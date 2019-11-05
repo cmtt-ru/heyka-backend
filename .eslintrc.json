@@ -14,6 +14,8 @@
     },
     "rules": {
         "eol-last": ["error", "always"],
-        "no-unused-vars": ["error", { "args": "none" }]
+        "no-unused-vars": ["error", { "args": "none" }],
+        "strict": ["error", "global"],
+        "semi": ["error", "always"]
     }
 }

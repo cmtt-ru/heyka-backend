@@ -1,4 +1,6 @@
-const config = require('./index.js')
+'use strict';
+
+const config = require('./index.js');
 
 module.exports = {
   server: {
@@ -6,8 +8,7 @@ module.exports = {
   },
   register: {
     plugins: [
-      './modules/auth',
-      './modules/api',
+      './lib',
       {
         plugin: 'hapi-redis2',
         options: {
@@ -17,4 +18,4 @@ module.exports = {
       }
     ]
   }
-}
+};

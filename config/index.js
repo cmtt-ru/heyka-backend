@@ -1,4 +1,6 @@
-require('dotenv').config()
+'use strict';
+
+require('dotenv').config();
 
 module.exports = {
   port: process.env.PORT || 5000,
@@ -11,4 +13,4 @@ module.exports = {
   redis: {
     uri: process.env.REDIS_URI || 'redis://127.0.0.1:6379'
   }
-}
+};

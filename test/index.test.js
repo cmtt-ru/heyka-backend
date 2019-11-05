@@ -42,33 +42,27 @@ describe('Test sandbox routes', () => {
     });
     describe('With an expired bearer token', () => {
       it('returns 401 unauthorized error', async () => {
-        const token = uuid4();
-        const tokenPayload = {
-          expiredTime: Date.now() - 2019
-        };
-        await server.redis.client.set(`token:${token}`, JSON.stringify(tokenPayload));
+        const { userService } = server.services()
+        const tokens = await userService.createTokens({ id: '1' }, -2019, -2019)
         const response = await server.inject({
           method: 'GET',
           url: '/protected',
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${tokens.access}`
           }
         });
         expect(response.statusCode).to.be.equal(401);
       });
     });
     describe('With a valid bearer token', () => {
-      it('returns 401 unauthorized error', async () => {
-        const token = uuid4();
-        const tokenPayload = {
-          expiredTime: Date.now() + 2019
-        };
-        await server.redis.client.set(`token:${token}`, JSON.stringify(tokenPayload));
+      it('returns 200 OK', async () => {
+        const { userService } = server.services()
+        const tokens = await userService.createTokens({ id: '1' }, 2019, 2019)
         const response = await server.inject({
           method: 'GET',
           url: '/protected',
           headers: {
-            'Authorization': `Bearer ${token}`
+            'Authorization': `Bearer ${tokens.access}`
           }
         });
         expect(response.statusCode).to.be.equal(200);

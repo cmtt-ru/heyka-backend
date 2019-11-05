@@ -23,10 +23,12 @@
     "@hapi/boom": "^8.0.1",
     "@hapi/glue": "^6.2.0",
     "@hapi/hapi": "^18.4.0",
+    "@hapi/joi": "15.1.1",
     "dotenv": "^8.2.0",
     "hapi-auth-bearer-token": "^6.2.1",
     "hapi-redis2": "^2.1.3",
     "haute-couture": "^3.4.0",
+    "schmervice": "^1.3.0",
     "toys": "^2.2.3",
     "uuid": "^3.3.3"
   },

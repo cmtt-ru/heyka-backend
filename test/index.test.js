@@ -1,42 +1,41 @@
 'use strict';
 
-const Code = require('@hapi/code');
 const Lab = require('@hapi/lab');
-const expect = Code.expect;
-const { describe, it, before, beforeEach } = exports.lab = Lab.script();
+const { describe, it, before, afterEach } = exports.lab = Lab.script();
 const createServer = require('../server');
-const uuid4 = require('uuid/v4');
+const { expect } = require('@hapi/code');
+const uuid4 = require('uuid/v4')
 
 describe('Test sandbox routes', () => {
-  let server = null;
-
-  before(async () => {
-    server = await createServer();
-  });
-
-  beforeEach(async () => {
-    // clear redis server
-    await server.redis.client.flushdb();
-  });
-
+  console.log('1')
+  before(async ({ context }) => {
+    console.log(11)
+    context.server = await createServer()
+    console.log(12)
+  })
+  afterEach(async ({ context }) => {
+    console.log(13)
+    await new Promise(resolve => setTimeout(resolve, 10))
+    await context.server.redis.client.flushdb()
+    console.log(14)
+  })
   describe('GET /status (an unprotected route)', () => {
-    it('returns "OK"', async () => {
-      const response = await server.inject('/status');
+    it('returns "OK"', async ({ context }) => {
+      const response = await context.server.inject('/status');
       expect(response.statusCode).to.be.equal(200);
       expect(response.payload).to.be.equal('OK');
     });
   });
-
   describe('GET /protected', () => {
     describe('Without a bearer token', () => {
-      it('returns 401 unauthorized error', async () => {
-        const response = await server.inject('/protected');
+      it('returns 401 unauthorized error', async ({ context }) => {
+        const response = await context.server.inject('/protected');
         expect(response.statusCode).to.be.equal(401);
       });
     });
     describe('With an unexisted bearer token', () => {
-      it('returns 401 unauthorized error', async () => {
-        const response = await server.inject({
+      it('returns 401 unauthorized error', async ({ context }) => {
+        const response = await context.server.inject({
           method: 'GET',
           url: '/protected',
           headers: {
@@ -47,13 +46,13 @@ describe('Test sandbox routes', () => {
       });
     });
     describe('With an expired bearer token', () => {
-      it('returns 401 unauthorized error', async () => {
+      it('returns 401 unauthorized error', async ({ context }) => {
         const token = uuid4();
         const tokenPayload = {
           expiredTime: Date.now() - 2019
         };
-        await server.redis.client.set(`token:${token}`, JSON.stringify(tokenPayload));
-        const response = await server.inject({
+        await context.server.redis.client.set(`token:${token}`, JSON.stringify(tokenPayload));
+        const response = await context.server.inject({
           method: 'GET',
           url: '/protected',
           headers: {
@@ -64,13 +63,13 @@ describe('Test sandbox routes', () => {
       });
     });
     describe('With a valid bearer token', () => {
-      it('returns 401 unauthorized error', async () => {
+      it('returns 401 unauthorized error', async ({ context }) => {
         const token = uuid4();
         const tokenPayload = {
           expiredTime: Date.now() + 2019
         };
-        await server.redis.client.set(`token:${token}`, JSON.stringify(tokenPayload));
-        const response = await server.inject({
+        await context.server.redis.client.set(`token:${token}`, JSON.stringify(tokenPayload));
+        const response = await context.server.inject({
           method: 'GET',
           url: '/protected',
           headers: {
@@ -82,5 +81,5 @@ describe('Test sandbox routes', () => {
       });
     });
   });
+  
 });
-

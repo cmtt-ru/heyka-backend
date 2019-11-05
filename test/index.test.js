@@ -4,16 +4,15 @@ const Lab = require('@hapi/lab');
 const { describe, it, before, afterEach } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
-const uuid4 = require('uuid/v4')
 
 describe('Test sandbox routes', () => {
-  let server = null
+  let server = null;
   before(async () => {
-    server = await createServer()
-  })
+    server = await createServer();
+  });
   afterEach(async () => {
-    server.redis.client.flushdb()
-  })
+    server.redis.client.flushdb();
+  });
   describe('GET /status (an unprotected route)', () => {
     it('returns "OK"', async () => {
       const response = await server.inject('/status');
@@ -42,8 +41,8 @@ describe('Test sandbox routes', () => {
     });
     describe('With an expired bearer token', () => {
       it('returns 401 unauthorized error', async () => {
-        const { userService } = server.services()
-        const tokens = await userService.createTokens({ id: '1' }, -2019, -2019)
+        const { userService } = server.services();
+        const tokens = await userService.createTokens({ id: '1' }, -2019, -2019);
         const response = await server.inject({
           method: 'GET',
           url: '/protected',
@@ -56,8 +55,8 @@ describe('Test sandbox routes', () => {
     });
     describe('With a valid bearer token', () => {
       it('returns 200 OK', async () => {
-        const { userService } = server.services()
-        const tokens = await userService.createTokens({ id: '1' }, 2019, 2019)
+        const { userService } = server.services();
+        const tokens = await userService.createTokens({ id: '1' }, 2019, 2019);
         const response = await server.inject({
           method: 'GET',
           url: '/protected',

@@ -522,7 +522,7 @@ buffer-from@^1.0.0:
   resolved "https://registry.yarnpkg.com/buffer-from/-/buffer-from-1.1.1.tgz#32713bc028f75c02fdb710d7c7bcec1f2c6070ef"
   integrity sha512-MQcXEUbCKtEo7bhqEs6560Hyd4XaovZlO/k9V3hjVUF/zwW7KBVdSK4gIt/bzwS9MbR5qob+F5jusZsb0YQK2A==
 
-callsites@^3.0.0:
+callsites@^3.0.0, callsites@^3.1.0:
   version "3.1.0"
   resolved "https://registry.yarnpkg.com/callsites/-/callsites-3.1.0.tgz#b3630abd8943432f54b3f0519238e33cd7df2f73"
   integrity sha512-P8BjAsXvZS+VIDUI11hHCQEv74YT67YUi5JJFNWIqL235sBmjX4+qx9Muvls5ivyNENctx46xQLQ3aTuE7ssaQ==
@@ -922,6 +922,24 @@ has-flag@^4.0.0:
   resolved "https://registry.yarnpkg.com/has-flag/-/has-flag-4.0.0.tgz#944771fd9c81c81265c4d6941860da06bb59479b"
   integrity sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==
 
+haute-couture@^3.4.0:
+  version "3.4.0"
+  resolved "https://registry.yarnpkg.com/haute-couture/-/haute-couture-3.4.0.tgz#4d104613445b3d0c87b4ba4b115882c68fd7f777"
+  integrity sha512-CAu3co9Rgp9ynkOisWBvJRrFIenbVlKekLNZUYB+SAvj4ZWYwHn4ZQ+hb+8uR+CZgehJkCrxdrEkYlFEOl0Bcw==
+  dependencies:
+    "@hapi/hoek" "8.x.x"
+    "@hapi/topo" "3.x.x"
+    haute ">=3.1.x <4"
+    parent-module "2.x.x"
+
+"haute@>=3.1.x <4":
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/haute/-/haute-3.1.0.tgz#e52d4e3dd9aa5b12e2f5f09758005db87d6641e7"
+  integrity sha512-KOg4EGKKwHKYoqVKTj+3ZzCPf94G9KO5jhpTng0smXIuj6KcuV8TmT6J9aZafg/2Z/LMYD23fOB0gXu0jFk2lw==
+  dependencies:
+    "@hapi/hoek" "8.x.x"
+    require-directory "2.x.x"
+
 iconv-lite@^0.4.24:
   version "0.4.24"
   resolved "https://registry.yarnpkg.com/iconv-lite/-/iconv-lite-0.4.24.tgz#2022b4b25fbddc21d2f524974a474aafe733908b"
@@ -1193,6 +1211,13 @@ os-tmpdir@~1.0.2:
   resolved "https://registry.yarnpkg.com/os-tmpdir/-/os-tmpdir-1.0.2.tgz#bbe67406c79aa85c5cfec766fe5734555dfa1274"
   integrity sha1-u+Z0BseaqFxc/sdm/lc0VV36EnQ=
 
+parent-module@2.x.x:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/parent-module/-/parent-module-2.0.0.tgz#fa71f88ff1a50c27e15d8ff74e0e3a9523bf8708"
+  integrity sha512-uo0Z9JJeWzv8BG+tRcapBKNJ0dro9cLyczGzulS6EfeyAdeC9sbojtW6XwvYxJkEne9En+J2XEl4zyglVeIwFg==
+  dependencies:
+    callsites "^3.1.0"
+
 parent-module@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/parent-module/-/parent-module-1.0.1.tgz#691d2709e78c79fae3a156622452d00762caaaa2"
@@ -1256,6 +1281,11 @@ regexpp@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/regexpp/-/regexpp-2.0.1.tgz#8d19d31cf632482b589049f8281f93dbcba4d07f"
   integrity sha512-lv0M6+TkDVniA3aD1Eg0DVpfU/booSu7Eev3TDO/mZKHBfVjgCGTV4t4buppESEYDtkArYFOxTJWv6S5C+iaNw==
+
+require-directory@2.x.x:
+  version "2.1.1"
+  resolved "https://registry.yarnpkg.com/require-directory/-/require-directory-2.1.1.tgz#8c64ad5fd30dab1c976e2344ffe7f792a6a6df42"
+  integrity sha1-jGStX9MNqxyXbiNE/+f3kqam30I=
 
 resolve-from@^4.0.0:
   version "4.0.0"
@@ -1457,6 +1487,13 @@ to-regex-range@^5.0.1:
   integrity sha512-65P7iz6X5yEr1cwcgvQxbbIw7Uk3gOy5dIdtZ4rDveLqhrdJP+Li/Hx6tyK0NEb+2GCyneCMJiGqrADCSNk8sQ==
   dependencies:
     is-number "^7.0.0"
+
+toys@^2.2.3:
+  version "2.2.3"
+  resolved "https://registry.yarnpkg.com/toys/-/toys-2.2.3.tgz#c7c14c151d3d899bd4da1c4203113dfea73dff6f"
+  integrity sha512-1T+D8kmmYitlMzb1roIWaMRYFaA9b/48yvIKYbg7NdNOAeR9FdHZxq/W1MXb3Ud0Vf92yFVEXTtkV4H0A7322g==
+  dependencies:
+    "@hapi/hoek" "8.x.x"
 
 tslib@^1.9.0:
   version "1.10.0"

@@ -5,8 +5,21 @@ const register = async function (server) {
     path: '/status',
     handler () {
       return 'OK'
+    },
+    options: {
+      auth: false
     }
   })
+
+  await server.route({
+    method: 'GET',
+    path: '/protected',
+    handler () {
+      return 'OK'
+    }
+  })
+
+  server.auth.default('simple')
 }
 
 exports.plugin = {

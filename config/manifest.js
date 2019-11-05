@@ -6,7 +6,15 @@ module.exports = {
   },
   register: {
     plugins: [
-      './modules/api'
+      './modules/auth',
+      './modules/api',
+      {
+        plugin: 'hapi-redis2',
+        options: {
+          settings: config.redis.uri,
+          decorate: true
+        }
+      }
     ]
   }
 }

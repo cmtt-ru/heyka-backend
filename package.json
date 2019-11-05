@@ -1,0 +1,32 @@
+{
+  "name": "heyka-backend",
+  "version": "0.0.1",
+  "description": "An awesome API for Heyka",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "lint": "eslint ./",
+    "test": "lab --verbose --coverage --leaks",
+    "check": "yarn run lint && yarn run test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmtt-ru/heyka-backend.git"
+  },
+  "author": "cmtt-ru",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/cmtt-ru/heyka-backend/issues"
+  },
+  "homepage": "https://github.com/cmtt-ru/heyka-backend#readme",
+  "dependencies": {
+    "@hapi/glue": "^6.2.0",
+    "@hapi/hapi": "^18.4.0",
+    "dotenv": "^8.2.0"
+  },
+  "devDependencies": {
+    "@hapi/code": "^7.0.0",
+    "@hapi/lab": "^21.0.0",
+    "eslint": "^6.6.0"
+  }
+}

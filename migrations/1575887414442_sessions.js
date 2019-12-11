@@ -5,13 +5,17 @@ exports.shorthands = undefined;
 
 exports.up = (pgm) => {
   pgm.createTable('sessions', {
-    access_token: {
+    id: {
       type: 'uuid',
       primaryKey: true
     },
+    access_token: {
+      type: 'uuid',
+      unique: true,
+    },
     refresh_token: {
       type: 'uuid',
-      primaryKey: true
+      unique: true
     },
     user_id: {
       type: 'uuid',

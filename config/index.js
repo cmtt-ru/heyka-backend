@@ -18,5 +18,8 @@ module.exports = {
   },
   redis: {
     uri: process.env.REDIS_URI || 'redis://127.0.0.1:6379'
+  },
+  pg: {
+    uri: process.env.DATABASE_URL || 'postgres://pg:strongpassword@localhost:5432/heyka'
   }
 };

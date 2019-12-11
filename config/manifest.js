@@ -4,7 +4,11 @@ const config = require('./index.js');
 
 module.exports = {
   server: {
-    port: config.port
+    port: config.port,
+    debug: process.env.NODE_ENV === 'development' ? {
+      log: '*',
+      request: '*'
+    } : undefined
   },
   register: {
     plugins: [
@@ -14,6 +18,13 @@ module.exports = {
         options: {
           settings: config.redis.uri,
           decorate: true
+        }
+      },
+      {
+        plugin: 'hapi-pg-promise',
+        options: {
+          cn: config.pg.uri,
+          settings: {}
         }
       }
     ]

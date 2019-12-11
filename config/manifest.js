@@ -8,6 +8,9 @@ module.exports = {
     debug: process.env.NODE_ENV === 'development' ? {
       log: '*',
       request: '*'
+    } : process.env.NODE_ENV === 'test' ? {
+      log: ['debug-error'],
+      request: ['debug-error']
     } : undefined
   },
   register: {

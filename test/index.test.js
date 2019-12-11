@@ -4,6 +4,7 @@ const Lab = require('@hapi/lab');
 const { describe, it, before, beforeEach } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
+const uuid4 = require('uuid/v4');
 
 describe('Test sandbox routes', () => {
   let server = null;
@@ -148,4 +149,72 @@ describe('Test sandbox routes', () => {
       });
     });
   });
+  describe('POST /refresh_token', () => {
+    describe('Incorrect request without tokens', () => {
+      it('Should return 400 Bad Request', async () => {
+        const response = await server.inject({
+          method: 'POST',
+          url: '/refresh_token',
+          payload: {}
+        });
+        expect(response.statusCode).to.be.equal(400);
+      });
+    });
+    describe('Request with tokens that doesnt exist', () => {
+      it('should return 401 Unauthorized request', async () => {
+        const accessToken = uuid4();
+        const refreshToken = uuid4();
+        const response = await server.inject({
+          method: 'POST',
+          url: '/refresh_token',
+          payload: { accessToken, refreshToken }
+        });
+        expect(response.statusCode).to.be.equal(401);
+      });
+    });
+    describe('Request with valid refresh token but with invalid access token', () => {
+      it('Should return 401 Unauthorized request', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'funny@chel.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/refresh_token',
+          payload: { accessToken: uuid4(), refreshToken: tokens.refresh }
+        });
+        expect(response.statusCode).to.be.equal(401);
+      });
+    });
+    describe('Request with expired refresh token', () => {
+      it('Should return 401 Unauthorized request', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'funny@chel.ru' });
+        const tokens = await userService.createTokens(user, 10000, -10000);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/refresh_token',
+          payload: { accessToken: tokens.access, refreshToken: tokens.refresh }
+        });
+        expect(response.statusCode).to.be.equal(401);
+      });
+    });
+    describe('Request with valid tokens', () => {
+      it('Should return new tokens and delete old ones', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'funny@chel.ru' });
+        const tokens = await userService.createTokens(user, 10000, 10000);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/refresh_token',
+          payload: { accessToken: tokens.access, refreshToken: tokens.refresh }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload).includes('accessToken');
+        expect(payload).includes('refreshToken');
+        expect(await userService.findAccessToken(tokens.access)).to.be.null();
+        expect(await userService.findRefreshToken(tokens.refresh)).to.be.null();
+      });
+    });
+  })
 });

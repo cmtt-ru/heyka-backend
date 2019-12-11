@@ -216,5 +216,5 @@ describe('Test sandbox routes', () => {
         expect(await userService.findRefreshToken(tokens.refresh)).to.be.null();
       });
     });
-  })
+  });
 });

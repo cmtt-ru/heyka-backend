@@ -7,15 +7,12 @@ exports.up = (pgm) => {
   pgm.createTable('users', {
     id: {
       type: 'uuid',
-      primaryKey: true,
-      notNull: true,
-      unique: true
+      primaryKey: true
     },
     auth: 'jsonb',
     email: {
       type: 'varchar(255)',
       unique: true,
-      primaryKey: true
     },
     password_hash: 'text',
     password_salt: 'text',

@@ -6,7 +6,7 @@ const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
 
-describe('Test sandbox routes', () => {
+describe('Test routes', () => {
   let server = null;
   before(async () => {
     server = await createServer();
@@ -214,6 +214,28 @@ describe('Test sandbox routes', () => {
         expect(payload).includes('refreshToken');
         expect(await userService.findAccessToken(tokens.access)).to.be.null();
         expect(await userService.findRefreshToken(tokens.refresh)).to.be.null();
+      });
+    });
+  });
+  describe('POST /workspaces/create', () => {
+    describe('With valid input data', () => {
+      it('should return workspace object', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const tokens = await userService.createTokens({ id: user.id });
+        const response = await server.inject({
+          method: 'POST',
+          url: '/workspaces/create',
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          },
+          payload: {
+            name: 'TestWorkspace'
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload).includes('workspace');
       });
     });
   });

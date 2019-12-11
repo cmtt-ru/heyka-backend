@@ -14,6 +14,10 @@ module.exports = {
       clientId: process.env.SLACK_CLIENT_ID,
       clientSecret: process.env.SLACK_CLIENT_SECRET,
       verificationToken: process.env.SLACK_VERIFICATION_TOKEN
+    },
+    facebook: {
+      clientId: process.env.FACEBOOK_CLIENT_ID,
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET
     }
   },
   redis: {

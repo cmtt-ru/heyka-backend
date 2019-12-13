@@ -7,9 +7,10 @@
     "start": "node index.js",
     "dev": "NODE_ENV=development nodemon index.js",
     "lint": "eslint ./",
+    "test:unit": "lab --verbose --leaks test/unit/*",
     "test:api": "lab --verbose --leaks test/index.test.js",
     "test:socket": "lab --verbose --leaks test/socket.test.js",
-    "test": "yarn run test:api && yarn run test:socket",
+    "test": "yarn run test:unit && yarn run test:api && yarn run test:socket",
     "check": "yarn run lint && yarn run test",
     "migrate": "node-pg-migrate"
   },
@@ -47,6 +48,7 @@
     "@hapi/code": "^7.0.0",
     "@hapi/lab": "^21.0.0",
     "eslint": "^6.6.0",
-    "nodemon": "^2.0.1"
+    "nodemon": "^2.0.1",
+    "sinon": "^7.5.0"
   }
 }

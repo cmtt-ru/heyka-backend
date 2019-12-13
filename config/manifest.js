@@ -15,7 +15,9 @@ module.exports = {
   },
   register: {
     plugins: [
+      // main plugin (API)
       './lib',
+      // plugin for Redis
       {
         plugin: 'hapi-redis2',
         options: {
@@ -23,11 +25,19 @@ module.exports = {
           decorate: true
         }
       },
+      // plugin for Postgresql
       {
         plugin: 'hapi-pg-promise',
         options: {
           cn: config.pg.uri,
           settings: {}
+        }
+      },
+      // plugin for global event emitter
+      {
+        plugin: 'hapi-emitter',
+        options: {
+          name: 'apiEvents'
         }
       }
     ]

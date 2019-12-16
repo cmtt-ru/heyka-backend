@@ -1,5 +1,7 @@
+'use strict';
+
 const Lab = require('@hapi/lab');
-const { describe, it, before, beforeEach } = exports.lab = Lab.script();
+const { describe, it, before } = exports.lab = Lab.script();
 const { expect } = require('@hapi/code');
 const UserService = require('../../lib/services/user');
 const sinon = require('sinon');
@@ -10,10 +12,10 @@ const stubServices = (serviceName, object) => ({
     services () {
       return {
         [serviceName]: object
-      }
+      };
     }
   }
-})
+});
 
 describe('Unit tests: userService', () => {
   let userService = null;
@@ -28,7 +30,7 @@ describe('Unit tests: userService', () => {
       const result = await userService.findById.call(stubServices('userDatabaseService', serviceStub), 'anid');
       expect(result).equal('user');
     });
-  })
+  });
   describe('findByEmail', () => {
     it('should return user if he exists', async () => {
       const serviceStub = {
@@ -43,10 +45,12 @@ describe('Unit tests: userService', () => {
       const serviceStub = {
         findByExternalAuthenticatorId: sinon.stub().resolves('user')
       };
-      const result = await userService.findByExternalAuthenticatorId.call(stubServices('userDatabaseService', serviceStub), 'enemail');
+      const result = await userService
+        .findByExternalAuthenticatorId
+        .call(stubServices('userDatabaseService', serviceStub), 'enemail');
       expect(result).equal('user');
     });
-  })
+  });
   describe('signup', () => {
     it('should throws error when user is exists', async () => {
       const serviceStub = {
@@ -62,7 +66,7 @@ describe('Unit tests: userService', () => {
         isExcept = true;
       }
       expect(isExcept).equals(true);
-    })
+    });
     it ('should add user without password to the database and return him', async () => {
       const serviceStub = {
         findByEmail: sinon.stub().resolves(null),
@@ -75,7 +79,7 @@ describe('Unit tests: userService', () => {
       expect(regUser.password_salt).undefined();
       expect(regUser).includes('updated_at');
       expect(regUser).includes('created_at');
-    })
+    });
     it ('should add user with password hash and password salt to the database and return him', async () => {
       const serviceStub = {
         findByEmail: sinon.stub().resolves(null),
@@ -88,7 +92,7 @@ describe('Unit tests: userService', () => {
       expect(regUser.password_salt).to.not.undefined();
       expect(regUser).includes('updated_at');
       expect(regUser).includes('created_at');
-    })
+    });
   });
   describe('signin', () => {
     it('should throw error if user doesnt exists', async () => {
@@ -104,10 +108,15 @@ describe('Unit tests: userService', () => {
         isExcept = true;
       }
       expect(isExcept).equals(true);
-    })
+    });
     it('should throw error if user hasnt password', async () => {
       const serviceStub = {
-        findByEmail: sinon.stub().resolves({ id: 'id', email: 'email', password_hash: undefined, password_salt: undefined })
+        findByEmail: sinon.stub().resolves({
+          id: 'id', 
+          email: 'email', 
+          password_hash: undefined, 
+          password_salt: undefined 
+        })
       };
       const user = { email: 'anemail', password: 'apassword' };
       let isExcept = false;
@@ -118,7 +127,7 @@ describe('Unit tests: userService', () => {
         isExcept = true;
       }
       expect(isExcept).equals(true);
-    })
+    });
     it('should throw error if user provided invalid password', async () => {
       const slt = await bcrypt.genSalt(4);
       const pwd = await bcrypt.hash('apassword', slt);
@@ -134,7 +143,7 @@ describe('Unit tests: userService', () => {
         isExcept = true;
       }
       expect(isExcept).equals(true);
-    })
+    });
     it('should return user from database if credentials are valid', async () => {
       const slt = await bcrypt.genSalt(4);
       const pwd = await bcrypt.hash('apassword', slt);
@@ -145,8 +154,8 @@ describe('Unit tests: userService', () => {
       const userInfo = { email: 'anemail', password: 'apassword' };
       const signUser = await userService.signin.call(stubServices('userDatabaseService', serviceStub), userInfo);
       expect(signUser).equals(user);
-    })
-  })
+    });
+  });
   describe('createTokens', () => {
     it('creates tokens and insert it to the database', async () => {
       const serviceStub = {
@@ -160,8 +169,8 @@ describe('Unit tests: userService', () => {
       expect(tokens.access).equals('access-token-uuid');
       expect(tokens.refresh).to.not.undefined();
       expect(serviceStub.insertSession.calledOnce).true();
-    })
-  })
+    });
+  });
   describe('findRefreshToken', () => {
     it('returns session info from the database by refreshToken', async () => {
       const session = { userId: 'id', access_token: 'at' };
@@ -173,8 +182,8 @@ describe('Unit tests: userService', () => {
       }, 'token');
       expect(serviceStub.findSession.calledOnce).true();
       expect(info).equals(session);
-    })
-  })
+    });
+  });
   describe('deleteRefreshToken', () => {
     it('deletes token from the database', async () => {
       const session = { userId: 'id', access_token: 'at' };
@@ -189,8 +198,8 @@ describe('Unit tests: userService', () => {
       expect(serviceStub.findSession.calledOnceWithExactly('token')).true();
       expect(serviceStub.deleteAccessToken.calledOnceWithExactly('at')).true();
       expect(serviceStub.deleteSession.calledOnceWithExactly('token')).true();
-    })
-  })
+    });
+  });
   describe('createAccessToken', () => {
     it('creates access token and saves it to the Redis', async () => {
       const serviceStub = {
@@ -202,8 +211,8 @@ describe('Unit tests: userService', () => {
       }, user);
       expect(token).to.not.undefined();
       expect(serviceStub.insertAccessToken.calledOnce).true();
-    })
-  })
+    });
+  });
   describe('findAccessToken', () => {
     it('finds access token in the database and returns token info', async () => {
       const tokenInfo = { userId: 'id', expired: Date.now() };
@@ -215,8 +224,8 @@ describe('Unit tests: userService', () => {
       }, 'token');
       expect(token).equals(tokenInfo);
       expect(serviceStub.findAccessToken.calledOnce).true();
-    })
-  })
+    });
+  });
   describe('deleteAccessToken', () => {
     it('deletes access token from the database', async () => {
       const serviceStub = {
@@ -226,8 +235,8 @@ describe('Unit tests: userService', () => {
         ...stubServices('userDatabaseService', serviceStub)
       }, 'token');
       expect(serviceStub.deleteAccessToken.calledOnce).true();
-    })
-  })
+    });
+  });
   describe('refreshToken', () => {
     it('throw exception if there is no such sessions in the database', async () => {
       const serviceStub = {
@@ -243,10 +252,10 @@ describe('Unit tests: userService', () => {
         }, 'rtoken', 'atoken');
       } catch(e) {
         expect(e.message).includes('TokenNotFound');
-        isExcept = true
+        isExcept = true;
       }
       expect(isExcept).true();
-    })
+    });
     it('throw exception if refresh token is expired', async () => {
       const refreshToken = { expired_at: Date.now() - 2000, access_token: 'atoken' };
       const serviceStub = {
@@ -262,10 +271,10 @@ describe('Unit tests: userService', () => {
         }, 'atoken', 'rtoken');
       } catch(e) {
         expect(e.message).includes('RefreshTokenExpired');
-        isExcept = true
+        isExcept = true;
       }
       expect(isExcept).true();
-    })
+    });
     it('throw exception if access tokens are not matched', async () => {
       const refreshToken = { expired_at: Date.now() - 2000, access_token: 'NOT(atoken)' };
       const serviceStub = {
@@ -281,12 +290,17 @@ describe('Unit tests: userService', () => {
         }, 'atoken', 'rtoken');
       } catch(e) {
         expect(e.message).includes('AccessTokenNotMatched');
-        isExcept = true
+        isExcept = true;
       }
       expect(isExcept).true();
-    })
+    });
     it('should refresh token, deletes old and creates ones', async () => {
-      const refreshToken = { id: 'rtokenUUID', expired_at: Date.now() + 2000, access_token: 'atoken', user_id: 'userUUID' };
+      const refreshToken = { 
+        id: 'rtokenUUID', 
+        expired_at: Date.now() + 2000, 
+        access_token: 'atoken', 
+        user_id: 'userUUID' 
+      };
       const user = { id: 'userUUID' };
       const serviceStub = {
         findSession: sinon.stub().resolves(refreshToken),
@@ -305,6 +319,6 @@ describe('Unit tests: userService', () => {
       expect(serviceStub.deleteAccessToken.calledOnceWithExactly('atoken')).true();
       expect(serviceStub.updateSession.firstCall.args[0]).equals(refreshToken.id);
       expect(serviceStub.findById.calledOnceWithExactly('userUUID')).true();
-    })
-  })
+    });
+  });
 });

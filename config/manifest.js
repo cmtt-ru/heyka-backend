@@ -30,7 +30,9 @@ module.exports = {
         plugin: 'hapi-pg-promise',
         options: {
           cn: config.pg.uri,
-          settings: {}
+          init: {
+            noWarnings: process.env.NODE_ENV === 'test'
+          }
         }
       },
       // plugin for global event emitter

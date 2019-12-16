@@ -7,10 +7,7 @@
     "start": "node index.js",
     "dev": "NODE_ENV=development nodemon index.js",
     "lint": "eslint ./",
-    "test:unit": "lab --verbose --leaks test/unit/*",
-    "test:api": "lab --verbose --leaks test/index.test.js",
-    "test:socket": "lab --verbose --leaks test/socket.test.js",
-    "test": "yarn run test:unit && yarn run test:api && yarn run test:socket",
+    "test": "yarn lab --verbose --leaks --coverage",
     "check": "yarn run lint && yarn run test",
     "migrate": "node-pg-migrate"
   },

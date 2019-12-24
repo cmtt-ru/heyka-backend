@@ -13,6 +13,7 @@ describe('Test socket', () => {
   let server = null;
   let socketIO = null;
   let socket = null;
+
   before(async () => {
     server = await createServer();
     socketIO = await socketAPI.getSocketIO(server);
@@ -25,6 +26,7 @@ describe('Test socket', () => {
       });
     });
   });
+
   beforeEach(async () => {
     const db = server.plugins['hapi-pg-promise'].db;
     await db.none('DELETE FROM users');
@@ -33,6 +35,7 @@ describe('Test socket', () => {
     await db.none('DELETE FROM workspaces_members');
     await server.redis.client.flushdb();
   });
+
   describe('Testing socket authentication', () => {
     describe('With valid auth tokens', () => {
       it('server should emit "auth-success" event', async () => {
@@ -62,6 +65,7 @@ describe('Test socket', () => {
         await Promise.race([awaitSuccess, awaitTransactionError, awaitGeneralError]);
       });
     });
+    
     describe('With an expired auth tokens', () => {
       it('should return two "error" events', async () => {
         const { userService } = server.services();

@@ -1,4 +1,5 @@
 /* eslint-disable camelcase */
+'use strict';
 
 exports.shorthands = undefined;
 
@@ -44,7 +45,7 @@ exports.up = (pgm) => {
       type: 'uuid',
       primaryKey: true,
       references: 'users(id)',
-      onDelete: cascade
+      onDelete: 'cascade'
     },
     role: 'channel_members_roles'
   });

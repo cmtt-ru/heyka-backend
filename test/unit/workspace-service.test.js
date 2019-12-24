@@ -23,9 +23,11 @@ const stubServices = (...args) => {
 
 describe('Unit tests: workspaceService', () => {
   let workspaceService = null;
+
   before(() => {
     workspaceService = new WorkspaceService();
   });
+  
   describe('createWorkspace', () => {
     it('works without errors', async () => {
       const user = { id: 'userUUID' };
@@ -33,16 +35,22 @@ describe('Unit tests: workspaceService', () => {
         createServer: sinon.stub().resolves('janus-info-JSON')
       };
       const workspaceDatabaseService = {
+        roles: () => ({}),
         insertWorkspace: sinon.stub().resolves(true),
         addWorkspaceMember: sinon.stub().resolves(true),
         updateWorkspace: sinon.stub().resolves({ created: true })
+      };
+      const channelService = {
+        createDefaultChannels: sinon.stub().resolves(true)
       };
       await workspaceService.createWorkspace.call(
         stubServices(
           'janusWorkspaceService', 
           janusWorkspaceService,
           'workspaceDatabaseService',
-          workspaceDatabaseService
+          workspaceDatabaseService,
+          'channelService',
+          channelService
         ), 
         user, 
         'workspaceName');
@@ -51,6 +59,7 @@ describe('Unit tests: workspaceService', () => {
       expect(workspaceDatabaseService.addWorkspaceMember.firstCall.args[0].user_id).equals('userUUID');
       expect(workspaceDatabaseService.updateWorkspace.calledOnce).true();
       expect(workspaceDatabaseService.updateWorkspace.firstCall.args[1]).equals({ janus: 'janus-info-JSON' });
+      expect(channelService.createDefaultChannels.calledOnce).true();
     });
   });
 });

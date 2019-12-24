@@ -8,14 +8,17 @@ const uuid4 = require('uuid/v4');
 
 describe('Test routes', () => {
   let server = null;
+
   before(async () => {
     server = await createServer();
   });
+
   beforeEach(async () => {
     await server.redis.client.flushdb();
     await server.plugins['hapi-pg-promise'].db.query('DELETE FROM users');
     await server.plugins['hapi-pg-promise'].db.query('DELETE FROM sessions');
   });
+
   describe('GET /status (an unprotected route)', () => {
     it('returns "OK"', async () => {
       const response = await server.inject('/status');
@@ -23,6 +26,7 @@ describe('Test routes', () => {
       expect(response.payload).to.be.equal('OK');
     });
   });
+
   describe('GET /protected', () => {
     describe('Without a bearer token', () => {
       it('returns 401 unauthorized error', async () => {
@@ -30,6 +34,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(401);
       });
     });
+
     describe('With an unexisted bearer token', () => {
       it('returns 401 unauthorized error', async () => {
         const response = await server.inject({
@@ -42,6 +47,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(401);
       });
     });
+
     describe('With an expired bearer token', () => {
       it('returns 401 unauthorized error', async () => {
         const { userService } = server.services();
@@ -57,6 +63,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(401);
       });
     });
+
     describe('With a valid bearer token', () => {
       it('returns 200 OK', async () => {
         const { userService } = server.services();
@@ -74,6 +81,7 @@ describe('Test routes', () => {
       });
     });
   });
+
   describe('POST /signin', () => {
     describe('sign in with an invalid email', () => {
       it('returns 401', async () => {
@@ -86,6 +94,7 @@ describe('Test routes', () => {
         expect(response.payload).includes('Email or password are invalid');
       });
     });
+
     describe('sign in with valid email but invalid password', () => {
       it('return 401', async () => {
         const { userService } = server.services();
@@ -99,6 +108,7 @@ describe('Test routes', () => {
         expect(response.payload).includes('Email or password are invalid');
       });
     });
+
     describe('sign in with valid credentials', () => {
       it('returns user info and tokens', async () => {
         const { userService } = server.services();
@@ -118,6 +128,7 @@ describe('Test routes', () => {
       });
     });
   });
+
   describe('POST /signup', () => {
     describe('sign up with an existed email', () => {
       it('returns 401', async () => {
@@ -131,6 +142,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(400);
       });
     });
+
     describe('sign up with valid credentials', () => {
       it('creates user and returns tokens', async () => {
         const { userService } = server.services();
@@ -149,6 +161,7 @@ describe('Test routes', () => {
       });
     });
   });
+
   describe('POST /refresh_token', () => {
     describe('Incorrect request without tokens', () => {
       it('Should return 400 Bad Request', async () => {
@@ -160,6 +173,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(400);
       });
     });
+
     describe('Request with tokens that doesnt exist', () => {
       it('should return 401 Unauthorized request', async () => {
         const accessToken = uuid4();
@@ -172,6 +186,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(401);
       });
     });
+
     describe('Request with valid refresh token but with invalid access token', () => {
       it('Should return 401 Unauthorized request', async () => {
         const { userService } = server.services();
@@ -185,6 +200,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(401);
       });
     });
+
     describe('Request with expired refresh token', () => {
       it('Should return 401 Unauthorized request', async () => {
         const { userService } = server.services();
@@ -198,6 +214,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(401);
       });
     });
+
     describe('Request with valid tokens', () => {
       it('Should return new tokens and delete old ones', async () => {
         const { userService } = server.services();
@@ -217,6 +234,7 @@ describe('Test routes', () => {
       });
     });
   });
+
   describe('POST /workspaces/create', () => {
     describe('With valid input data', () => {
       it('should return workspace object', async () => {

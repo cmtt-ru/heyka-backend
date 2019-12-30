@@ -41,7 +41,36 @@ module.exports = {
         options: {
           name: 'apiEvents'
         }
-      }
+      },
+      
+      // add swagger if development mode (swagger requires inert and vision for static files)
+      ...(
+        process.env.NODE_ENV === 'development' ? [
+          '@hapi/inert',
+          '@hapi/vision',
+          {
+            plugin: 'hapi-swagger',
+            options: {
+              info: {
+                title: 'API documentation'
+              },
+              securityDefinitions: {
+                simple: {
+                  type: 'apiKey',
+                  description: 'Required a valid access token',
+                  name: 'Authorization',
+                  in: 'header'
+                }
+              },
+              security: [{
+                simple: []
+              }],
+              grouping: 'tags'
+            }
+          }
+        ] :
+          []
+      )
     ]
   }
 };

@@ -3,10 +3,10 @@ name: Unit Tests And Linter Check
 on:
   push:
     branches:
-    - ga_setup
+    - master
   pull_request:
     branches:
-    - ga_setup
+    - master
 
 jobs:
   container-job:

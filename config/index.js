@@ -7,17 +7,17 @@ module.exports = {
   credentials: {
     cookiePassword: process.env.COOKIE_PASSWORD,
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET
+      clientId: process.env.GOOGLE_CLIENT_ID || 'google-client-id',
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'google-client-secret'
     },
     slack: {
-      clientId: process.env.SLACK_CLIENT_ID,
-      clientSecret: process.env.SLACK_CLIENT_SECRET,
-      verificationToken: process.env.SLACK_VERIFICATION_TOKEN
+      clientId: process.env.SLACK_CLIENT_ID || 'slack-client-id',
+      clientSecret: process.env.SLACK_CLIENT_SECRET || 'slack-client-secret',
+      verificationToken: process.env.SLACK_VERIFICATION_TOKEN || 'slack-verification-token'
     },
     facebook: {
-      clientId: process.env.FACEBOOK_CLIENT_ID,
-      clientSecret: process.env.FACEBOOK_CLIENT_SECRET
+      clientId: process.env.FACEBOOK_CLIENT_ID || 'facebook-client-id',
+      clientSecret: process.env.FACEBOOK_CLIENT_SECRET || 'facebook-client-secret'
     }
   },
   redis: {

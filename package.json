@@ -8,6 +8,8 @@
     "dev": "NODE_ENV=development nodemon index.js",
     "lint": "eslint ./",
     "test": "yarn lab --verbose --leaks --coverage",
+    "test:integration": "yarn lab --verbose --leaks test/index.test.js test/socket.test.js",
+    "test:unit": "yarn lab --verbose --leaks test/unit/*.js",
     "check": "yarn run lint && yarn run test",
     "migrate": "node-pg-migrate"
   },

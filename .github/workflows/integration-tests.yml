@@ -37,7 +37,7 @@ jobs:
     - uses: actions/checkout@v1
     - uses: actions/setup-python@v1
     - run: yarn
-    - run: yarn run migrate
+    - run: yarn run migrate up
       env:
         REDIS_URI: redis://redis:6379
         DATABASE_URL: postgres://pg:passw@postgres:5432/test

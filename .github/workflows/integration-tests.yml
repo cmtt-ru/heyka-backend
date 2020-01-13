@@ -36,7 +36,6 @@ jobs:
     steps:
     - uses: actions/checkout@v1
     - uses: actions/setup-python@v1
-    - run: apt-get update && apt-get install python -y 
     - run: yarn
     - run: yarn run migrate
       env:

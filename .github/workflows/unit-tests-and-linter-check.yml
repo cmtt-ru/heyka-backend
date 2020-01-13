@@ -19,5 +19,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
+    - run: sudo apt-get update && sudo apt-get install python -y 
     - run: yarn
     - run: yarn run test:unit && yarn run lint

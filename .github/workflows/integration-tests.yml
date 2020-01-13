@@ -1,0 +1,49 @@
+name: Integration Tests Check
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  container-job:
+    runs-on: ubuntu-latest
+    
+    # runs all of the steps inside the specified container rather than on the VM host.  
+    # Because of this the network configuration changes from host based network to a container network.
+    container:
+      image:  node:12-alpine
+
+    services:
+      postgres:
+        image: postgres:alpine
+        env:
+          POSTGRES_USER: pg
+          POSTGRES_PASSWORD: passw
+          POSTGRES_DB: test
+        ports:
+        - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:alpine
+        ports:
+        - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+    - run: yarn
+    - run: yarn run migrate up
+      env:
+        REDIS_URI: redis://redis:6379
+        DATABASE_URL: postgres://pg:passw@postgres:5432/test
+        COOKIE_PASSWORD: cookie_password
+    - run: yarn run test:integration
+      env:
+        REDIS_URI: redis://redis:6379
+        DATABASE_URL: postgres://pg:passw@postgres:5432/test
+        COOKIE_PASSWORD: cookie_password

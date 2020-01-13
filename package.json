@@ -8,6 +8,8 @@
     "dev": "NODE_ENV=development nodemon index.js",
     "lint": "eslint ./",
     "test": "yarn lab --verbose --leaks --coverage",
+    "test:integration": "yarn lab --verbose --leaks test/index.test.js test/socket.test.js",
+    "test:unit": "yarn lab --verbose --leaks test/unit/*.js",
     "check": "yarn run lint && yarn run test",
     "migrate": "node-pg-migrate"
   },
@@ -28,7 +30,7 @@
     "@hapi/inert": "^5.2.2",
     "@hapi/joi": "^16.1.8",
     "@hapi/vision": "^5.5.4",
-    "bcrypt": "^3.0.7",
+    "bcryptjs": "^2.4.3",
     "bell": "^10.0.0",
     "dotenv": "^8.2.0",
     "hapi-auth-bearer-token": "^6.2.1",

@@ -1,0 +1,24 @@
+name: Unit Tests And Linter Check
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  container-job:
+    runs-on: ubuntu-latest
+    
+    # runs all of the steps inside the specified container rather than on the VM host.  
+    # Because of this the network configuration changes from host based network to a container network.
+    container:
+      image:  node:12-alpine
+
+    steps:
+    - uses: actions/checkout@v1
+    - uses: actions/setup-python@v1
+    - run: yarn
+    - run: yarn run test:unit && yarn run lint

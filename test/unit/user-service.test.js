@@ -5,7 +5,7 @@ const { describe, it, before } = exports.lab = Lab.script();
 const { expect } = require('@hapi/code'); 
 const UserService = require('../../lib/services/user');
 const sinon = require('sinon');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const stubServices = (serviceName, object) => ({
   server: {

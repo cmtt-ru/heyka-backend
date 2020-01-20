@@ -30,6 +30,8 @@ exports.up = (pgm) => {
       onDelete: 'cascade',
       primaryKey: true
     },
+    created_at: 'timestamp',
+    updated_at: 'timestamp',
     role: 'workspace_members_roles'
   });
 };

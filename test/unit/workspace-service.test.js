@@ -71,31 +71,31 @@ describe('Unit tests: workspaceService', () => {
       };
       const result = await workspaceService.canCreateChannel.call(
         stubServices('workspaceDatabaseService', workspaceDatabaseService), 
-        user, 
-        'workspaceName');
+        'workspaceId', 
+        'userId');
       expect(result).to.equal(false);
     });
-    it('should return "false" if the relation is not admin\moderator', async () => {
+    it('should return "false" if the relation is not admin\\moderator\\user', async () => {
       const workspaceDatabaseService = {
-        roles: () => ({ admin: 'a', moderator: 'm', user: 'u'}),
-        getUserWorkspaceRelations: sinon.stub().resolves([{ role: 'u' }])
+        roles: () => ({ admin: 'a', moderator: 'm', user: 'u', guest: 'g' }),
+        getUserWorkspaceRelations: sinon.stub().resolves([{ role: 'g' }])
       };
       const result = await workspaceService.canCreateChannel.call(
         stubServices('workspaceDatabaseService', workspaceDatabaseService), 
-        user, 
-        'workspaceName');
+        'workspaceId', 
+        'userId');
       expect(result).to.equal(false);
     });
-    it('should return "true" if the relation is admin\moderator', async () => {
+    it('should return "true" if the relation is admin\\moderator\\user', async () => {
       const workspaceDatabaseService = {
         roles: () => ({ admin: 'a', moderator: 'm', user: 'u'}),
         getUserWorkspaceRelations: sinon.stub().resolves([{ role: 'a' }])
       };
       const result = await workspaceService.canCreateChannel.call(
         stubServices('workspaceDatabaseService', workspaceDatabaseService), 
-        user, 
-        'workspaceName');
+        'workspaceId', 
+        'userId');
       expect(result).to.equal(true);
     });
-  })
+  });
 });

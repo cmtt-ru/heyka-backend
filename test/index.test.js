@@ -257,4 +257,65 @@ describe('Test routes', () => {
       });
     });
   });
+
+  describe('POST /workspaces/{workspaceId}/channels', () => {
+    describe('user cant create channel (not an admin, moderator or user)', () => {
+      it('should return 401 error', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const guest = await userService.signup({ email: 'guest@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(guest);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // add guest to the workspace as a guest
+        await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'guest');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/channels`,
+          payload: {
+            isPrivate: false,
+            name: 'testChannel'
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(401);
+      });
+    });
+    describe('user can create channel (an admin, moderator or user)', () => {
+      it('should create channel and return it', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(admin);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/channels`,
+          payload: {
+            isPrivate: false,
+            name: 'testChannel'
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const result = JSON.parse(response.payload);
+        expect(result.channel.id).exists();
+        expect(result.channel.name).exists();
+      });
+    });
+  });
 });

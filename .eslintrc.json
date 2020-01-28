@@ -18,6 +18,7 @@
         "strict": ["error", "global"],
         "semi": ["error", "always"],
         "indent": ["error", 2],
-        "max-len": ["error", { "code": 120 }]
+        "max-len": ["error", { "code": 120 }],
+        "require-atomic-updates": "off"
     }
 }

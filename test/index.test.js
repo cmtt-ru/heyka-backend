@@ -235,7 +235,7 @@ describe('Test routes', () => {
     });
   });
 
-  describe('POST /workspaces/create', () => {
+  describe('POST /workspaces', () => {
     describe('With valid input data', () => {
       it('should return workspace object', async () => {
         const { userService } = server.services();
@@ -243,7 +243,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens({ id: user.id });
         const response = await server.inject({
           method: 'POST',
-          url: '/workspaces/create',
+          url: '/workspaces',
           headers: {
             'Authorization': `Bearer ${tokens.access}`
           },

@@ -21,6 +21,7 @@ exports.up = (pgm) => {
       onDelete: 'set null'
     },
     name: 'varchar(255)',
+    janus: 'jsonb',
     is_private: {
       type: 'boolean'
     },

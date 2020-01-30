@@ -8,6 +8,7 @@ const uuid4 = require('uuid/v4');
 const socketAPI = require('../lib/socket');
 const io = require('socket.io-client');
 const eventNames = require('../lib/socket/event_names');
+const sinon = require('sinon');
 
 describe('Test socket', () => {
   let server = null;
@@ -112,11 +113,20 @@ describe('Test socket', () => {
         // add 2nd user to workspace
         await workspaceService.addUserToWorkspace(workspace.id, user2.id, wdb.roles().user);
         // create channel
+        const returnServices = server.services;
+        server.services = sinon.stub().returns({
+          channelDatabaseService: server.services().channelDatabaseService,
+          workspaceDatabaseService: server.services().workspaceDatabaseService,
+          janusWorkspaceService: {
+            createAudioVideoRooms: () => ({ audioRoomId: 'id', videoRoomId: 'id' })
+          }
+        });
         const channel = await workspaceService.createChannel(
           workspace.id,
           user1.id,
           { name: 'testChannel', isPrivate: false }
         );
+        server.services = returnServices;
         // first and second users should receive an event about just created channel
         const awaitChannelCreatedEvent = (socket) => new Promise((resolve, reject) => {
           socket.on(eventNames.socket.channelCreated, data => {

@@ -5,6 +5,27 @@ const { describe, it, before, beforeEach } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
+const mockery = require('mockery');
+const path = require('path');
+const Schmervice = require('schmervice');
+
+// mock janusWorkspaceService
+const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
+mockery.enable({
+  warnOnReplace: false,
+  warnOnUnregistered: false // disable warnings on unmocked modules
+});
+mockery.registerMock(
+  pathToJanusService,
+  class JanusWorkspaceService extends Schmervice.Service {
+    createServer() {
+      return {};
+    }
+    createAudioVideoRooms() {
+      return { audioRoomId: 'id', videoRoomId: 'id' };
+    }
+  }
+);
 
 describe('Test routes', () => {
   let server = null;

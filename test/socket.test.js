@@ -22,11 +22,9 @@ mockery.registerMock(
   pathToJanusService,
   class JanusWorkspaceService extends Schmervice.Service {
     createServer() {
-      console.log('ой-ё-ёй')
       return {};
     }
     createAudioVideoRooms() {
-      console.log('ой-ё-ёй 2')
       return { audioRoomId: 'id', videoRoomId: 'id' }
     }
   }

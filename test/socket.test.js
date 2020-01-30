@@ -25,7 +25,7 @@ mockery.registerMock(
       return {};
     }
     createAudioVideoRooms() {
-      return { audioRoomId: 'id', videoRoomId: 'id' }
+      return { audioRoomId: 'id', videoRoomId: 'id' };
     }
   }
 );

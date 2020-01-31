@@ -402,4 +402,52 @@ describe('Test routes', () => {
       });
     });
   });
+
+  describe('GET /check/{code}', () => {
+    describe('Invite code is expired', () => {
+      it('should return status "expired"', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // create invite code
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check/${code}`
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const body = JSON.parse(response.payload);
+        expect(body.status).equals('expired');
+      });
+    });
+
+    describe('Invite code is valid', () => {
+      it('should return status "valid", info about the user who invited and info about workspace', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // create invite code
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check/${code}`
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const body = JSON.parse(response.payload);
+        expect(body.status).equals('valid');
+        expect(body.workspace).exists();
+        expect(body.user).exists();
+      });
+    });
+  });
 });

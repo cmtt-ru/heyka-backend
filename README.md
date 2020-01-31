@@ -22,3 +22,7 @@
 # Линтер
 
 По команде `yarn run lint` можно проверить соответствие кода установленному style-guide.
+
+# Запуск Janus-сервера
+
+Из каталога `docker/janus` построить образ с помощью Dockerfile, затем запустить контейнер командой по типу `docker run -d --name janus -p 10000-10200:10000-10200/udp -v ./docker/janus/conf:/opt/janus/etc/janus`.

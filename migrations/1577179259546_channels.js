@@ -21,6 +21,7 @@ exports.up = (pgm) => {
       onDelete: 'set null'
     },
     name: 'varchar(255)',
+    janus: 'jsonb',
     is_private: {
       type: 'boolean'
     },
@@ -47,7 +48,9 @@ exports.up = (pgm) => {
       references: 'users(id)',
       onDelete: 'cascade'
     },
-    role: 'channel_members_roles'
+    role: 'channel_members_roles',
+    created_at: 'timestamp',
+    updated_at: 'timestamp'
   });
 };
 

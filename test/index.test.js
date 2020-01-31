@@ -416,13 +416,19 @@ describe('Test routes', () => {
         const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        // make invite code is expired
+        const now = new Date(Date.now() - 1000);
+        await server.plugins['hapi-pg-promise'].db.none('UPDATE invites SET expired_at=$1 WHERE id=$2', [
+          now,
+          code.code.id
+        ]);
         const response = await server.inject({
           method: 'GET',
-          url: `/check/${code}`
+          url: `/check/${code.fullCode}`
         });
         expect(response.statusCode).to.be.equal(200);
         const body = JSON.parse(response.payload);
-        expect(body.status).equals('expired');
+        expect(body.valid).equals(false);
       });
     });
 
@@ -440,11 +446,11 @@ describe('Test routes', () => {
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         const response = await server.inject({
           method: 'GET',
-          url: `/check/${code}`
+          url: `/check/${code.fullCode}`
         });
         expect(response.statusCode).to.be.equal(200);
         const body = JSON.parse(response.payload);
-        expect(body.status).equals('valid');
+        expect(body.valid).equals(true);
         expect(body.workspace).exists();
         expect(body.user).exists();
       });

@@ -5,6 +5,27 @@ const { describe, it, before, beforeEach } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
+const mockery = require('mockery');
+const path = require('path');
+const Schmervice = require('schmervice');
+
+// mock janusWorkspaceService
+const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
+mockery.enable({
+  warnOnReplace: false,
+  warnOnUnregistered: false // disable warnings on unmocked modules
+});
+mockery.registerMock(
+  pathToJanusService,
+  class JanusWorkspaceService extends Schmervice.Service {
+    createServer() {
+      return {};
+    }
+    createAudioVideoRooms() {
+      return { audioRoomId: 'id', videoRoomId: 'id' };
+    }
+  }
+);
 
 describe('Test routes', () => {
   let server = null;
@@ -235,7 +256,7 @@ describe('Test routes', () => {
     });
   });
 
-  describe('POST /workspaces/create', () => {
+  describe('POST /workspaces', () => {
     describe('With valid input data', () => {
       it('should return workspace object', async () => {
         const { userService } = server.services();
@@ -243,7 +264,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens({ id: user.id });
         const response = await server.inject({
           method: 'POST',
-          url: '/workspaces/create',
+          url: '/workspaces',
           headers: {
             'Authorization': `Bearer ${tokens.access}`
           },
@@ -254,6 +275,67 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(200);
         const payload = JSON.parse(response.payload);
         expect(payload).includes('workspace');
+      });
+    });
+  });
+
+  describe('POST /workspaces/{workspaceId}/channels', () => {
+    describe('user cant create channel (not an admin, moderator or user)', () => {
+      it('should return 401 error', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const guest = await userService.signup({ email: 'guest@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(guest);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // add guest to the workspace as a guest
+        await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'guest');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/channels`,
+          payload: {
+            isPrivate: false,
+            name: 'testChannel'
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(401);
+      });
+    });
+    describe('user can create channel (an admin, moderator or user)', () => {
+      it('should create channel and return it', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(admin);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/channels`,
+          payload: {
+            isPrivate: false,
+            name: 'testChannel'
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const result = JSON.parse(response.payload);
+        expect(result.channel.id).exists();
+        expect(result.channel.name).exists();
       });
     });
   });

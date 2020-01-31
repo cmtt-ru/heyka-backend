@@ -8,6 +8,27 @@ const uuid4 = require('uuid/v4');
 const socketAPI = require('../lib/socket');
 const io = require('socket.io-client');
 const eventNames = require('../lib/socket/event_names');
+const mockery = require('mockery');
+const path = require('path');
+const Schmervice = require('schmervice');
+
+// mock janusWorkspaceService
+const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
+mockery.enable({
+  warnOnReplace: false,
+  warnOnUnregistered: false // disable warnings on unmocked modules
+});
+mockery.registerMock(
+  pathToJanusService,
+  class JanusWorkspaceService extends Schmervice.Service {
+    createServer() {
+      return {};
+    }
+    createAudioVideoRooms() {
+      return { audioRoomId: 'id', videoRoomId: 'id' };
+    }
+  }
+);
 
 describe('Test socket', () => {
   let server = null;
@@ -81,6 +102,67 @@ describe('Test socket', () => {
         socket.emit(eventNames.client.auth, { token: tokens.access, transaction });
         // the both errors should be fired
         await Promise.all([awaitTransactionError, awaitGeneralError]);
+      });
+    });
+  });
+
+  describe('Testing notification about just created channels', () => {
+    describe('try to create channels in workspace (2 users in workspace and 1 user out of workspace)', () => {
+      it('the both users should receive event, the third user shouldnt', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        // sign up three users and create valid tokens
+        const user1 = await userService.signup({ email: 'hello1@world.net' });
+        const user2 = await userService.signup({ email: 'hello2@world.net' });
+        const user3 = await userService.signup({ email: 'hello3@world.net' });
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+        const tokens3 = await userService.createTokens(user3);
+        // authenticate 3 users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        const socket3 = io(server.info.uri);
+        socket1.emit(eventNames.client.auth, { token: tokens1.access, transaction: uuid4() });
+        socket2.emit(eventNames.client.auth, { token: tokens2.access, transaction: uuid4() });
+        socket3.emit(eventNames.client.auth, { token: tokens3.access, transaction: uuid4() });
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(user1, 'testWorkspace');
+        // add 2nd user to workspace
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, wdb.roles().user);
+        // create channel
+        const channel = await workspaceService.createChannel(
+          workspace.id,
+          user1.id,
+          { name: 'testChannel', isPrivate: false }
+        );
+        // first and second users should receive an event about just created channel
+        const awaitChannelCreatedEvent = (socket) => new Promise((resolve, reject) => {
+          socket.on(eventNames.socket.channelCreated, data => {
+            try {
+              expect(data.id).equals(channel.id);
+              expect(data.name).equals(channel.name);
+            } catch (e) {
+              reject(e);
+            }
+            resolve();
+          });
+        });
+        const notAwaitEvent = (socket) => new Promise((resolve, reject) => {
+          socket.on(eventNames.socket.channelCreated, data => {
+            reject();
+          });
+        });
+        /* Сложно на английском написать
+        Ждём, в общем, что первый и второй сокет получат ивент о только что созданном канале
+        И НЕ ждём, что третий сокет получит этот ивент.
+        */
+        await Promise.race([
+          Promise.all([awaitChannelCreatedEvent(socket1), awaitChannelCreatedEvent(socket2)]),
+          notAwaitEvent(socket3)
+        ]);
       });
     });
   });

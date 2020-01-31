@@ -38,6 +38,9 @@ describe('Test routes', () => {
     await server.redis.client.flushdb();
     await server.plugins['hapi-pg-promise'].db.query('DELETE FROM users');
     await server.plugins['hapi-pg-promise'].db.query('DELETE FROM sessions');
+    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM channels');
+    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM invites');
+    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM workspaces');
   });
 
   describe('GET /status (an unprotected route)', () => {
@@ -453,6 +456,71 @@ describe('Test routes', () => {
         expect(body.valid).equals(true);
         expect(body.workspace).exists();
         expect(body.user).exists();
+      });
+    });
+  });
+
+  describe('POST /join/{code}', () => {
+    describe('Try to join with an expired invite code', () => {
+      it('Should return 400 Bad request', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const user = await userService.signup({ email: 'user@user.net' });
+        // create tokens for user
+        const tokens = await userService.createTokens(user);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // create invite code
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        // make invite code is expired
+        const now = new Date(Date.now() - 1000);
+        await server.plugins['hapi-pg-promise'].db.none('UPDATE invites SET expired_at=$1 WHERE id=$2', [
+          now,
+          code.code.id
+        ]);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/join/${code.fullCode}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          },
+        });
+        expect(response.statusCode).to.be.equal(400);
+        const body = JSON.parse(response.payload);
+        expect(body.message).equals('InvalidCode');
+      });
+    });
+    describe('Try to join with a valid code', () => {
+      it('should add user to the workspace and return workspace info', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const user = await userService.signup({ email: 'user@user.net' });
+        // create tokens for user
+        const tokens = await userService.createTokens(user);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // create invite code
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/join/${code.fullCode}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          },
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const workspaces = await wdb.getWorkspacesByUserId(user.id);
+        expect(workspaces.length).equals(1);
+        expect(workspaces[0].id).equals(workspace.id);
       });
     });
   });

@@ -398,7 +398,7 @@ describe('Test routes', () => {
         const body = JSON.parse(response.payload);
         expect(body.code).exists();
         //ensure that it is a guid + code
-        expect(body.code).match(/^[0-9a-f]{82}$/i)
+        expect(body.code).match(/^[0-9a-f]{82}$/i);
       });
     });
   });

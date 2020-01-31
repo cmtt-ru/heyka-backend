@@ -103,6 +103,9 @@ describe('Test routes', () => {
     });
   });
 
+  /**
+   * Authentication
+   */
   describe('POST /signin', () => {
     describe('sign in with an invalid email', () => {
       it('returns 401', async () => {
@@ -256,6 +259,9 @@ describe('Test routes', () => {
     });
   });
 
+  /**
+   * Workspaces
+   */
   describe('POST /workspaces', () => {
     describe('With valid input data', () => {
       it('should return workspace object', async () => {
@@ -336,6 +342,63 @@ describe('Test routes', () => {
         const result = JSON.parse(response.payload);
         expect(result.channel.id).exists();
         expect(result.channel.name).exists();
+      });
+    });
+  });
+
+  /**
+   * Invites
+   */
+  describe('POST /workspaces/{workspaceId}/invites', () => {
+    describe('User tries to create invite, but he hasnt a permission to do it', () => {
+      it('should return 403 (Forbidden) code', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const guest = await userService.signup({ email: 'guest@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(guest);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // add guest to the workspace as a guest
+        await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'guest');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/invites`,
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(403);
+      });
+    });
+    describe('User has a permission to create invites', () => {
+      it('should return 200 status and invite code', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(admin);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/invites`,
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const body = JSON.parse(response.body);
+        expect(body.code).exists();
+        //ensure that it is a guid + code
+        expect(body.code).regexp(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}-[0-9a-f]{50}$/i)
       });
     });
   });

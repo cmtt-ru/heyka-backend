@@ -395,10 +395,10 @@ describe('Test routes', () => {
           }
         });
         expect(response.statusCode).to.be.equal(200);
-        const body = JSON.parse(response.body);
+        const body = JSON.parse(response.payload);
         expect(body.code).exists();
         //ensure that it is a guid + code
-        expect(body.code).regexp(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-5][0-9a-f]{3}-[089ab][0-9a-f]{3}-[0-9a-f]{12}-[0-9a-f]{50}$/i)
+        expect(body.code).match(/^[0-9a-f]{82}$/i)
       });
     });
   });

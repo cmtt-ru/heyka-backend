@@ -38,6 +38,9 @@ describe('Test routes', () => {
     await server.redis.client.flushdb();
     await server.plugins['hapi-pg-promise'].db.query('DELETE FROM users');
     await server.plugins['hapi-pg-promise'].db.query('DELETE FROM sessions');
+    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM channels');
+    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM invites');
+    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM workspaces');
   });
 
   describe('GET /status (an unprotected route)', () => {
@@ -103,6 +106,9 @@ describe('Test routes', () => {
     });
   });
 
+  /**
+   * Authentication
+   */
   describe('POST /signin', () => {
     describe('sign in with an invalid email', () => {
       it('returns 401', async () => {
@@ -256,6 +262,9 @@ describe('Test routes', () => {
     });
   });
 
+  /**
+   * Workspaces
+   */
   describe('POST /workspaces', () => {
     describe('With valid input data', () => {
       it('should return workspace object', async () => {
@@ -336,6 +345,182 @@ describe('Test routes', () => {
         const result = JSON.parse(response.payload);
         expect(result.channel.id).exists();
         expect(result.channel.name).exists();
+      });
+    });
+  });
+
+  /**
+   * Invites
+   */
+  describe('POST /workspaces/{workspaceId}/invites', () => {
+    describe('User tries to create invite, but he hasnt a permission to do it', () => {
+      it('should return 403 (Forbidden) code', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const guest = await userService.signup({ email: 'guest@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(guest);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // add guest to the workspace as a guest
+        await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'guest');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/invites`,
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(403);
+      });
+    });
+    describe('User has a permission to create invites', () => {
+      it('should return 200 status and invite code', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(admin);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/invites`,
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const body = JSON.parse(response.payload);
+        expect(body.code).exists();
+        //ensure that it is a guid + code
+        expect(body.code).match(/^[0-9a-f]{82}$/i);
+      });
+    });
+  });
+
+  describe('GET /check/{code}', () => {
+    describe('Invite code is expired', () => {
+      it('should return status "expired"', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // create invite code
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        // make invite code is expired
+        const now = new Date(Date.now() - 1000);
+        await server.plugins['hapi-pg-promise'].db.none('UPDATE invites SET expired_at=$1 WHERE id=$2', [
+          now,
+          code.code.id
+        ]);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check/${code.fullCode}`
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const body = JSON.parse(response.payload);
+        expect(body.valid).equals(false);
+      });
+    });
+
+    describe('Invite code is valid', () => {
+      it('should return status "valid", info about the user who invited and info about workspace', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // create invite code
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check/${code.fullCode}`
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const body = JSON.parse(response.payload);
+        expect(body.valid).equals(true);
+        expect(body.workspace).exists();
+        expect(body.user).exists();
+      });
+    });
+  });
+
+  describe('POST /join/{code}', () => {
+    describe('Try to join with an expired invite code', () => {
+      it('Should return 400 Bad request', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const user = await userService.signup({ email: 'user@user.net' });
+        // create tokens for user
+        const tokens = await userService.createTokens(user);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // create invite code
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        // make invite code is expired
+        const now = new Date(Date.now() - 1000);
+        await server.plugins['hapi-pg-promise'].db.none('UPDATE invites SET expired_at=$1 WHERE id=$2', [
+          now,
+          code.code.id
+        ]);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/join/${code.fullCode}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          },
+        });
+        expect(response.statusCode).to.be.equal(400);
+        const body = JSON.parse(response.payload);
+        expect(body.message).equals('InvalidCode');
+      });
+    });
+    describe('Try to join with a valid code', () => {
+      it('should add user to the workspace and return workspace info', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const user = await userService.signup({ email: 'user@user.net' });
+        // create tokens for user
+        const tokens = await userService.createTokens(user);
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // create invite code
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/join/${code.fullCode}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          },
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const workspaces = await wdb.getWorkspacesByUserId(user.id);
+        expect(workspaces.length).equals(1);
+        expect(workspaces[0].id).equals(workspace.id);
       });
     });
   });

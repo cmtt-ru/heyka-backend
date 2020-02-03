@@ -166,4 +166,38 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('Testing notification about joined user', () => {
+    describe('Add user to the workspace', () => {
+      it('"user-joined" event should be emitted', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // sign up users and create valid tokens
+        const admin = await userService.signup({ email: 'admin@world.net' });
+        const user = await userService.signup({ email: 'user@world.net' });
+        const tokens = await userService.createTokens(admin);
+        // authenticate 3 users
+        const adminSocket = io(server.info.uri);
+        adminSocket.emit(eventNames.client.auth, { token: tokens.access, transaction: uuid4() });
+        // create workspace
+        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const notifyAboutJoinedUser = new Promise((resolve, reject) => {
+          adminSocket.on(eventNames.socket.userJoined, data => {
+            try {
+              expect(data.id).equals(user.id);
+            } catch(e) {
+              reject(e);
+            }
+            resolve();
+          });
+        });
+        // join user by invite (without await because
+        // we are awaiting the event
+        workspaceService.addUserToWorkspace(workspace.id, user.id);
+        await notifyAboutJoinedUser;
+      });
+    });
+  });
 });

@@ -14,6 +14,7 @@ exports.up = (pgm) => {
       type: 'varchar(255)',
       unique: true,
     },
+    is_email_verified: 'boolean',
     password_hash: 'text',
     password_salt: 'text',
     created_at: 'timestamptz',

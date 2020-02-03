@@ -4,18 +4,17 @@
 exports.shorthands = undefined;
 
 exports.up = (pgm) => {
-  pgm.createTable('confirmation_codes', {
+  pgm.createTable('verification_codes', {
     id: {
       type: 'uuid',
       primaryKey: true
     },
-    email: 'varchar(255)',
-    code: 'varchar(50)',
     user_id: {
       type: 'uuid',
-      references: 'users(id)',
-      onDelete: 'cascade'
+      references: 'users(id)'
     },
+    email: 'varchar(255)',
+    code: 'varchar(50)',
     created_at: 'timestamp',
     updated_at: 'timestamp',
     expired_at: 'timestamp'
@@ -23,5 +22,5 @@ exports.up = (pgm) => {
 };
 
 exports.down = (pgm) => {
-  pgm.dropTable('confirmation_codes');
+  pgm.dropTable('verification_codes');
 };

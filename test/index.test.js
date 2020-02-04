@@ -14,7 +14,8 @@ const serviceHelpers = require('../lib/services/helpers');
 
 // Stubbed methods to check external services
 const stubbedMethods = {
-  sendEmail: sinon.stub()
+  sendEmail: sinon.stub(),
+  sendEmailWithInvite: sinon.stub()
 };
 
 // mock services that make requests to external APIs
@@ -40,6 +41,9 @@ mockery.registerMock(
   class EmailService extends Schmervice.Service {
     sendEmailVerificationCode() {
       stubbedMethods.sendEmail(arguments);
+    }
+    sendInviteToWorkspace() {
+      stubbedMethods.sendEmailWithInvite(arguments);
     }
   }
 );
@@ -554,6 +558,31 @@ describe('Test routes', () => {
         const workspaces = await wdb.getWorkspacesByUserId(user.id);
         expect(workspaces.length).equals(1);
         expect(workspaces[0].id).equals(workspace.id);
+      });
+    });
+  });
+
+  describe('POST /workspaces/{workspaceId}/invite/email', () => {
+    describe('Try to send invite by email', () => {
+      it('should send email, we have to check stubbed method', async () => {
+        const { userService, workspaceService } = server.services();
+        const user = await userService.signup({ email: 'admin@admin.ru' });
+        const tokens = await userService.createTokens({ id: user.id });
+        const workspace = await workspaceService.createWorkspace(user, 'testWorkspace');
+        const email = 'invited_person@mail.ru';
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/invite/email`,
+          headers: {
+            Authorization: `Bearer ${tokens.access}`
+          },
+          payload: {
+            email
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(stubbedMethods.sendEmailWithInvite.calledOnce).true();
+        expect(stubbedMethods.sendEmailWithInvite.firstCall.args[0][0]).equals(email);
       });
     });
   });

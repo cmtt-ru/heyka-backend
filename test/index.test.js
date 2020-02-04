@@ -8,8 +8,17 @@ const uuid4 = require('uuid/v4');
 const mockery = require('mockery');
 const path = require('path');
 const Schmervice = require('schmervice');
+const sinon = require('sinon');
+const crypto = require('crypto-promise');
+const serviceHelpers = require('../lib/services/helpers');
 
-// mock janusWorkspaceService
+// Stubbed methods to check external services
+const stubbedMethods = {
+  sendEmail: sinon.stub()
+};
+
+// mock services that make requests to external APIs
+const pathToEmailService = path.resolve(__dirname, '../lib/services/email.js');
 const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
 mockery.enable({
   warnOnReplace: false,
@@ -26,6 +35,14 @@ mockery.registerMock(
     }
   }
 );
+mockery.registerMock(
+  pathToEmailService,
+  class EmailService extends Schmervice.Service {
+    sendEmailVerificationCode() {
+      stubbedMethods.sendEmail(arguments);
+    }
+  }
+);
 
 describe('Test routes', () => {
   let server = null;
@@ -35,12 +52,16 @@ describe('Test routes', () => {
   });
 
   beforeEach(async () => {
+    const db = server.plugins['hapi-pg-promise'].db;
     await server.redis.client.flushdb();
-    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM users');
-    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM sessions');
-    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM channels');
-    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM invites');
-    await server.plugins['hapi-pg-promise'].db.query('DELETE FROM workspaces');
+    await db.query('DELETE FROM verification_codes');
+    await db.query('DELETE FROM users');
+    await db.query('DELETE FROM sessions');
+    await db.query('DELETE FROM channels');
+    await db.query('DELETE FROM invites');
+    await db.query('DELETE FROM workspaces');
+    // clear all stubbed methods
+    Object.values(stubbedMethods).forEach(func => func.reset());
   });
 
   describe('GET /status (an unprotected route)', () => {
@@ -185,6 +206,18 @@ describe('Test routes', () => {
         expect(payload.user).includes('id');
         expect(await userService.findAccessToken(payload.user.accessToken)).to.be.an.object();
         expect(await userService.findRefreshToken(payload.user.refreshToken)).to.be.an.object();
+      });
+      it('call "sendEmail" stubbed method (email with verification code is sent', async () => {
+        const email = 'admin@example.com';
+        const response = await server.inject({
+          method: 'POST',
+          url: '/signup',
+          payload: { user: { email, password: 'qwerty' } }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        // check that email is sent
+        expect(stubbedMethods.sendEmail.calledOnce).true();
+        expect(stubbedMethods.sendEmail.args[0][0][0]).equals(email);
       });
     });
   });
@@ -521,6 +554,86 @@ describe('Test routes', () => {
         const workspaces = await wdb.getWorkspacesByUserId(user.id);
         expect(workspaces.length).equals(1);
         expect(workspaces[0].id).equals(workspace.id);
+      });
+    });
+  });
+
+  /**
+   * Email verification functionality
+   */
+  describe('POST /vefiry/{code}', () => {
+    describe('Try to verify not existed verification code', () => {
+      it('should return fail status, reason should be "invalid code"', async () => {
+        const response = await server.inject({
+          method: 'GET',
+          url: `/verify/${(await crypto.randomBytes(41)).toString('hex')}`
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.status).equals('fail');
+        expect(payload.reason).equals('Verification code is not valid');
+      });
+    });
+    describe('Try to verify an expired verification code', () => {
+      it('should return fail status, reason should be "invalid code"', async () => {
+        const { userService } = server.services();
+        const db = server.plugins['hapi-pg-promise'].db;
+        const user = await userService.signup({ email: 'admin@admin.ru' });
+        const expiredDate = new Date(Date.now() - 1);
+        const query = `
+          UPDATE verification_codes
+          SET expired_at=$1
+          WHERE user_id=$2
+          RETURNING *
+        `;
+        const record = await db.one(query, [expiredDate, user.id]);
+        const fullCode = serviceHelpers.codeConvertToUrl(record.id, record.code);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/verify/${fullCode}`
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.status).equals('fail');
+        expect(payload.reason).equals('Verification code is not valid');
+      });
+    });
+    describe('Try to verify verification code, but email are not matched', () => {
+      it('should return fail status, reason should be "invalid code"', async () => {
+        const { userService } = server.services();
+        const db = server.plugins['hapi-pg-promise'].db;
+        const user = await userService.signup({ email: 'admin@admin.ru' });
+        await db.none('UPDATE users SET email=$1 WHERE id=$2', ['notadmin@admin.ru', user.id]);
+        const fullCode = stubbedMethods.sendEmail.firstCall.args[0][1];
+        const response = await server.inject({
+          method: 'GET',
+          url: `/verify/${fullCode}`
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.status).equals('fail');
+        expect(payload.reason).equals('Verification code is not valid');
+      });
+    });
+    describe('Try to verify valid verification code', () => {
+      it('should set "email_verified" true, should delete verification code', async () => {
+        const { userService } = server.services();
+        const db = server.plugins['hapi-pg-promise'].db;
+        const user = await userService.signup({ email: 'admin@admin.ru' });
+        const fullCode = stubbedMethods.sendEmail.firstCall.args[0][1];
+        const response = await server.inject({
+          method: 'GET',
+          url: `/verify/${fullCode}`
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.status).equals('success');
+        // check is email verified
+        const userUpdated = await userService.findById(user.id);
+        expect(userUpdated.is_email_verified).true();
+        // check verification code is not exist
+        const verificationCode = await db.oneOrNone('SELECT * FROM verification_codes WHERE user_id=$1', [user.id]);
+        expect(verificationCode).null();
       });
     });
   });

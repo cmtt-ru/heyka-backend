@@ -18,6 +18,10 @@ module.exports = {
     facebook: {
       clientId: process.env.FACEBOOK_CLIENT_ID || 'facebook-client-id',
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET || 'facebook-client-secret'
+    },
+    mailgun: {
+      domain: process.env.MAILGUN_DOMAIN,
+      apikey: process.env.MAILGUN_APIKEY
     }
   },
   redis: {

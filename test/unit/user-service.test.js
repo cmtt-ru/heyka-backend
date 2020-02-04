@@ -78,8 +78,22 @@ describe('Unit tests: userService', () => {
         findByEmail: sinon.stub().resolves(null),
         insert: sinon.stub().resolves(true)
       };
+      const emailServiceStub = {
+        sendEmailVerificationCode: sinon.stub().resolves(true)
+      };
       const user = { email: 'anemail' };
-      const regUser = await userService.signup.call(stubServices('userDatabaseService', serviceStub), user);
+      const thisObject = {
+        server: {
+          services () {
+            return {
+              userDatabaseService: serviceStub,
+              emailService: emailServiceStub
+            };
+          }
+        },
+        createEmailVerificationCode: sinon.stub().resolves('code')
+      };
+      const regUser = await userService.signup.call(thisObject, user);
       expect(regUser).includes('id');
       expect(regUser.password_hash).undefined();
       expect(regUser.password_salt).undefined();
@@ -92,8 +106,22 @@ describe('Unit tests: userService', () => {
         findByEmail: sinon.stub().resolves(null),
         insert: sinon.stub().resolves(true)
       };
+      const emailServiceStub = {
+        sendEmailVerificationCode: sinon.stub().resolves(true)
+      };
+      const thisObject = {
+        server: {
+          services () {
+            return {
+              userDatabaseService: serviceStub,
+              emailService: emailServiceStub
+            };
+          }
+        },
+        createEmailVerificationCode: sinon.stub().resolves('code')
+      };
       const user = { email: 'anemail', password: 'password' };
-      const regUser = await userService.signup.call(stubServices('userDatabaseService', serviceStub), user);
+      const regUser = await userService.signup.call(thisObject, user);
       expect(regUser).includes('id');
       expect(regUser.password_hash).to.not.undefined();
       expect(regUser.password_salt).to.not.undefined();

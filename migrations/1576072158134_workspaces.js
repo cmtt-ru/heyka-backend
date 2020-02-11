@@ -13,6 +13,7 @@ exports.up = (pgm) => {
     name: 'varchar(255)',
     avatar: 'text',
     janus: 'jsonb',
+    slack: 'jsonb',
     created_at: 'timestamp',
     updated_at: 'timestamp',
     limits: 'jsonb'

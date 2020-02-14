@@ -48,6 +48,7 @@ exports.up = (pgm) => {
       references: 'users(id)',
       onDelete: 'cascade'
     },
+    janus_auth_token: 'varchar(50)',
     role: 'channel_members_roles',
     created_at: 'timestamp',
     updated_at: 'timestamp'

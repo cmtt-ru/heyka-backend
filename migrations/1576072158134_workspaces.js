@@ -30,6 +30,7 @@ exports.up = (pgm) => {
       onDelete: 'cascade',
       primaryKey: true
     },
+    janus_auth_token: 'varchar(50)',
     created_at: 'timestamp',
     updated_at: 'timestamp',
     role: 'workspace_members_roles'

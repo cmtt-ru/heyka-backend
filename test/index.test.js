@@ -33,6 +33,7 @@ mockery.registerMock(
     createAudioVideoRooms() {
       return { audioRoomId: 'id', videoRoomId: 'id' };
     }
+    addAuthTokenForWorkspace() {}
   }
 );
 mockery.registerMock(

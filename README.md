@@ -28,3 +28,10 @@
 Из каталога `docker/janus` построить образ с помощью Dockerfile, затем запустить контейнер командой по типу `docker run -d --name janus -p 10000-10200:10000-10200/udp -p 8088:8088 -p 7088:7088 -v %ABSOLUTE_PATH_TO_PROJECT_DIRECTORY%/docker/janus/conf:/opt/janus/etc/janus %JANUS_IMAGE_NAME%`.
 
 Для запуска Janus-сервера в интерактивном режиме (чтобы видеть логи), добавьте вместо аргумента `-d` аргументы `-it`.
+
+# Параметры деплоя Janus-сервера.
+
+При деплое Janus-сервера для веб-сервера Хейки необходимо предоставить возможность указать следующие параметры:
+- `janus.cfg[admin_secret]`
+- `janus.plugin.audiobridge.jcfg[general.admin_key]`
+- `janus.plugin.videoroom.jcfg[general.admin_key]`

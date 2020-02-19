@@ -31,6 +31,7 @@ exports.up = (pgm) => {
       primaryKey: true
     },
     janus_auth_token: 'varchar(50)',
+    token_granted_at: 'timestamp',
     created_at: 'timestamp',
     updated_at: 'timestamp',
     role: 'workspace_members_roles'

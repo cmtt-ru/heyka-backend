@@ -34,6 +34,8 @@ mockery.registerMock(
       return { audioRoomId: 'id', videoRoomId: 'id' };
     }
     addAuthTokenForWorkspace() {}
+    manageAuthTokensForChannel () {}
+    addAuthTokenForWorkspace () {}
   }
 );
 mockery.registerMock(

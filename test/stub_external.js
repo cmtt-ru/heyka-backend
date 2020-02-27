@@ -71,6 +71,6 @@ mockery.registerMock(
       return {};
     }
   }
-)
+);
 
 exports.methods = stubbedMethods;

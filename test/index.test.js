@@ -747,8 +747,8 @@ describe('Test routes', () => {
           headers: { Authorization: `Bearer ${tokens.access}` }
         });
         expect(response.statusCode).equals(200);
-        expect(stubbedMethods.sendInviteToWorkspace.calledOnce).true();
-        const args = stubbedMethods.sendInviteToWorkspace.args[0][0];
+        expect(stubbedMethods.sendInviteToWorkspaceBySlack.calledOnce).true();
+        const args = stubbedMethods.sendInviteToWorkspaceBySlack.args[0][0];
         expect(args[0]).equals(senderSlackUserId);
         expect(args[1]).equals(slackAccessToken);
         expect(args[2]).equals(slackUserId);

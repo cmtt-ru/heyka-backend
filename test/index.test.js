@@ -5,66 +5,9 @@ const { describe, it, before, beforeEach } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
-const mockery = require('mockery');
-const path = require('path');
-const Schmervice = require('schmervice');
-const sinon = require('sinon');
 const crypto = require('crypto-promise');
 const serviceHelpers = require('../lib/services/helpers');
-
-// Stubbed methods to check external services
-const stubbedMethods = {
-  sendEmail: sinon.stub(),
-  sendEmailWithInvite: sinon.stub(),
-  sendInviteToWorkspace: sinon.stub(),
-  getConnectingSlackUrl: sinon.stub(),
-  gainAccessTokenByOAuthCode: sinon.stub()
-};
-
-// mock services that make requests to external APIs
-const pathToEmailService = path.resolve(__dirname, '../lib/services/email.js');
-const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
-const pathToSlackService = path.resolve(__dirname, '../lib/services/slack.js');
-mockery.enable({
-  warnOnReplace: false,
-  warnOnUnregistered: false // disable warnings on unmocked modules
-});
-mockery.registerMock(
-  pathToJanusService,
-  class JanusWorkspaceService extends Schmervice.Service {
-    createServer() {
-      return {};
-    }
-    createAudioVideoRooms() {
-      return { audioRoomId: 'id', videoRoomId: 'id' };
-    }
-  }
-);
-mockery.registerMock(
-  pathToEmailService,
-  class EmailService extends Schmervice.Service {
-    sendEmailVerificationCode() {
-      stubbedMethods.sendEmail(arguments);
-    }
-    sendInviteToWorkspace() {
-      stubbedMethods.sendEmailWithInvite(arguments);
-    }
-  }
-);
-mockery.registerMock(
-  pathToSlackService,
-  class SlackService extends Schmervice.Service {
-    sendInviteToWorkspace () {
-      stubbedMethods.sendInviteToWorkspace(arguments);
-    }
-    getConnectingSlackUrl () {
-      stubbedMethods.getConnectingSlackUrl(arguments);
-    }
-    gainAccessTokenByOAuthCode () {
-      stubbedMethods.gainAccessTokenByOAuthCode(arguments);
-    }
-  }
-);
+const { methods: stubbedMethods } = require('./stub_external');
 
 describe('Test routes', () => {
   let server = null;
@@ -339,6 +282,41 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(200);
         const payload = JSON.parse(response.payload);
         expect(payload).includes('workspace');
+      });
+      it('should create default channels for that workspace and grant tokens for it', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const tokens = await userService.createTokens({ id: user.id });
+        const response = await server.inject({
+          method: 'POST',
+          url: '/workspaces',
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          },
+          payload: {
+            name: 'TestWorkspace 222'
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(stubbedMethods.createAudioVideoRooms.calledOnce).true();
+        expect(stubbedMethods.manageAuthTokensForChannel.calledOnce).true();
+      });
+      it('should grant token on creating workspace and register it in Janus', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const tokens = await userService.createTokens({ id: user.id });
+        const response = await server.inject({
+          method: 'POST',
+          url: '/workspaces',
+          headers: {
+            'Authorization': `Bearer ${tokens.access}`
+          },
+          payload: {
+            name: 'TestWorkspace'
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(stubbedMethods.addAuthTokenForWorkspace.calledOnce).true();
       });
     });
   });
@@ -769,8 +747,8 @@ describe('Test routes', () => {
           headers: { Authorization: `Bearer ${tokens.access}` }
         });
         expect(response.statusCode).equals(200);
-        expect(stubbedMethods.sendInviteToWorkspace.calledOnce).true();
-        const args = stubbedMethods.sendInviteToWorkspace.args[0][0];
+        expect(stubbedMethods.sendInviteToWorkspaceBySlack.calledOnce).true();
+        const args = stubbedMethods.sendInviteToWorkspaceBySlack.args[0][0];
         expect(args[0]).equals(senderSlackUserId);
         expect(args[1]).equals(slackAccessToken);
         expect(args[2]).equals(slackUserId);

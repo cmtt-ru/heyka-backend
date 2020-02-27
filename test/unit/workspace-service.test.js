@@ -32,7 +32,8 @@ describe('Unit tests: workspaceService', () => {
     it('works without errors', async () => {
       const user = { id: 'userUUID' };
       const janusWorkspaceService = {
-        createServer: sinon.stub().resolves('janus-info-JSON')
+        createServer: sinon.stub().resolves('janus-info-JSON'),
+        addAuthTokenForWorkspace: sinon.stub().resolves()
       };
       const workspaceDatabaseService = {
         roles: () => ({}),

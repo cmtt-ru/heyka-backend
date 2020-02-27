@@ -8,27 +8,7 @@ const uuid4 = require('uuid/v4');
 const socketAPI = require('../lib/socket');
 const io = require('socket.io-client');
 const eventNames = require('../lib/socket/event_names');
-const mockery = require('mockery');
-const path = require('path');
-const Schmervice = require('schmervice');
-
-// mock janusWorkspaceService
-const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
-mockery.enable({
-  warnOnReplace: false,
-  warnOnUnregistered: false // disable warnings on unmocked modules
-});
-mockery.registerMock(
-  pathToJanusService,
-  class JanusWorkspaceService extends Schmervice.Service {
-    createServer() {
-      return {};
-    }
-    createAudioVideoRooms() {
-      return { audioRoomId: 'id', videoRoomId: 'id' };
-    }
-  }
-);
+const { methods: stubbedMethods } = require('./stub_external');
 
 describe('Test socket', () => {
   let server = null;
@@ -56,6 +36,7 @@ describe('Test socket', () => {
     await db.none('DELETE FROM sessions');
     await db.none('DELETE FROM workspaces_members');
     await server.redis.client.flushdb();
+    Object.values(stubbedMethods).forEach(m => m.reset());
   });
 
   describe('Testing socket authentication', () => {
@@ -148,7 +129,11 @@ describe('Test socket', () => {
             } catch (e) {
               reject(e);
             }
-            resolve();
+            // Таймаут нужен для того, чтобы если придет ивент
+            // третьему юзеру, то мы должны получить ошибку
+            // если не сделать таймаут, то третий сокет может
+            // получить ивент раньше, чем получат эти два
+            setTimeout(() => { resolve(); }, 10);
           });
         });
         const notAwaitEvent = (socket) => new Promise((resolve, reject) => {

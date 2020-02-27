@@ -31,16 +31,23 @@ describe('Unit tests: channelService', () => {
   describe('createDefaultChannels', () => {
     it('works without errors', async () => {
       const user = { id: 'userUUID' };
-      const workspace = { id: 'workspaceUUID' };
+      const workspace = { id: 'workspaceUUID', janus: {} };
       const channelDatabaseService = {
         insertChannel: sinon.stub().resolves(true),
         addChannelMembers: sinon.stub().resolves(true),
         roles: () => ({ admin: 'admin' })
       };
+      const janusWorkspaceServiceStub = {
+        createAudioVideoRooms: sinon.stub().resolves({}),
+        manageAuthTokensForChannel: sinon.stub().resolves({})
+
+      };
       await channelService.createDefaultChannels.call(
         stubServices(
           'channelDatabaseService', 
-          channelDatabaseService
+          channelDatabaseService,
+          'janusWorkspaceService',
+          janusWorkspaceServiceStub
         ), 
         user, 
         workspace);

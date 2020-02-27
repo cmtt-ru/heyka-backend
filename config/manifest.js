@@ -5,6 +5,7 @@ const config = require('./index.js');
 module.exports = {
   server: {
     port: config.port,
+    host: config.host,
     debug: process.env.NODE_ENV === 'development' ? {
       log: '*',
       request: '*'

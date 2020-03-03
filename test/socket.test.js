@@ -30,6 +30,7 @@ describe('Test socket', () => {
 
   beforeEach(async () => {
     const db = server.plugins['hapi-pg-promise'].db;
+    await db.none('DELETE FROM auth_links');
     await db.none('DELETE FROM verification_codes');
     await db.none('DELETE FROM users');
     await db.none('DELETE FROM workspaces');

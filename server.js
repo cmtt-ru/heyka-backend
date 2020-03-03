@@ -8,6 +8,5 @@ const options = {
 
 module.exports = async function createServer () {
   const server = await Glue.compose(manifest, options);
-  console.log(`Server started at ${server.info.uri}`);
   return server;
 };

@@ -32,7 +32,7 @@ mockery.registerMock(
   class JanusWorkspaceService extends Schmervice.Service {
     createServer() {
       stubbedMethods.createServer(arguments);
-      return {};
+      return { url: 'http://192.168.0.13:8088' };
     }
     createAudioVideoRooms() {
       stubbedMethods.createAudioVideoRooms(arguments);

@@ -1,0 +1,47 @@
+version: "3"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: ./docker/backend/Dockerfile
+    container_name: heyka_backend
+    network_mode: "host"
+    volumes: 
+      - .:/app
+    environment: 
+      - DATABASE_URL=postgres://heyka:postgres_password@0.0.0.0:5432/heyka
+      - REDIS_URI=redis://0.0.0.0:6379
+      - DEFAULT_JANUS_URL=http://0.0.0.0
+    depends_on:
+      - redis
+      - pg
+
+  redis:
+    image: redis:alpine
+    container_name: heyka_redis
+    ports: 
+      - 6379:6379
+
+  pg:
+    image: postgres:alpine
+    container_name: heyka_postgres
+    environment: 
+      - POSTGRES_PASSWORD=postgres_password
+      - POSTGRES_USER=heyka
+      - POSTGRES_DB=heyka
+    ports: 
+      - 5432:5432
+
+  janus:
+    container_name: heyka_janus
+    build: ./docker/janus
+    environment:
+      - EXTERNAL_IP:${EXTERNAL_IP}
+    volumes:
+      - ./docker/janus/conf:/opt/janus/etc/janus
+    ports:
+      - 10000-10200:10000-10200/udp
+      - 8088:8088
+      - 7088:7088
+      

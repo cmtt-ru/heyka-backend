@@ -206,8 +206,8 @@ describe('Unit tests: userService', () => {
         ...stubServices('userDatabaseService', serviceStub),
         createAccessToken: sinon.stub().resolves('access-token-uuid')
       }, user);
-      expect(tokens.access).equals('access-token-uuid');
-      expect(tokens.refresh).to.not.undefined();
+      expect(tokens.accessToken).equals('access-token-uuid');
+      expect(tokens.refreshToken).to.not.undefined();
       expect(serviceStub.insertSession.calledOnce).true();
     });
   });
@@ -362,8 +362,8 @@ describe('Unit tests: userService', () => {
         createAccessToken: sinon.stub().resolves('uuid')
       }, 'atoken', 'rtoken');
 
-      expect(tokens.access).to.not.undefined();
-      expect(tokens.refresh).to.not.undefined();
+      expect(tokens.accessToken).to.not.undefined();
+      expect(tokens.refreshToken).to.not.undefined();
       expect(serviceStub.findSession.calledOnceWithExactly('rtoken')).true();
       expect(serviceStub.deleteAccessToken.calledOnceWithExactly('atoken')).true();
       expect(serviceStub.updateSession.firstCall.args[0]).equals(refreshToken.id);

@@ -67,7 +67,7 @@ describe('Test routes', () => {
           method: 'GET',
           url: '/protected',
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           }
         });
         expect(response.statusCode).to.be.equal(401);
@@ -83,7 +83,7 @@ describe('Test routes', () => {
           method: 'GET',
           url: '/protected',
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           }
         });
         expect(response.statusCode).to.be.equal(200);
@@ -133,11 +133,11 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).to.be.equal(200);
         const payload = JSON.parse(response.payload);
-        expect(payload.user).includes('accessToken');
-        expect(payload.user).includes('refreshToken');
+        expect(payload.credentials).includes('accessToken');
+        expect(payload.credentials).includes('refreshToken');
         expect(payload.user).includes('id');
-        expect(await userService.findAccessToken(payload.user.accessToken)).to.be.an.object();
-        expect(await userService.findRefreshToken(payload.user.refreshToken)).to.be.an.object();
+        expect(await userService.findAccessToken(payload.credentials.accessToken)).to.be.an.object();
+        expect(await userService.findRefreshToken(payload.credentials.refreshToken)).to.be.an.object();
       });
     });
   });
@@ -166,11 +166,11 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).to.be.equal(200);
         const payload = JSON.parse(response.payload);
-        expect(payload.user).includes('accessToken');
-        expect(payload.user).includes('refreshToken');
+        expect(payload.credentials).includes('accessToken');
+        expect(payload.credentials).includes('refreshToken');
         expect(payload.user).includes('id');
-        expect(await userService.findAccessToken(payload.user.accessToken)).to.be.an.object();
-        expect(await userService.findRefreshToken(payload.user.refreshToken)).to.be.an.object();
+        expect(await userService.findAccessToken(payload.credentials.accessToken)).to.be.an.object();
+        expect(await userService.findRefreshToken(payload.credentials.refreshToken)).to.be.an.object();
       });
       it('call "sendEmail" stubbed method (email with verification code is sent', async () => {
         const email = 'admin@example.com';
@@ -220,7 +220,7 @@ describe('Test routes', () => {
         const response = await server.inject({
           method: 'POST',
           url: '/refresh_token',
-          payload: { accessToken: uuid4(), refreshToken: tokens.refresh }
+          payload: { accessToken: uuid4(), refreshToken: tokens.refreshToken }
         });
         expect(response.statusCode).to.be.equal(401);
       });
@@ -234,7 +234,7 @@ describe('Test routes', () => {
         const response = await server.inject({
           method: 'POST',
           url: '/refresh_token',
-          payload: { accessToken: tokens.access, refreshToken: tokens.refresh }
+          payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
         });
         expect(response.statusCode).to.be.equal(401);
       });
@@ -248,14 +248,14 @@ describe('Test routes', () => {
         const response = await server.inject({
           method: 'POST',
           url: '/refresh_token',
-          payload: { accessToken: tokens.access, refreshToken: tokens.refresh }
+          payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
         });
         expect(response.statusCode).to.be.equal(200);
         const payload = JSON.parse(response.payload);
         expect(payload).includes('accessToken');
         expect(payload).includes('refreshToken');
-        expect(await userService.findAccessToken(tokens.access)).to.be.null();
-        expect(await userService.findRefreshToken(tokens.refresh)).to.be.null();
+        expect(await userService.findAccessToken(tokens.accessToken)).to.be.null();
+        expect(await userService.findRefreshToken(tokens.refreshToken)).to.be.null();
       });
     });
   });
@@ -273,7 +273,7 @@ describe('Test routes', () => {
           method: 'POST',
           url: '/workspaces',
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           },
           payload: {
             name: 'TestWorkspace'
@@ -291,7 +291,7 @@ describe('Test routes', () => {
           method: 'POST',
           url: '/workspaces',
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           },
           payload: {
             name: 'TestWorkspace 222'
@@ -309,7 +309,7 @@ describe('Test routes', () => {
           method: 'POST',
           url: '/workspaces',
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           },
           payload: {
             name: 'TestWorkspace'
@@ -334,7 +334,7 @@ describe('Test routes', () => {
         // create tokens
         const tokens = await userService.createTokens(guest);
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // add guest to the workspace as a guest
         await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'guest');
         const response = await server.inject({
@@ -362,7 +362,7 @@ describe('Test routes', () => {
         // create tokens
         const tokens = await userService.createTokens(admin);
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/channels`,
@@ -371,13 +371,71 @@ describe('Test routes', () => {
             name: 'testChannel'
           },
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           }
         });
         expect(response.statusCode).to.be.equal(200);
         const result = JSON.parse(response.payload);
         expect(result.channel.id).exists();
         expect(result.channel.name).exists();
+      });
+    });
+  });
+
+  describe('GET /workspaces', () => {
+    describe('request a list of user\'s workspaces', () => {
+      it('should return an array with workspaces that are belong to the authed user', async () => {
+        const { userService, workspaceService } = server.services();
+        const user = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const tokens = await userService.createTokens({ id: user.id });
+        const anotherUser = await userService.signup({ email: 'another@user.ru' });
+        const { workspace: w1 } = await workspaceService.createWorkspace(user, 'workspace1');
+        const { workspace: w2 } = await workspaceService.createWorkspace(user, 'workspace2');
+        const { workspace: w3 } = await workspaceService.createWorkspace(anotherUser, 'workspace3');
+        const response = await server.inject({
+          method: 'GET',
+          url: '/workspaces',
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload).array().length(2);
+        expect(payload.find(i => i.id === w1.id)).exist();
+        expect(payload.find(i => i.id === w2.id)).exist();
+        expect(payload.find(i => i.id === w3.id)).not.exist();
+      });
+    });
+  });
+
+  describe('GET /workspaces/{workspaceId}', () => {
+    describe('request the state of the workspace', () => {
+      it('should return workspace state, array of users and channels', async () => {
+        const { userService, workspaceService } = server.services();
+        const user = await userService.signup({ email: 'user@heyka.com' });
+        const user2 = await userService.signup({ email: 'user2@heyka.com' });
+        // создаём третьего юзера, который не должен фигурировать нигде
+        const user3 = await userService.signup({ email: 'user3@heyka.com' });
+        const tokens = await userService.createTokens({ id: user.id });
+        const { workspace } = await workspaceService.createWorkspace(user, 'workspace1');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
+        await workspaceService.createChannel(workspace.id, user.id, { name: 'test', isPrivate: false });
+        const response = await server.inject({
+          method: 'GET',
+          url: `/workspaces/${workspace.id}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.workspace).exists();
+        expect(payload.channels).exists();
+        expect(payload.users).exists();
+        expect(payload.users.find(u => u.id === user3.id)).not.exists();
+        expect(payload.users.length).equals(2);
+        expect(payload.channels.length).equals(2);
       });
     });
   });
@@ -398,14 +456,14 @@ describe('Test routes', () => {
         // create tokens
         const tokens = await userService.createTokens(guest);
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // add guest to the workspace as a guest
         await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'guest');
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/invites`,
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           }
         });
         expect(response.statusCode).to.be.equal(403);
@@ -422,12 +480,12 @@ describe('Test routes', () => {
         // create tokens
         const tokens = await userService.createTokens(admin);
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/invites`,
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           }
         });
         expect(response.statusCode).to.be.equal(200);
@@ -449,7 +507,7 @@ describe('Test routes', () => {
         // create users
         const admin = await userService.signup({ email: 'admin@user.net' });
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         // make invite code is expired
@@ -462,9 +520,7 @@ describe('Test routes', () => {
           method: 'GET',
           url: `/check/${code.fullCode}`
         });
-        expect(response.statusCode).to.be.equal(200);
-        const body = JSON.parse(response.payload);
-        expect(body.valid).equals(false);
+        expect(response.statusCode).to.be.equal(400);
       });
     });
 
@@ -477,7 +533,7 @@ describe('Test routes', () => {
         // create users
         const admin = await userService.signup({ email: 'admin@user.net' });
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         const response = await server.inject({
@@ -486,7 +542,6 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).to.be.equal(200);
         const body = JSON.parse(response.payload);
-        expect(body.valid).equals(true);
         expect(body.workspace).exists();
         expect(body.user).exists();
       });
@@ -506,7 +561,7 @@ describe('Test routes', () => {
         // create tokens for user
         const tokens = await userService.createTokens(user);
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         // make invite code is expired
@@ -519,7 +574,7 @@ describe('Test routes', () => {
           method: 'POST',
           url: `/join/${code.fullCode}`,
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           },
         });
         expect(response.statusCode).to.be.equal(400);
@@ -540,14 +595,14 @@ describe('Test routes', () => {
         // create tokens for user
         const tokens = await userService.createTokens(user);
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         const response = await server.inject({
           method: 'POST',
           url: `/join/${code.fullCode}`,
           headers: {
-            'Authorization': `Bearer ${tokens.access}`
+            'Authorization': `Bearer ${tokens.accessToken}`
           },
         });
         expect(response.statusCode).to.be.equal(200);
@@ -564,13 +619,13 @@ describe('Test routes', () => {
         const { userService, workspaceService } = server.services();
         const user = await userService.signup({ email: 'admin@admin.ru' });
         const tokens = await userService.createTokens({ id: user.id });
-        const workspace = await workspaceService.createWorkspace(user, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(user, 'testWorkspace');
         const email = 'invited_person@mail.ru';
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/invite/email`,
           headers: {
-            Authorization: `Bearer ${tokens.access}`
+            Authorization: `Bearer ${tokens.accessToken}`
           },
           payload: {
             email
@@ -592,12 +647,12 @@ describe('Test routes', () => {
         } = server.services();
         const user = await userService.signup({ email: 'admin@admin.ru', auth: { slack: {} } });
         const anotherUser = await userService.signup({ email: 'another@admin.ru' , auth: { slack: {} } });
-        const workspace = await workspaceService.createWorkspace(anotherUser, 'workspace');
+        const { workspace } = await workspaceService.createWorkspace(anotherUser, 'workspace');
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
           method: 'GET',
           url: `/workspaces/${workspace.id}/slack/connect`,
-          headers: { Authorization: `Bearer ${tokens.access}` }
+          headers: { Authorization: `Bearer ${tokens.accessToken}` }
         });
         expect(response.statusCode).equals(401);
       });
@@ -609,12 +664,12 @@ describe('Test routes', () => {
           workspaceService
         } = server.services();
         const user = await userService.signup({ email: 'admin@admin.ru', auth: { slack: {} } });
-        const workspace = await workspaceService.createWorkspace(user, 'workspace');
+        const { workspace } = await workspaceService.createWorkspace(user, 'workspace');
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
           method: 'GET',
           url: `/workspaces/${workspace.id}/slack/connect`,
-          headers: { Authorization: `Bearer ${tokens.access}` }
+          headers: { Authorization: `Bearer ${tokens.accessToken}` }
         });
         expect(response.statusCode).equals(200);
         expect(stubbedMethods.getConnectingSlackUrl.calledOnce).true();
@@ -631,7 +686,7 @@ describe('Test routes', () => {
           userDatabaseService
         } = server.services();
         const user = await userService.signup({ email: 'admin@admin.ru' });
-        const workspace = await workspaceService.createWorkspace(user, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(user, 'testWorkspace');
         const slackState = uuid4();
         await userDatabaseService.saveSlackState(slackState, {
           workspaceId: workspace.id,
@@ -656,14 +711,14 @@ describe('Test routes', () => {
         const admin = await userService.signup({ email: 'admin@admin.ru' });
         const user = await userService.signup({ email: 'user@user.ru' });
         const tokens = await userService.createTokens(user);
-        const workspace = await workspaceService.createWorkspace(admin, 'test');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/invite/slack`,
           payload: {
             slackUserId: 'JUHSYND1'
           },
-          headers: { Authorization: `Bearer ${tokens.access}` }
+          headers: { Authorization: `Bearer ${tokens.accessToken}` }
         });
         expect(response.statusCode).equals(403);
         expect(response.payload).includes('NotAllowed');
@@ -677,14 +732,14 @@ describe('Test routes', () => {
         } = server.services();
         const admin = await userService.signup({ email: 'admin@admin.ru', auth: { slack: {} }});
         const tokens = await userService.createTokens(admin);
-        const workspace = await workspaceService.createWorkspace(admin, 'test');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/invite/slack`,
           payload: {
             slackUserId: 'JUHSYND1'
           },
-          headers: { Authorization: `Bearer ${tokens.access}` }
+          headers: { Authorization: `Bearer ${tokens.accessToken}` }
         });
         expect(response.statusCode).equals(400);
         expect(response.payload).includes('SlackIsNotConnected');
@@ -699,7 +754,7 @@ describe('Test routes', () => {
         const db = server.plugins['hapi-pg-promise'].db;
         const admin = await userService.signup({ email: 'admin@admin.ru' });
         const tokens = await userService.createTokens(admin);
-        const workspace = await workspaceService.createWorkspace(admin, 'test');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
         // emulate workspace connected to slack
         await db.none(
           'UPDATE workspaces SET slack=$1 WHERE id=$2',
@@ -711,7 +766,7 @@ describe('Test routes', () => {
           payload: {
             slackUserId: 'JUHSYND1'
           },
-          headers: { Authorization: `Bearer ${tokens.access}` }
+          headers: { Authorization: `Bearer ${tokens.accessToken}` }
         });
         expect(response.statusCode).equals(400);
         expect(response.payload).includes('UserNotAuthedWithSlack');
@@ -732,7 +787,7 @@ describe('Test routes', () => {
           auth: { slack: { params: { user_id: senderSlackUserId }} }
         });
         const tokens = await userService.createTokens(admin);
-        const workspace = await workspaceService.createWorkspace(admin, 'test');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
         // emulate workspace connected to slack
         await db.none(
           'UPDATE workspaces SET slack=$1 WHERE id=$2',
@@ -744,7 +799,7 @@ describe('Test routes', () => {
           payload: {
             slackUserId
           },
-          headers: { Authorization: `Bearer ${tokens.access}` }
+          headers: { Authorization: `Bearer ${tokens.accessToken}` }
         });
         expect(response.statusCode).equals(200);
         expect(stubbedMethods.sendInviteToWorkspaceBySlack.calledOnce).true();
@@ -767,10 +822,9 @@ describe('Test routes', () => {
           method: 'GET',
           url: `/verify/${(await crypto.randomBytes(41)).toString('hex')}`
         });
-        expect(response.statusCode).equals(200);
+        expect(response.statusCode).equals(400);
         const payload = JSON.parse(response.payload);
-        expect(payload.status).equals('fail');
-        expect(payload.reason).equals('Verification code is not valid');
+        expect(payload.message).equals('Verification code is not valid');
       });
     });
     describe('Try to verify an expired verification code', () => {
@@ -791,10 +845,9 @@ describe('Test routes', () => {
           method: 'GET',
           url: `/verify/${fullCode}`
         });
-        expect(response.statusCode).equals(200);
+        expect(response.statusCode).equals(400);
         const payload = JSON.parse(response.payload);
-        expect(payload.status).equals('fail');
-        expect(payload.reason).equals('Verification code is not valid');
+        expect(payload.message).equals('Verification code is not valid');
       });
     });
     describe('Try to verify verification code, but email are not matched', () => {
@@ -808,10 +861,9 @@ describe('Test routes', () => {
           method: 'GET',
           url: `/verify/${fullCode}`
         });
-        expect(response.statusCode).equals(200);
+        expect(response.statusCode).equals(400);
         const payload = JSON.parse(response.payload);
-        expect(payload.status).equals('fail');
-        expect(payload.reason).equals('Verification code is not valid');
+        expect(payload.message).equals('Verification code is not valid');
       });
     });
     describe('Try to verify valid verification code', () => {
@@ -825,8 +877,6 @@ describe('Test routes', () => {
           url: `/verify/${fullCode}`
         });
         expect(response.statusCode).equals(200);
-        const payload = JSON.parse(response.payload);
-        expect(payload.status).equals('success');
         // check is email verified
         const userUpdated = await userService.findById(user.id);
         expect(userUpdated.is_email_verified).true();

@@ -63,7 +63,7 @@ describe('Test socket', () => {
         const awaitGeneralError = new Promise((resolve, reject) => {
           socket.on('socket-api-error', reject);
         });
-        socket.emit(eventNames.client.auth, { token: tokens.access, transaction });
+        socket.emit(eventNames.client.auth, { token: tokens.accessToken, transaction });
         // then await first finished promise
         await Promise.race([awaitSuccess, awaitTransactionError, awaitGeneralError]);
       });
@@ -81,7 +81,7 @@ describe('Test socket', () => {
         const awaitGeneralError = new Promise((resolve) => {
           socket.on('socket-api-error', resolve);
         });
-        socket.emit(eventNames.client.auth, { token: tokens.access, transaction });
+        socket.emit(eventNames.client.auth, { token: tokens.accessToken, transaction });
         // the both errors should be fired
         await Promise.all([awaitTransactionError, awaitGeneralError]);
       });
@@ -107,11 +107,11 @@ describe('Test socket', () => {
         const socket1 = io(server.info.uri);
         const socket2 = io(server.info.uri);
         const socket3 = io(server.info.uri);
-        socket1.emit(eventNames.client.auth, { token: tokens1.access, transaction: uuid4() });
-        socket2.emit(eventNames.client.auth, { token: tokens2.access, transaction: uuid4() });
-        socket3.emit(eventNames.client.auth, { token: tokens3.access, transaction: uuid4() });
+        socket1.emit(eventNames.client.auth, { token: tokens1.accessToken, transaction: uuid4() });
+        socket2.emit(eventNames.client.auth, { token: tokens2.accessToken, transaction: uuid4() });
+        socket3.emit(eventNames.client.auth, { token: tokens3.accessToken, transaction: uuid4() });
         // create workspace
-        const workspace = await workspaceService.createWorkspace(user1, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
         // add 2nd user to workspace
         await workspaceService.addUserToWorkspace(workspace.id, user2.id, wdb.roles().user);
         // create channel
@@ -166,9 +166,9 @@ describe('Test socket', () => {
         const tokens = await userService.createTokens(admin);
         // authenticate 3 users
         const adminSocket = io(server.info.uri);
-        adminSocket.emit(eventNames.client.auth, { token: tokens.access, transaction: uuid4() });
+        adminSocket.emit(eventNames.client.auth, { token: tokens.accessToken, transaction: uuid4() });
         // create workspace
-        const workspace = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         const notifyAboutJoinedUser = new Promise((resolve, reject) => {
           adminSocket.on(eventNames.socket.userJoined, data => {
             try {

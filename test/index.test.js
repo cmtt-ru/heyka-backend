@@ -20,6 +20,7 @@ describe('Test routes', () => {
     const db = server.plugins['hapi-pg-promise'].db;
     await server.redis.client.flushdb();
     await db.query('DELETE FROM verification_codes');
+    await db.query('DELETE FROM auth_links');
     await db.query('DELETE FROM users');
     await db.query('DELETE FROM sessions');
     await db.query('DELETE FROM channels');
@@ -883,6 +884,63 @@ describe('Test routes', () => {
         // check verification code is not exist
         const verificationCode = await db.oneOrNone('SELECT * FROM verification_codes WHERE user_id=$1', [user.id]);
         expect(verificationCode).null();
+      });
+    });
+  });
+
+  /**
+   * authentication link functionality
+   */
+  describe('POST /auth-link', () => {
+    describe('creates auth link', () => {
+      it('should create auth link in the database', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'user@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/auth-link',
+          headers: { Authorization: `Bearer ${tokens.accessToken}` }
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        const db = server.plugins['hapi-pg-promise'].db;
+        const authLink = await db.one('SELECT * FROM auth_links WHERE user_id=$1', [user.id]);
+        expect(payload.code).equals(serviceHelpers.codeConvertToUrl(authLink.id, authLink.code));
+      });
+    });
+  });
+  describe('POST /signin/link/${fullCode}', () => {
+    describe('try to signin with an expired code', () => {
+      it('should return badRequest error', async () => {
+        const { userService } = server.services();
+        const db = server.plugins['hapi-pg-promise'].db;
+        const user = await userService.signup({ email: 'user@user.ru' });
+        const code = await userService.createAuthLink(user.id);
+        await db.none('UPDATE auth_links SET expired_at=$1 WHERE user_id=$2', [
+          new Date(Date.now() - 1),
+          user.id
+        ]);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/signin/link/${code}`
+        });
+        expect(response.statusCode).equals(400);
+      });
+    });
+    describe('try to signin with a valid code', () => {
+      it('should return auth credentials as a normal pacan', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'user@user.ru' });
+        const code = await userService.createAuthLink(user.id);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/signin/link/${code}`
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.accessToken).exists();
+        expect(payload.refreshToken).exists();
       });
     });
   });

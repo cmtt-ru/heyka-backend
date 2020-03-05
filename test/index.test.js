@@ -461,7 +461,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user2);
         const response = await server.inject({
           method: 'GET',
-          url: `/channels/${channel.id}/select`,
+          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
           headers: {
             Authorization: `Bearer ${tokens.accessToken}`
           }
@@ -485,7 +485,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
           method: 'GET',
-          url: `/channels/${channel.id}/select`,
+          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
           headers: {
             Authorization: `Bearer ${tokens.accessToken}`
           }
@@ -516,7 +516,7 @@ describe('Test routes', () => {
         // select first channel
         await server.inject({
           method: 'GET',
-          url: `/channels/${channel1.id}/select`,
+          url: `/channels/${channel1.id}/select?socketId=${uuid4()}`,
           headers: {
             Authorization: `Bearer ${tokens.accessToken}`
           }
@@ -527,7 +527,7 @@ describe('Test routes', () => {
         // select the second channel
         await server.inject({
           method: 'GET',
-          url: `/channels/${channel2.id}/select`,
+          url: `/channels/${channel2.id}/select?socketId=${uuid4()}`,
           headers: {
             Authorization: `Bearer ${tokens.accessToken}`
           }

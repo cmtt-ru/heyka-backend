@@ -9,6 +9,8 @@ const socketAPI = require('../lib/socket');
 const io = require('socket.io-client');
 const eventNames = require('../lib/socket/event_names');
 const { methods: stubbedMethods } = require('./stub_external');
+const helpers = require('./helpers');
+const schemas = require('../lib/schemas');
 
 describe('Test socket', () => {
   let server = null;
@@ -219,9 +221,10 @@ describe('Test socket', () => {
         });
         const notAwaitUserSelected = awaitSocketForEvent(false, notMemberSocket, eventName);
         await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${channel.id}/select?socketId=${adminSocket.id}`,
-          headers: { Authorization: `Bearer ${adminTokens.accessToken}` }
+          ...helpers.withAuthorization(adminTokens),
+          payload: helpers.defaultUserState()
         });
         await Promise.race([
           Promise.all([
@@ -230,6 +233,56 @@ describe('Test socket', () => {
           ]),
           notAwaitUserSelected
         ]);
+      });
+      it('All members get media state of the user who just connected', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const admin = await userService.signup({ email: 'admin@world.net' });
+        const user1 = await userService.signup({ email: 'user@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user1.id);
+        const channel = await workspaceService.createChannel(workspace.id, admin.id, {
+          isPrivate: false,
+          name: 'testChannel'
+        });
+        const adminTokens = await userService.createTokens(admin);
+        const user1Tokens = await userService.createTokens(user1);
+
+        // authenticate 2 users
+        const adminSocket = io(server.info.uri);
+        const user1Socket = io(server.info.uri);
+        let eventName = eventNames.socket.authSuccess;
+        const adminAuth = awaitSocketForEvent(true, adminSocket, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const user1Auth = awaitSocketForEvent(true, user1Socket, eventName, data => {
+          expect(data).includes('userId');
+        });
+        adminSocket.emit(eventNames.client.auth, { token: adminTokens.accessToken, transaction: uuid4() });
+        user1Socket.emit(eventNames.client.auth, { token: user1Tokens.accessToken, transaction: uuid4() });
+        await Promise.all([adminAuth, user1Auth]);
+
+        /**
+         * Админ коннектится к каналу
+         * Пользователь должен получить mediaState админа
+         */
+        const adminMediaState = helpers.defaultUserState();
+        adminMediaState.microphone = true;
+        const user1Notified = awaitSocketForEvent(true, user1Socket, eventNames.socket.userSelectedChannel, data => {
+          expect(data.userMediaState).exists();
+          schemas.userMediaState.validate(data.userMediaState);
+          expect(data.userMediaState).equals(adminMediaState);
+        });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${adminSocket.id}`,
+          ...helpers.withAuthorization(adminTokens),
+          payload: adminMediaState
+        });
+        expect(response.statusCode).equals(200);
+        await user1Notified;
       });
     });
     describe('User was in a private channel, selects a publisc channel', () => {
@@ -290,9 +343,10 @@ describe('Test socket', () => {
         });
         let notMemberNotNotified = awaitSocketForEvent(false, notMemberSocket, eventName);
         let response = await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${privateChannel.id}/select?socketId=${adminSocket.id}`,
-          headers: { Authorization: `Bearer ${adminTokens.accessToken}` }
+          ...helpers.withAuthorization(adminTokens),
+          payload: helpers.defaultUserState()
         });
         expect(response.statusCode).equals(200);
         await Promise.race([
@@ -333,9 +387,10 @@ describe('Test socket', () => {
           expect(data.userId).equals(admin.id);
         });
         response = await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${publicChannel.id}/select?socketId=${adminSocket.id}`,
-          headers: { Authorization: `Bearer ${adminTokens.accessToken}` }
+          ...helpers.withAuthorization(adminTokens),
+          payload: helpers.defaultUserState()
         });
         expect(response.statusCode).equals(200);
         /**
@@ -390,18 +445,20 @@ describe('Test socket', () => {
 
         // select first channel
         const response1 = await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${firstChannel.id}/select?socketId=${firstSocket.id}`,
-          headers: { Authorization: `Bearer ${userTokens.accessToken}` }
+          ...helpers.withAuthorization(userTokens),
+          payload: helpers.defaultUserState()
         });
         expect(response1.statusCode).equals(200);
 
         // the first socket gets event about the second connection
         const waitEvent = awaitSocketForEvent(true, firstSocket, eventNames.socket.changedDevice);
         const response2 = await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${secondChannel.id}/select?socketId=${secondSocket.id}`,
-          headers: { Authorization: `Bearer ${userTokens.accessToken}` }
+          ...helpers.withAuthorization(userTokens),
+          payload: helpers.defaultUserState()
         });
         expect(response2.statusCode).equals(200);
         await waitEvent;
@@ -437,21 +494,100 @@ describe('Test socket', () => {
 
         // select first channel
         const response1 = await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${singleChannel.id}/select?socketId=${firstSocket.id}`,
-          headers: { Authorization: `Bearer ${userTokens.accessToken}` }
+          ...helpers.withAuthorization(userTokens),
+          payload: helpers.defaultUserState()
         });
         expect(response1.statusCode).equals(200);
 
         // the first socket gets event about the second connection
         const waitEvent = awaitSocketForEvent(true, firstSocket, eventNames.socket.changedDevice);
         const response2 = await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${singleChannel.id}/select?socketId=${secondSocket.id}`,
-          headers: { Authorization: `Bearer ${userTokens.accessToken}` }
+          ...helpers.withAuthorization(userTokens),
+          payload: helpers.defaultUserState()
         });
         expect(response2.statusCode).equals(200);
         await waitEvent;
+      });
+    });
+  });
+
+  describe('Testing update user media state', () => {
+    describe('User select a channel, update media state', () => {
+      it('all member gets new media state of that user', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@world.net' });
+        const user2 = await userService.signup({ email: 'user2@world.net' });
+        const user3 = await userService.signup({ email: 'user3@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        const channel = await workspaceService.createChannel(workspace.id, user1.id, {
+          isPrivate: true,
+          name: 'first'
+        });
+        await workspaceService.addMembersToChannel(channel.id, workspace.id, [user2.id]);
+        const user1Tokens = await userService.createTokens(user1);
+        const user2Tokens = await userService.createTokens(user2);
+        const user3Tokens = await userService.createTokens(user3);
+
+        // authenticate all users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        const socket3 = io(server.info.uri);
+
+        let eventName = eventNames.socket.authSuccess;
+        const auth1 = awaitSocketForEvent(true, socket1, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth2 = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth3 = awaitSocketForEvent(true, socket3, eventName, data => {
+          expect(data).includes('userId');
+        });
+        socket1.emit(eventNames.client.auth, { token: user1Tokens.accessToken, transaction: uuid4() });
+        socket2.emit(eventNames.client.auth, { token: user2Tokens.accessToken, transaction: uuid4() });
+        socket3.emit(eventNames.client.auth, { token: user3Tokens.accessToken, transaction: uuid4() });
+        await Promise.all([auth1, auth2, auth3]);
+
+        // user1 selects channel
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(response1.statusCode).equals(200);
+
+        // user2 gets an event about changed media state
+        // but user3 doesnt get that event (because he is not member of the channel)
+        eventName = eventNames.socket.mediaStateUpdated;
+        const newMediaState = helpers.defaultUserState();
+        newMediaState.microphone = true;
+        const user2Event = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.userId).equals(user1.id);
+          expect(data.userMediaState).equals(newMediaState);
+        });
+        const user3NotEvent = awaitSocketForEvent(false, socket3, eventName);
+        // user1 updates media state
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/user/media-state?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: newMediaState
+        });
+        expect(response2.statusCode).equals(200);
+        await Promise.race([
+          user2Event,
+          user3NotEvent
+        ]);
       });
     });
   });

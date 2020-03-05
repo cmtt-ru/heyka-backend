@@ -190,19 +190,16 @@ describe('Test socket', () => {
         const adminSocket = io(server.info.uri);
         const memberSocket = io(server.info.uri);
         const notMemberSocket = io(server.info.uri);
-        const awaitSuccessForSocket = (socket) => new Promise((resolve, reject) => {
-          socket.on(eventNames.socket.authSuccess, data => {
-            try {
-              expect(data).includes('userId');
-            } catch(e) {
-              reject(e);
-            }
-            resolve();
-          });
+        let eventName = eventNames.socket.authSuccess;
+        const awaitAdminAuth = awaitSocketForEvent(true, adminSocket, eventName, data => {
+          expect(data).includes('userId');
         });
-        const awaitAdminAuth = awaitSuccessForSocket(adminSocket);
-        const awaitMemberAuth = awaitSuccessForSocket(memberSocket);
-        const awaitNotMemberAuth = awaitSuccessForSocket(notMemberSocket);
+        const awaitMemberAuth = awaitSocketForEvent(true, memberSocket, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const awaitNotMemberAuth = awaitSocketForEvent(true, notMemberSocket, eventName, data => {
+          expect(data).includes('userId');
+        });
         adminSocket.emit(eventNames.client.auth, { token: adminTokens.accessToken, transaction: uuid4() });
         memberSocket.emit(eventNames.client.auth, { token: memberTokens.accessToken, transaction: uuid4() });
         notMemberSocket.emit(eventNames.client.auth, { token: notMemberTokens.accessToken, transaction: uuid4() });
@@ -213,32 +210,17 @@ describe('Test socket', () => {
          * Ждём, что админ и мембер получат уведомления о присоединении
          * При этом не мембер не получит
          */
-        const awaitUserSelectedForSocket = (socket) => new Promise((resolve, reject) => {
-          socket.on(eventNames.socket.userSelectedChannel, data => {
-            try {
-              expect(data).includes('userId');
-              expect(data).includes('channelId');
-              expect(data.channelId).equals(channel.id);
-            } catch(e) {
-              reject(e);
-            }
-            /**
-             * Даём 50 мс, если за это время не мембер получит уведомление
-             * о присоединии, то значит есть ошибка
-             */
-            setTimeout(() => resolve(), 50);
-          });
+        eventName = eventNames.socket.userSelectedChannel;
+        const awaitNotifyForAdmin = awaitSocketForEvent(true, adminSocket, eventName, data => {
+          expect(data.channelId).equals(channel.id);
         });
-        const awaitNotifyForAdmin = awaitUserSelectedForSocket(adminSocket);
-        const awaitNotifyForMember = awaitUserSelectedForSocket(memberSocket);
-        const notAwaitUserSelected = new Promise((resolve, reject) => {
-          notMemberSocket.on(eventNames.socket.userSelectedChannel, data => {
-            reject('NotMember shouldb be notified!!!');
-          });
+        const awaitNotifyForMember = awaitSocketForEvent(true, memberSocket, eventName, data => {
+          expect(data.channelId).equals(channel.id);
         });
+        const notAwaitUserSelected = awaitSocketForEvent(false, notMemberSocket, eventName);
         await server.inject({
           method: 'GET',
-          url: `/channels/${channel.id}/select`,
+          url: `/channels/${channel.id}/select?socketId=${adminSocket.id}`,
           headers: { Authorization: `Bearer ${adminTokens.accessToken}` }
         });
         await Promise.race([
@@ -309,7 +291,7 @@ describe('Test socket', () => {
         let notMemberNotNotified = awaitSocketForEvent(false, notMemberSocket, eventName);
         let response = await server.inject({
           method: 'GET',
-          url: `/channels/${privateChannel.id}/select`,
+          url: `/channels/${privateChannel.id}/select?socketId=${adminSocket.id}`,
           headers: { Authorization: `Bearer ${adminTokens.accessToken}` }
         });
         expect(response.statusCode).equals(200);
@@ -352,7 +334,7 @@ describe('Test socket', () => {
         });
         response = await server.inject({
           method: 'GET',
-          url: `/channels/${publicChannel.id}/select`,
+          url: `/channels/${publicChannel.id}/select?socketId=${adminSocket.id}`,
           headers: { Authorization: `Bearer ${adminTokens.accessToken}` }
         });
         expect(response.statusCode).equals(200);
@@ -373,7 +355,104 @@ describe('Test socket', () => {
           notMemberNotNotified
         ]);
       });
+    });
+    describe('User has two connections, try to select several channels', () => {
+      it('First socket gets an event about the second connection', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user = await userService.signup({ email: 'user@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const firstChannel = await workspaceService.createChannel(workspace.id, user.id, {
+          isPrivate: true,
+          name: 'first'
+        });
+        const secondChannel = await workspaceService.createChannel(workspace.id, user.id, {
+          isPrivate: false,
+          name: 'second'
+        });
+        const userTokens = await userService.createTokens(user);
 
+        // authenticate 2 socket connection for the single user
+        const firstSocket = io(server.info.uri);
+        const secondSocket = io(server.info.uri);
+        let eventName = eventNames.socket.authSuccess;
+        const firstAuth = awaitSocketForEvent(true, firstSocket, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const secondAuth = awaitSocketForEvent(true, secondSocket, eventName, data => {
+          expect(data).includes('userId');
+        });
+        firstSocket.emit(eventNames.client.auth, { token: userTokens.accessToken, transaction: uuid4() });
+        secondSocket.emit(eventNames.client.auth, { token: userTokens.accessToken, transaction: uuid4() });
+        await Promise.all([firstAuth, secondAuth]);
+
+        // select first channel
+        const response1 = await server.inject({
+          method: 'GET',
+          url: `/channels/${firstChannel.id}/select?socketId=${firstSocket.id}`,
+          headers: { Authorization: `Bearer ${userTokens.accessToken}` }
+        });
+        expect(response1.statusCode).equals(200);
+
+        // the first socket gets event about the second connection
+        const waitEvent = awaitSocketForEvent(true, firstSocket, eventNames.socket.changedDevice);
+        const response2 = await server.inject({
+          method: 'GET',
+          url: `/channels/${secondChannel.id}/select?socketId=${secondSocket.id}`,
+          headers: { Authorization: `Bearer ${userTokens.accessToken}` }
+        });
+        expect(response2.statusCode).equals(200);
+        await waitEvent;
+      });
+    });
+    describe('User has two connections, try to select the same channel with two connections', () => {
+      it('First socket gets an event about the second connection', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user = await userService.signup({ email: 'user@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const singleChannel = await workspaceService.createChannel(workspace.id, user.id, {
+          isPrivate: true,
+          name: 'first'
+        });
+        const userTokens = await userService.createTokens(user);
+
+        // authenticate 2 socket connection for the single user
+        const firstSocket = io(server.info.uri);
+        const secondSocket = io(server.info.uri);
+        let eventName = eventNames.socket.authSuccess;
+        const firstAuth = awaitSocketForEvent(true, firstSocket, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const secondAuth = awaitSocketForEvent(true, secondSocket, eventName, data => {
+          expect(data).includes('userId');
+        });
+        firstSocket.emit(eventNames.client.auth, { token: userTokens.accessToken, transaction: uuid4() });
+        secondSocket.emit(eventNames.client.auth, { token: userTokens.accessToken, transaction: uuid4() });
+        await Promise.all([firstAuth, secondAuth]);
+
+        // select first channel
+        const response1 = await server.inject({
+          method: 'GET',
+          url: `/channels/${singleChannel.id}/select?socketId=${firstSocket.id}`,
+          headers: { Authorization: `Bearer ${userTokens.accessToken}` }
+        });
+        expect(response1.statusCode).equals(200);
+
+        // the first socket gets event about the second connection
+        const waitEvent = awaitSocketForEvent(true, firstSocket, eventNames.socket.changedDevice);
+        const response2 = await server.inject({
+          method: 'GET',
+          url: `/channels/${singleChannel.id}/select?socketId=${secondSocket.id}`,
+          headers: { Authorization: `Bearer ${userTokens.accessToken}` }
+        });
+        expect(response2.statusCode).equals(200);
+        await waitEvent;
+      });
     });
   });
 });

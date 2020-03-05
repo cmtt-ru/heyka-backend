@@ -442,6 +442,106 @@ describe('Test routes', () => {
   });
 
   /**
+   * Select channels
+   */
+  describe('GET /channels/{channelId}/select', () => {
+    describe('Try to select channel which user hasnt access', () => {
+      it('should return forbidden error', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        const tokens = await userService.createTokens(user2);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/channels/${channel.id}/select`,
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('Select channel when user wasnt in any channels', () => {
+      it('should return 200 and user should appear in channel users list', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelDatabaseService
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/channels/${channel.id}/select`,
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).equals(200);
+        const users = await channelDatabaseService.getAllUsersInChannel(channel.id);
+        expect(users).includes(user.id);
+      });
+    });
+    describe('Select channel when user was in another channel', () => {
+      it('user should appear in new users list and disappear in the old users list', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelDatabaseService
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel1 = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        const channel2 = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test2',
+          isPrivate: false
+        });
+        const tokens = await userService.createTokens(user);
+        // select first channel
+        await server.inject({
+          method: 'GET',
+          url: `/channels/${channel1.id}/select`,
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+          }
+        });
+        // expect that user was appeared in the first channel
+        let list = await channelDatabaseService.getAllUsersInChannel(channel1.id);
+        expect(list).includes(user.id);
+        // select the second channel
+        await server.inject({
+          method: 'GET',
+          url: `/channels/${channel2.id}/select`,
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`
+          }
+        });
+        // expect that user was appeared in the second channel and was disappeared from the first
+        list = await channelDatabaseService.getAllUsersInChannel(channel1.id);
+        expect(list).not.includes(user.id);
+        list = await channelDatabaseService.getAllUsersInChannel(channel2.id);
+        expect(list).includes(user.id);
+      });
+    });
+  });
+
+  /**
    * Invites
    */
   describe('POST /workspaces/{workspaceId}/invites', () => {

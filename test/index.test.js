@@ -8,6 +8,7 @@ const uuid4 = require('uuid/v4');
 const crypto = require('crypto-promise');
 const serviceHelpers = require('../lib/services/helpers');
 const { methods: stubbedMethods } = require('./stub_external');
+const helpers = require('./helpers');
 
 describe('Test routes', () => {
   let server = null;
@@ -444,7 +445,7 @@ describe('Test routes', () => {
   /**
    * Select channels
    */
-  describe('GET /channels/{channelId}/select', () => {
+  describe('POST /channels/{channelId}/select', () => {
     describe('Try to select channel which user hasnt access', () => {
       it('should return forbidden error', async () => {
         const {
@@ -460,11 +461,10 @@ describe('Test routes', () => {
         });
         const tokens = await userService.createTokens(user2);
         const response = await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
-          }
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
         });
         expect(response.statusCode).equals(403);
       });
@@ -484,11 +484,10 @@ describe('Test routes', () => {
         });
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
-          }
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
         });
         expect(response.statusCode).equals(200);
         const users = await channelDatabaseService.getAllUsersInChannel(channel.id);
@@ -515,28 +514,68 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user);
         // select first channel
         await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${channel1.id}/select?socketId=${uuid4()}`,
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
-          }
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
         });
         // expect that user was appeared in the first channel
         let list = await channelDatabaseService.getAllUsersInChannel(channel1.id);
         expect(list).includes(user.id);
         // select the second channel
         await server.inject({
-          method: 'GET',
+          method: 'POST',
           url: `/channels/${channel2.id}/select?socketId=${uuid4()}`,
-          headers: {
-            Authorization: `Bearer ${tokens.accessToken}`
-          }
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
         });
         // expect that user was appeared in the second channel and was disappeared from the first
         list = await channelDatabaseService.getAllUsersInChannel(channel1.id);
         expect(list).not.includes(user.id);
         list = await channelDatabaseService.getAllUsersInChannel(channel2.id);
         expect(list).includes(user.id);
+      });
+    });
+    describe('User select channel, the second user select the same channel too', () => {
+      it('the second user gets media state of all users of the channel', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+
+        const user = await userService.signup({ email: 'user@world.ru' });
+        const tokens = await userService.createTokens(user);
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'testChannel',
+          isPrivate: false
+        });
+        const mediaState = helpers.defaultUserState();
+        mediaState.microphone = true;
+        const socketId = uuid4();
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socketId}`,
+          ...helpers.withAuthorization(tokens),
+          payload: mediaState
+        });
+        expect(response1.statusCode).equals(200);
+
+        const user2 = await userService.signup({ email: 'user2@world.ru' });
+        const tokens2 = await userService.createTokens(user2);
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socketId}`,
+          ...helpers.withAuthorization(tokens2),
+          payload: mediaState
+        });
+        expect(response2.statusCode).equals(200);
+
+        const payload = JSON.parse(response2.payload);
+        expect(payload.length).equals(2);
+        expect(payload.find(u => u.userId === user.id)).exists();
+        expect(payload.find(u => u.userId === user2.id)).equals({ ...mediaState, userId: user2.id });
       });
     });
   });

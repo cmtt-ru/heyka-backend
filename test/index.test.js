@@ -442,8 +442,94 @@ describe('Test routes', () => {
     });
   });
 
+  describe('POST /workspaces/{workspaceId}/leave', () => {
+    describe('The last admin in the workspace tries to leave', () => {
+      it('should response with error (the last admin cant leave workspace', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user = await userService.signup({ email: 'user@heyka.ru'});
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/leave`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('User is on active conversation, he tries to leave the workspace', () => {
+      it('should response with error (cant leave the workspace when is on active conv.', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const admin = await userService.signup({ email: 'admin@heyka.ru'});
+        const user = await userService.signup({ email: 'user@heyka.ru' });
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user.id);
+        const channel = await workspaceService.createChannel(workspace.id, admin.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        const tokens = await userService.createTokens(user);
+        // user select the channel
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          payload: helpers.defaultUserState(),
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(selectResponse.statusCode).equals(200);
+        // try to leave the workspace
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/leave`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('User tries to leave the workspace and he can do it', () => {
+      it('should kick the user from the all workspace channels and from the workspace', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        const admin = await userService.signup({ email: 'admin@heyka.ru'});
+        const user = await userService.signup({ email: 'user@heyka.ru' });
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user.id);
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/leave`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        // there shouldnt be any relations between user and workspace channels
+        const channelsForUser = await wdb.getWorkspaceChannelsForUser(workspace.id, user.id);
+        expect(channelsForUser).length(0);
+        // there shouldnt be any relation between user and worskpaces
+        const userWorkspaces = await wdb.getWorkspacesByUserId(user.id);
+        expect(userWorkspaces).length(0);
+
+        // janus auth tokens should be deleted for all channels and workspaces
+        expect(stubbedMethods.deleteAuthTokenForWorkspace.calledOnce).true();
+        //there should be remove auth token action
+        const call = stubbedMethods.manageAuthTokensForChannel.getCalls().find(call => {
+          return call.args[0][0] === 'remove';
+        });
+        expect(call).exists();
+      });
+    });
+  });
+
   /**
-   * Select channels
+   * Channels
    */
   describe('POST /channels/{channelId}/select', () => {
     describe('Try to select channel which user hasnt access', () => {
@@ -576,6 +662,61 @@ describe('Test routes', () => {
         expect(payload.length).equals(2);
         expect(payload.find(u => u.userId === user.id)).exists();
         expect(payload.find(u => u.userId === user2.id)).equals({ ...mediaState, userId: user2.id });
+      });
+    });
+  });
+
+  describe('POST /channels/{channelId}/leave', () => {
+    describe('User tries to leave channel what he is on active conversation in that channel', () => {
+      it('should response with error', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user = await userService.signup({ email: 'user@admin.ru' });
+        const tokens = await userService.createTokens(user);
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          payload: helpers.defaultUserState(),
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(selectResponse.statusCode).equals(200);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/leave`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('The last user leave the channel', () => {
+      it('should delete channel', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelDatabaseService: chdb
+        } = server.services();
+        const user = await userService.signup({ email: 'user@admin.ru' });
+        const tokens = await userService.createTokens(user);
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/leave`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        const channelFromDb = await chdb.getChannelById(channel.id);
+        expect(channelFromDb).not.exist();
       });
     });
   });

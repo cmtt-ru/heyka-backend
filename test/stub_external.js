@@ -11,8 +11,10 @@ const stubbedMethods = {
   sendEmailWithInvite: sinon.stub(),
 
   addAuthTokenForWorkspace: sinon.stub(),
+  deleteAuthTokenForWorkspace: sinon.stub(),
   manageAuthTokensForChannel: sinon.stub(),
   createAudioVideoRooms: sinon.stub(),
+  deleteAudioVideoRooms: sinon.stub(),
   createServer: sinon.stub(),
 
   sendInviteToWorkspaceBySlack: sinon.stub(),
@@ -38,8 +40,14 @@ mockery.registerMock(
       stubbedMethods.createAudioVideoRooms(arguments);
       return { audioRoomId: 5512318512, videoRoomId: 8412851923 };
     }
+    deleteAudioVideoRooms() {
+      stubbedMethods.deleteAudioVideoRooms(arguments);
+    }
     addAuthTokenForWorkspace() {
       stubbedMethods.addAuthTokenForWorkspace(arguments);
+    }
+    deleteAuthTokenForWorkspace() {
+      stubbedMethods.deleteAuthTokenForWorkspace(arguments);
     }
     manageAuthTokensForChannel () {
       stubbedMethods.manageAuthTokensForChannel(arguments);

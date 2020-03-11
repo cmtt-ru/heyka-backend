@@ -591,6 +591,62 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('Testing notification about user leaved workspace', () => {
+    describe('User leaves the workspace', () => {
+      it('all workspace members should be notified about it', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@world.net' });
+        const user2 = await userService.signup({ email: 'user2@world.net' });
+        const user3 = await userService.signup({ email: 'user3@world.net' });
+
+        const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const user1Tokens = await userService.createTokens(user1);
+        const user2Tokens = await userService.createTokens(user2);
+        const user3Tokens = await userService.createTokens(user3);
+
+        // authenticate all users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        const socket3 = io(server.info.uri);
+
+        let eventName = eventNames.socket.authSuccess;
+        const auth1 = awaitSocketForEvent(true, socket1, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth2 = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth3 = awaitSocketForEvent(true, socket3, eventName, data => {
+          expect(data).includes('userId');
+        });
+        socket1.emit(eventNames.client.auth, { token: user1Tokens.accessToken, transaction: uuid4() });
+        socket2.emit(eventNames.client.auth, { token: user2Tokens.accessToken, transaction: uuid4() });
+        socket3.emit(eventNames.client.auth, { token: user3Tokens.accessToken, transaction: uuid4() });
+        await Promise.all([auth1, auth2, auth3]);
+
+        // user2 leaves the workspace
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/leave`,
+          ...helpers.withAuthorization(user2Tokens)
+        });
+        expect(response.statusCode).equals(200);
+
+        // user1 should be notified, user3 shouldnt be
+        eventName = eventNames.socket.userLeavedWorkspace;
+        const user1Notified = awaitSocketForEvent(true, socket1, eventName, data => {
+          expect(data.userId).equals(user2.id);
+        });
+        const user3NotNotified = awaitSocketForEvent(false, socket3, eventName);
+        await Promise.race([user1Notified, user3NotNotified]);
+      });
+    });
+  });
 });
 
 /**

@@ -439,6 +439,41 @@ describe('Test routes', () => {
         expect(payload.users.length).equals(2);
         expect(payload.channels.length).equals(2);
       });
+      it('should return media state of users that are selected channels', async () => {
+        const { userService, workspaceService } = server.services();
+        const user = await userService.signup({ email: 'user@heyka.com' });
+        const user2 = await userService.signup({ email: 'user2@heyka.com' });
+        const tokens = await userService.createTokens({ id: user.id });
+        const tokens2 = await userService.createTokens(user2);
+        const { workspace } = await workspaceService.createWorkspace(user, 'workspace1');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test', isPrivate: false });
+        // user2 select the channel
+        const responseForSelecting = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          ...helpers.withAuthorization(tokens2),
+          payload: helpers.defaultUserState()
+        });
+        expect(responseForSelecting.statusCode).equals(200);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/workspaces/${workspace.id}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.workspace).exists();
+        expect(payload.channels).exists();
+        expect(payload.users).exists();
+        expect(payload.users.length).equals(2);
+        expect(payload.channels.length).equals(2);
+        const channelWithUser = payload.channels.find(ch => ch.id === channel.id);
+        expect(channelWithUser.users.length).equals(1);
+        expect(channelWithUser.users[0].userId).equals(user2.id);
+      });
     });
   });
 
@@ -717,6 +752,37 @@ describe('Test routes', () => {
         expect(response.statusCode).equals(200);
         const channelFromDb = await chdb.getChannelById(channel.id);
         expect(channelFromDb).not.exist();
+      });
+    });
+  });
+
+  describe('GET /channels/{channelId}/active-users', () => {
+    describe('Get request', () => {
+      it('should return a valid active users list', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelService
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        const tokens = await userService.createTokens(user);
+        await channelService.selectChannel(channel.id, user2.id, uuid4(), helpers.defaultUserState());
+        const response = await server.inject({
+          method: 'GET',
+          url: `/channels/${channel.id}/active-users`,
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.length).equals(1);
+        expect(payload[0].userId).equals(user2.id);
       });
     });
   });

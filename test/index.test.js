@@ -450,8 +450,8 @@ describe('Test routes', () => {
       });
       it('should return media state of users that are selected channels', async () => {
         const { userService, workspaceService } = server.services();
-        const user = await userService.signup({ email: 'user@heyka.com' });
-        const user2 = await userService.signup({ email: 'user2@heyka.com' });
+        const user = await userService.signup({ email: 'user@heyka.com', name: 'n' });
+        const user2 = await userService.signup({ email: 'user2@heyka.com', name: 'n' });
         const tokens = await userService.createTokens({ id: user.id });
         const tokens2 = await userService.createTokens(user2);
         const { workspace } = await workspaceService.createWorkspace(user, 'workspace1');

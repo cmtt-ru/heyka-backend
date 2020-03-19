@@ -127,7 +127,7 @@ describe('Test routes', () => {
     describe('sign in with valid credentials', () => {
       it('returns user info and tokens', async () => {
         const { userService } = server.services();
-        await userService.signup({ email: 'admin@example.com', password: 'qwerty' });
+        await userService.signup({ email: 'admin@example.com', password: 'qwerty', name: '1' });
         const response = await server.inject({
           method: 'POST',
           url: '/signin',
@@ -147,7 +147,7 @@ describe('Test routes', () => {
   describe('POST /signup', () => {
     describe('sign up with an existed email', () => {
       it('returns 401', async () => {
-        const userPayload = { email: 'admin@example.com', password: 'qwerty' };
+        const userPayload = { email: 'admin@example.com', password: 'qwerty', name: 'randomName' };
         await server.services().userService.signup(userPayload);
         const response = await server.inject({
           method: 'POST',
@@ -164,7 +164,7 @@ describe('Test routes', () => {
         const response = await server.inject({
           method: 'POST',
           url: '/signup',
-          payload: { user: { email: 'admin@example.com', password: 'qwerty' } }
+          payload: { user: { email: 'admin@example.com', password: 'qwerty', name: 'randomName' } }
         });
         expect(response.statusCode).to.be.equal(200);
         const payload = JSON.parse(response.payload);
@@ -179,7 +179,7 @@ describe('Test routes', () => {
         const response = await server.inject({
           method: 'POST',
           url: '/signup',
-          payload: { user: { email, password: 'qwerty' } }
+          payload: { user: { email, password: 'qwerty', name: 'randomName' } }
         });
         expect(response.statusCode).to.be.equal(200);
         // check that email is sent
@@ -415,14 +415,21 @@ describe('Test routes', () => {
     describe('request the state of the workspace', () => {
       it('should return workspace state, array of users and channels', async () => {
         const { userService, workspaceService } = server.services();
-        const user = await userService.signup({ email: 'user@heyka.com' });
-        const user2 = await userService.signup({ email: 'user2@heyka.com' });
+        const user = await userService.signup({ email: 'user@heyka.com', name: 'n' });
+        const user2 = await userService.signup({ email: 'user2@heyka.com', name: 'n2' });
         // создаём третьего юзера, который не должен фигурировать нигде
-        const user3 = await userService.signup({ email: 'user3@heyka.com' });
+        const user3 = await userService.signup({ email: 'user3@heyka.com', name: 'n3' });
         const tokens = await userService.createTokens({ id: user.id });
         const { workspace } = await workspaceService.createWorkspace(user, 'workspace1');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
-        await workspaceService.createChannel(workspace.id, user.id, { name: 'test', isPrivate: false });
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test', isPrivate: false });
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
         const response = await server.inject({
           method: 'GET',
           url: `/workspaces/${workspace.id}`,
@@ -438,6 +445,8 @@ describe('Test routes', () => {
         expect(payload.users.find(u => u.id === user3.id)).not.exists();
         expect(payload.users.length).equals(2);
         expect(payload.channels.length).equals(2);
+        expect(payload.channels[1].users.length).equals(1);
+        expect(payload.channels[1].users[0].userId).equals(user.id);
       });
       it('should return media state of users that are selected channels', async () => {
         const { userService, workspaceService } = server.services();
@@ -852,7 +861,7 @@ describe('Test routes', () => {
           workspaceService
         } = server.services();
         // create users
-        const admin = await userService.signup({ email: 'admin@user.net' });
+        const admin = await userService.signup({ email: 'admin@user.net', name: 'n' });
         // create workspace
         const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
@@ -878,7 +887,7 @@ describe('Test routes', () => {
           workspaceService
         } = server.services();
         // create users
-        const admin = await userService.signup({ email: 'admin@user.net' });
+        const admin = await userService.signup({ email: 'admin@user.net', name: 'n' });
         // create workspace
         const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code

@@ -9,6 +9,8 @@ exports.up = (pgm) => {
       type: 'uuid',
       primaryKey: true
     },
+    name: 'varchar(100)',
+    avatar: 'varchar(255)',
     auth: 'jsonb',
     email: {
       type: 'varchar(255)',

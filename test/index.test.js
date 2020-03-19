@@ -422,14 +422,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens({ id: user.id });
         const { workspace } = await workspaceService.createWorkspace(user, 'workspace1');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
-        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test', isPrivate: false });
-        const selectResponse = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
-          ...helpers.withAuthorization(tokens),
-          payload: helpers.defaultUserState()
-        });
-        expect(selectResponse.statusCode).equals(200);
+        await workspaceService.createChannel(workspace.id, user.id, { name: 'test', isPrivate: false });
         const response = await server.inject({
           method: 'GET',
           url: `/workspaces/${workspace.id}`,
@@ -445,8 +438,6 @@ describe('Test routes', () => {
         expect(payload.users.find(u => u.id === user3.id)).not.exists();
         expect(payload.users.length).equals(2);
         expect(payload.channels.length).equals(2);
-        expect(payload.channels[1].users.length).equals(1);
-        expect(payload.channels[1].users[0].userId).equals(user.id);
       });
       it('should return media state of users that are selected channels', async () => {
         const { userService, workspaceService } = server.services();

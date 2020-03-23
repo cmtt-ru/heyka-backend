@@ -191,12 +191,12 @@ describe('Test routes', () => {
     });
   });
 
-  describe('POST /refresh_token', () => {
+  describe('POST /refresh-token', () => {
     describe('Incorrect request without tokens', () => {
       it('Should return 400 Bad Request', async () => {
         const response = await server.inject({
           method: 'POST',
-          url: '/refresh_token',
+          url: '/refresh-token',
           payload: {}
         });
         expect(response.statusCode).to.be.equal(400);
@@ -209,7 +209,7 @@ describe('Test routes', () => {
         const refreshToken = uuid4();
         const response = await server.inject({
           method: 'POST',
-          url: '/refresh_token',
+          url: '/refresh-token',
           payload: { accessToken, refreshToken }
         });
         expect(response.statusCode).to.be.equal(401);
@@ -223,7 +223,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
           method: 'POST',
-          url: '/refresh_token',
+          url: '/refresh-token',
           payload: { accessToken: uuid4(), refreshToken: tokens.refreshToken }
         });
         expect(response.statusCode).to.be.equal(401);
@@ -237,7 +237,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user, 10000, -10000);
         const response = await server.inject({
           method: 'POST',
-          url: '/refresh_token',
+          url: '/refresh-token',
           payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
         });
         expect(response.statusCode).to.be.equal(401);
@@ -251,7 +251,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user, 10000, 10000);
         const response = await server.inject({
           method: 'POST',
-          url: '/refresh_token',
+          url: '/refresh-token',
           payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
         });
         expect(response.statusCode).to.be.equal(200);

@@ -647,6 +647,55 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('Testing update user profile', () => {
+    describe('User updates his own profile', () => {
+      it('Users from all workspaces should be notified', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'adm@adm.ru', name: 'n1' });
+        const user2 = await userService.signup({ email: 'adm2@adm.ru', name: 'n2' });
+        const user3 = await userService.signup({ email: 'adm3@adm.ru', name: 'n3' });
+        const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'workspace1');
+        const { workspace: w2 } = await workspaceService.createWorkspace(user2, 'workspace2');
+        await workspaceService.addUserToWorkspace(w1.id, user3.id);
+        await workspaceService.addUserToWorkspace(w2.id, user3.id);
+        
+        // authenticate user1 and user2 to sockets
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { token: tokens1.accessToken });
+        socket2.emit(eventNames.client.auth, { token: tokens2.accessToken });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // await for user update profile event
+        let newName = 'newName';
+        evtName = eventNames.socket.userUpdated;
+        const checkDataFunc = data => {
+          expect(data.name).equals(newName);
+          expect(data.id).equals(user3.id);
+        };
+        const awaitForNotify1 = awaitSocketForEvent(true, socket1, evtName, checkDataFunc);
+        const awaitForNotify2 = awaitSocketForEvent(true, socket2, evtName, checkDataFunc);
+        const tokens3 = await userService.createTokens(user3);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/profile',
+          ...helpers.withAuthorization(tokens3),
+          payload: { name: newName }
+        });
+        expect(response.statusCode).equals(200);
+        await Promise.all([awaitForNotify1, awaitForNotify2]);
+      });
+    });
+  });
 });
 
 /**

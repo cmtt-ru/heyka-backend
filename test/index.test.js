@@ -263,6 +263,40 @@ describe('Test routes', () => {
   });
 
   /**
+   * Users
+   */
+  describe('POST /profile', () => {
+    describe('update profile with a valid data', () => {
+      it('should update user profile data', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+
+        const oldName = 'oldName';
+        const user = await userService.signup({ email: 'admin@admin.ru', name: oldName });
+        const tokens = await userService.createTokens(user);
+
+        const newName = 'newName';
+        const avatar = 'http://leonardo.osnova.ru/picture/8hiua8h3h8fh9a9ur938rjaoe9r93uja0';
+        const response = await server.inject({
+          method: 'POST',
+          url: '/profile',
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: newName,
+            avatar
+          }
+        });
+        expect(response.statusCode).equals(200);
+        const newUser = await udb.findById(user.id);
+        expect(newUser.name).equals(newName);
+        expect(newUser.avatar).equals(avatar);
+      });
+    });
+  });
+
+  /**
    * Workspaces
    */
   describe('POST /workspaces', () => {

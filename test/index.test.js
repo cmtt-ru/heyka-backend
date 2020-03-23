@@ -73,6 +73,8 @@ describe('Test routes', () => {
           }
         });
         expect(response.statusCode).to.be.equal(401);
+        const payload = JSON.parse(response.payload);
+        expect(payload.message).equals('Token is expired');
       });
     });
 

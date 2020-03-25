@@ -168,12 +168,10 @@ describe('Test socket', () => {
         );
 
         const socket1ShouldBeNotified = awaitSocketForEvent(true, socket1, eventName, data => {
-          expect(data.id).equals(channel.id);
-          expect(data.name).equals(channel.name);
+          expect(data.channelId).equals(channel.id);
         });
         const socket2ShouldBeNotified = awaitSocketForEvent(true, socket2, eventName, data => {
-          expect(data.id).equals(channel.id);
-          expect(data.name).equals(channel.name);
+          expect(data.channelId).equals(channel.id);
         });
         const socket3ShouldntBeNotified = awaitSocketForEvent(false, socket3, eventName);
         /* Сложно на английском написать
@@ -214,7 +212,7 @@ describe('Test socket', () => {
         await successAuth;
         // create workspace
         const notifyAboutJoinedUser = awaitSocketForEvent(true, adminSocket, eventNames.socket.userJoined, data => {
-          expect(data.id).equals(user.id);
+          expect(data.user.id).equals(user.id);
         });
         // join user by invite (without await because
         // we are awaiting the event
@@ -816,8 +814,8 @@ describe('Test socket', () => {
         let newName = 'newName';
         evtName = eventNames.socket.userUpdated;
         const checkDataFunc = data => {
-          expect(data.name).equals(newName);
-          expect(data.id).equals(user3.id);
+          expect(data.user.name).equals(newName);
+          expect(data.user.id).equals(user3.id);
         };
         const awaitForNotify1 = awaitSocketForEvent(true, socket1, evtName, checkDataFunc);
         const awaitForNotify2 = awaitSocketForEvent(true, socket2, evtName, checkDataFunc);
@@ -830,6 +828,51 @@ describe('Test socket', () => {
         });
         expect(response.statusCode).equals(200);
         await Promise.all([awaitForNotify1, awaitForNotify2]);
+      });
+    });
+  });
+
+  describe('Testing delete channel', () => {
+    describe('Channel is deleted', () => {
+      it('All users of that channel should be notified', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'adm@adm.ru', name: 'n1' });
+        const user2 = await userService.signup({ email: 'adm2@adm.ru', name: 'n2' });
+        const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'workspace1');
+        await workspaceService.addUserToWorkspace(w1.id, user2.id);
+        const channel = await workspaceService.createChannel(w1.id, user1.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        
+        // authenticate user1 and user2 to sockets
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: w1.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: w1.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // delete channel, wait for event
+        evtName = eventNames.socket.channelDeleted;
+        const checkData = data => expect(data.channelId).equals(channel.id);
+        const deleteChannelEvent1 = awaitSocketForEvent(true, socket1, evtName, checkData);
+        const deleteChannelEvent2 = awaitSocketForEvent(true, socket2, evtName, checkData);
+        await workspaceService.deleteChannel(channel.id);
+        await Promise.all([deleteChannelEvent1, deleteChannelEvent2]);
       });
     });
   });

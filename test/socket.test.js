@@ -47,17 +47,22 @@ describe('Test socket', () => {
   describe('Testing socket authentication', () => {
     describe('With valid auth tokens', () => {
       it('server should emit "auth-success" event', async () => {
-        const { userService } = server.services();
+        const { userService, workspaceService } = server.services();
         // sign up user and create valid tokens
         const user = await userService.signup({ email: 'hello@world.net' });
         const tokens = await userService.createTokens(user);
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
         const transaction = uuid4();
         const awaitSuccess = awaitSocketForEvent(true, socket, eventNames.socket.authSuccess, data => {
           expect(data).includes('userId');
         });
         const awaitTransactionError = awaitSocketForEvent(false, socket, `socket-api-error-${transaction}`);
         const awaitGeneralError = awaitSocketForEvent(false, socket, `socket-api-error`);
-        socket.emit(eventNames.client.auth, { token: tokens.accessToken, transaction });
+        socket.emit(eventNames.client.auth, {
+          token: tokens.accessToken,
+          transaction,
+          workspaceId: workspace.id
+        });
         // then await first finished promise
         await Promise.race([
           awaitSuccess,
@@ -69,16 +74,42 @@ describe('Test socket', () => {
     
     describe('With an expired auth tokens', () => {
       it('should return two "error" events', async () => {
-        const { userService } = server.services();
+        const { userService, workspaceService } = server.services();
         const user = await userService.signup({ email: 'hello@world.net' });
         const tokens = await userService.createTokens(user, -2019, -2019);
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
         const transaction = uuid4();
         const socketError = `socket-api-error-${transaction}`;
         const awaitTransactionError = awaitSocketForEvent(true, socket, socketError);
         const awaitGeneralError = awaitSocketForEvent(true, socket, 'socket-api-error');
-        socket.emit(eventNames.client.auth, { token: tokens.accessToken, transaction });
+        socket.emit(eventNames.client.auth, {
+          token: tokens.accessToken,
+          transaction,
+          workspaceId: workspace.id
+        });
         // the both errors should be fired
         await Promise.all([awaitTransactionError, awaitGeneralError]);
+      });
+    });
+
+    describe('User tries to connect and to listen workspace without grants', () => {
+      it('should return error event', async () => {
+        const { userService, workspaceService } = server.services();
+        // sign up user and create valid tokens
+        const user = await userService.signup({ email: 'hello@world.net' });
+        const user2 = await userService.signup({ email: 'hello2@world.net' });
+        const tokens = await userService.createTokens(user);
+        const { workspace: workspace2 } = await workspaceService.createWorkspace(user2, 'name2');
+        const transaction = uuid4();
+        const awaitTransactionError = awaitSocketForEvent(true, socket, `socket-api-error-${transaction}`, data => {
+          expect(data).equals(`Can't listen workspace events`);
+        });
+        socket.emit(eventNames.client.auth, {
+          token: tokens.accessToken,
+          transaction,
+          workspaceId: workspace2.id
+        });
+        await awaitTransactionError;
       });
     });
   });
@@ -98,32 +129,49 @@ describe('Test socket', () => {
         const tokens1 = await userService.createTokens(user1);
         const tokens2 = await userService.createTokens(user2);
         const tokens3 = await userService.createTokens(user3);
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
+        const { workspace: w2 } = await workspaceService.createWorkspace(user3, 'name');
+        // add 2nd user to workspace
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, wdb.roles().user);
+
         // authenticate 3 users
         const socket1 = io(server.info.uri);
         const socket2 = io(server.info.uri);
         const socket3 = io(server.info.uri);
-        socket1.emit(eventNames.client.auth, { token: tokens1.accessToken, transaction: uuid4() });
-        socket2.emit(eventNames.client.auth, { token: tokens2.accessToken, transaction: uuid4() });
-        socket3.emit(eventNames.client.auth, { token: tokens3.accessToken, transaction: uuid4() });
-        // create workspace
-        const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
-        // add 2nd user to workspace
-        await workspaceService.addUserToWorkspace(workspace.id, user2.id, wdb.roles().user);
+        const successAuthForAllSockets = [socket1, socket2, socket3]
+          .map(socket => awaitSocketForEvent(true, socket, eventNames.socket.authSuccess));
+        socket1.emit(eventNames.client.auth, {
+          token: tokens1.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, {
+          token: tokens2.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket3.emit(eventNames.client.auth, {
+          token: tokens3.accessToken,
+          transaction: uuid4(),
+          workspaceId: w2.id
+        });
+        await Promise.all(successAuthForAllSockets);
+
+        // first and second users should receive an event about just created channel
+        const eventName = eventNames.socket.channelCreated;
         // create channel
         const channel = await workspaceService.createChannel(
           workspace.id,
           user1.id,
           { name: 'testChannel', isPrivate: false }
         );
-        // first and second users should receive an event about just created channel
-        const eventName = eventNames.socket.channelCreated;
+
         const socket1ShouldBeNotified = awaitSocketForEvent(true, socket1, eventName, data => {
-          expect(data.id).equals(channel.id);
-          expect(data.name).equals(channel.name);
+          expect(data.channelId).equals(channel.id);
         });
         const socket2ShouldBeNotified = awaitSocketForEvent(true, socket2, eventName, data => {
-          expect(data.id).equals(channel.id);
-          expect(data.name).equals(channel.name);
+          expect(data.channelId).equals(channel.id);
         });
         const socket3ShouldntBeNotified = awaitSocketForEvent(false, socket3, eventName);
         /* Сложно на английском написать
@@ -152,17 +200,23 @@ describe('Test socket', () => {
         const admin = await userService.signup({ email: 'admin@world.net' });
         const user = await userService.signup({ email: 'user@world.net' });
         const tokens = await userService.createTokens(admin);
-        // authenticate 3 users
-        const adminSocket = io(server.info.uri);
-        adminSocket.emit(eventNames.client.auth, { token: tokens.accessToken, transaction: uuid4() });
-        // create workspace
         const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        // authenticate user
+        const adminSocket = io(server.info.uri);
+        const successAuth = awaitSocketForEvent(true, adminSocket, eventNames.socket.authSuccess);
+        adminSocket.emit(eventNames.client.auth, {
+          token: tokens.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        await successAuth;
+        // create workspace
         const notifyAboutJoinedUser = awaitSocketForEvent(true, adminSocket, eventNames.socket.userJoined, data => {
-          expect(data.id).equals(user.id);
+          expect(data.user.id).equals(user.id);
         });
         // join user by invite (without await because
         // we are awaiting the event
-        workspaceService.addUserToWorkspace(workspace.id, user.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user.id);
         await notifyAboutJoinedUser;
       });
     });
@@ -179,6 +233,7 @@ describe('Test socket', () => {
         const member = await userService.signup({ email: 'user@world.net' });
         const notMember = await userService.signup({ email: 'notmember@world.net' });
         const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        const { workspace: w2 } = await workspaceService.createWorkspace(notMember, 'test2');
         await workspaceService.addUserToWorkspace(workspace.id, member.id);
         const channel = await workspaceService.createChannel(workspace.id, admin.id, {
           isPrivate: false,
@@ -202,9 +257,21 @@ describe('Test socket', () => {
         const awaitNotMemberAuth = awaitSocketForEvent(true, notMemberSocket, eventName, data => {
           expect(data).includes('userId');
         });
-        adminSocket.emit(eventNames.client.auth, { token: adminTokens.accessToken, transaction: uuid4() });
-        memberSocket.emit(eventNames.client.auth, { token: memberTokens.accessToken, transaction: uuid4() });
-        notMemberSocket.emit(eventNames.client.auth, { token: notMemberTokens.accessToken, transaction: uuid4() });
+        adminSocket.emit(eventNames.client.auth, {
+          token: adminTokens.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        memberSocket.emit(eventNames.client.auth, {
+          token: memberTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        notMemberSocket.emit(eventNames.client.auth, { 
+          token: notMemberTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: w2.id
+        });
         await Promise.all([awaitAdminAuth, awaitMemberAuth, awaitNotMemberAuth]);
         
         /**
@@ -260,8 +327,16 @@ describe('Test socket', () => {
         const user1Auth = awaitSocketForEvent(true, user1Socket, eventName, data => {
           expect(data).includes('userId');
         });
-        adminSocket.emit(eventNames.client.auth, { token: adminTokens.accessToken, transaction: uuid4() });
-        user1Socket.emit(eventNames.client.auth, { token: user1Tokens.accessToken, transaction: uuid4() });
+        adminSocket.emit(eventNames.client.auth, { 
+          token: adminTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        user1Socket.emit(eventNames.client.auth, { 
+          token: user1Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
         await Promise.all([adminAuth, user1Auth]);
 
         /**
@@ -295,6 +370,7 @@ describe('Test socket', () => {
         const member = await userService.signup({ email: 'user@world.net' });
         const notMember = await userService.signup({ email: 'notmember@world.net' });
         const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        const { workspace: w2 } = await workspaceService.createWorkspace(notMember, 'test2');
         await workspaceService.addUserToWorkspace(workspace.id, member.id);
         await workspaceService.addUserToWorkspace(workspace.id, notMember.id);
         const privateChannel = await workspaceService.createChannel(workspace.id, admin.id, {
@@ -325,9 +401,21 @@ describe('Test socket', () => {
         const awaitNotMemberAuth = awaitSocketForEvent(true, notMemberSocket, eventName, data => {
           expect(data).includes('userId');
         });
-        adminSocket.emit(eventNames.client.auth, { token: adminTokens.accessToken, transaction: uuid4() });
-        memberSocket.emit(eventNames.client.auth, { token: memberTokens.accessToken, transaction: uuid4() });
-        notMemberSocket.emit(eventNames.client.auth, { token: notMemberTokens.accessToken, transaction: uuid4() });
+        adminSocket.emit(eventNames.client.auth, { 
+          token: adminTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        memberSocket.emit(eventNames.client.auth, { 
+          token: memberTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        notMemberSocket.emit(eventNames.client.auth, { 
+          token: notMemberTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: w2.id
+        });
         await Promise.all([awaitAdminAuth, awaitMemberAuth, awaitNotMemberAuth]);
       
         // сейчас админ зайдет в приватный канал, нужно удостовериться, что только админ и
@@ -439,8 +527,16 @@ describe('Test socket', () => {
         const secondAuth = awaitSocketForEvent(true, secondSocket, eventName, data => {
           expect(data).includes('userId');
         });
-        firstSocket.emit(eventNames.client.auth, { token: userTokens.accessToken, transaction: uuid4() });
-        secondSocket.emit(eventNames.client.auth, { token: userTokens.accessToken, transaction: uuid4() });
+        firstSocket.emit(eventNames.client.auth, {
+          token: userTokens.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        secondSocket.emit(eventNames.client.auth, {
+          token: userTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
         await Promise.all([firstAuth, secondAuth]);
 
         // select first channel
@@ -488,8 +584,16 @@ describe('Test socket', () => {
         const secondAuth = awaitSocketForEvent(true, secondSocket, eventName, data => {
           expect(data).includes('userId');
         });
-        firstSocket.emit(eventNames.client.auth, { token: userTokens.accessToken, transaction: uuid4() });
-        secondSocket.emit(eventNames.client.auth, { token: userTokens.accessToken, transaction: uuid4() });
+        firstSocket.emit(eventNames.client.auth, { 
+          token: userTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        secondSocket.emit(eventNames.client.auth, { 
+          token: userTokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
         await Promise.all([firstAuth, secondAuth]);
 
         // select first channel
@@ -552,9 +656,21 @@ describe('Test socket', () => {
         const auth3 = awaitSocketForEvent(true, socket3, eventName, data => {
           expect(data).includes('userId');
         });
-        socket1.emit(eventNames.client.auth, { token: user1Tokens.accessToken, transaction: uuid4() });
-        socket2.emit(eventNames.client.auth, { token: user2Tokens.accessToken, transaction: uuid4() });
-        socket3.emit(eventNames.client.auth, { token: user3Tokens.accessToken, transaction: uuid4() });
+        socket1.emit(eventNames.client.auth, { 
+          token: user1Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: user2Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket3.emit(eventNames.client.auth, { 
+          token: user3Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
         await Promise.all([auth1, auth2, auth3]);
 
         // user1 selects channel
@@ -604,6 +720,7 @@ describe('Test socket', () => {
         const user3 = await userService.signup({ email: 'user3@world.net' });
 
         const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+        const { workspace: w2 } = await workspaceService.createWorkspace(user3, 'test2');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         const user1Tokens = await userService.createTokens(user1);
         const user2Tokens = await userService.createTokens(user2);
@@ -624,9 +741,21 @@ describe('Test socket', () => {
         const auth3 = awaitSocketForEvent(true, socket3, eventName, data => {
           expect(data).includes('userId');
         });
-        socket1.emit(eventNames.client.auth, { token: user1Tokens.accessToken, transaction: uuid4() });
-        socket2.emit(eventNames.client.auth, { token: user2Tokens.accessToken, transaction: uuid4() });
-        socket3.emit(eventNames.client.auth, { token: user3Tokens.accessToken, transaction: uuid4() });
+        socket1.emit(eventNames.client.auth, { 
+          token: user1Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: user2Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket3.emit(eventNames.client.auth, { 
+          token: user3Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: w2.id
+        });
         await Promise.all([auth1, auth2, auth3]);
 
         // user2 leaves the workspace
@@ -671,16 +800,22 @@ describe('Test socket', () => {
         let evtName = eventNames.socket.authSuccess;
         const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
         const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
-        socket1.emit(eventNames.client.auth, { token: tokens1.accessToken });
-        socket2.emit(eventNames.client.auth, { token: tokens2.accessToken });
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: w1.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: w2.id 
+        });
         await Promise.all([awaitForAuth1, awaitForAuth2]);
 
         // await for user update profile event
         let newName = 'newName';
         evtName = eventNames.socket.userUpdated;
         const checkDataFunc = data => {
-          expect(data.name).equals(newName);
-          expect(data.id).equals(user3.id);
+          expect(data.user.name).equals(newName);
+          expect(data.user.id).equals(user3.id);
         };
         const awaitForNotify1 = awaitSocketForEvent(true, socket1, evtName, checkDataFunc);
         const awaitForNotify2 = awaitSocketForEvent(true, socket2, evtName, checkDataFunc);
@@ -693,6 +828,51 @@ describe('Test socket', () => {
         });
         expect(response.statusCode).equals(200);
         await Promise.all([awaitForNotify1, awaitForNotify2]);
+      });
+    });
+  });
+
+  describe('Testing delete channel', () => {
+    describe('Channel is deleted', () => {
+      it('All users of that channel should be notified', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'adm@adm.ru', name: 'n1' });
+        const user2 = await userService.signup({ email: 'adm2@adm.ru', name: 'n2' });
+        const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'workspace1');
+        await workspaceService.addUserToWorkspace(w1.id, user2.id);
+        const channel = await workspaceService.createChannel(w1.id, user1.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        
+        // authenticate user1 and user2 to sockets
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: w1.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: w1.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // delete channel, wait for event
+        evtName = eventNames.socket.channelDeleted;
+        const checkData = data => expect(data.channelId).equals(channel.id);
+        const deleteChannelEvent1 = awaitSocketForEvent(true, socket1, evtName, checkData);
+        const deleteChannelEvent2 = awaitSocketForEvent(true, socket2, evtName, checkData);
+        await workspaceService.deleteChannel(channel.id);
+        await Promise.all([deleteChannelEvent1, deleteChannelEvent2]);
       });
     });
   });

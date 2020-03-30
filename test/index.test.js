@@ -737,6 +737,158 @@ describe('Test routes', () => {
     });
   });
 
+  describe('POST /channels/{channelId}/unselect', () => {
+    describe('User tries to unselect channel, but he hasnt selected it', () => {
+      it('should return 400 Bad request', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'testChannel',
+          isPrivate: false,
+          lifespan: 2000
+        });
+        const tokens = await userService.createTokens(user);
+        // try to unselect the channel
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/unselect?socketId=${uuid4()}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(400);
+        const payload = JSON.parse(response.payload);
+        expect(payload.message).equals('Channel is not selected');
+      });
+    });
+    describe('User tries to unselect channel on another device', () => {
+      it('should return 400 Bad request', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'testChannel',
+          isPrivate: false,
+          lifespan: 2000
+        });
+        const tokens = await userService.createTokens(user);
+        // select the channel
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
+        // try to unselect the channel
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/unselect?socketId=${uuid4()}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(400);
+        const payload = JSON.parse(response.payload);
+        expect(payload.message).equals('Channel was selected by another device');
+      });
+    });
+    describe('User unselect channel that was tmp', () => {
+      it('should delete channel', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelDatabaseService: chdb
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'testChannel',
+          isPrivate: false,
+          lifespan: 1
+        });
+        const tokens = await userService.createTokens(user);
+        // select the channel
+        const socketId ='socketId';
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socketId}`,
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
+        await new Promise(resolve => setTimeout(resolve, 1));
+        // try to unselect the channel
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/unselect?socketId=${socketId}`,
+          ...helpers.withAuthorization(tokens)
+        });
+
+        expect(response.statusCode).equals(200);
+        // channel should be deleted
+        const channelFromDb = await chdb.getChannelById(channel.id);
+        expect(channelFromDb).not.exists();
+      });
+    });
+    describe('User unselect channel that was tmp, but there are another users which are in the channel', () => {
+      it('shouldnt delete channel', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelDatabaseService: chdb
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const user2 = await userService.signup({ email: 'admin2@admin.ru', name: 'name' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'testChannel',
+          isPrivate: false,
+          lifespan: 1
+        });
+        const tokens = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user2);
+        // select the channel
+        const socketId ='socketId';
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socketId}`,
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
+        // select channel by another user
+        const selectResponse2 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          ...helpers.withAuthorization(tokens2),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse2.statusCode).equals(200);
+        await new Promise(resolve => setTimeout(resolve, 1));
+        // try to unselect the channel
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/unselect?socketId=${socketId}`,
+          ...helpers.withAuthorization(tokens)
+        });
+
+        expect(response.statusCode).equals(200);
+        // channel should be deleted
+        const channelFromDb = await chdb.getChannelById(channel.id);
+        expect(channelFromDb).exists();
+      });
+    });
+  });
+
   describe('POST /channels/{channelId}/leave', () => {
     describe('User tries to leave channel what he is on active conversation in that channel', () => {
       it('should response with error', async () => {

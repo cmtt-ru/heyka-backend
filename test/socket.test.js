@@ -876,6 +876,113 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('Testing updating online statuses', () => {
+    it('testing different scenarious', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+      const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+      const user3 = await userService.signup({ email: 'user3@email.email', name: 'user3' });
+
+      const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+
+      // create tokens for all users
+      const tokens1 = await userService.createTokens(user1);
+      const tokens2 = await userService.createTokens(user2);
+      const tokens3 = await userService.createTokens(user3);
+
+      // connect 2 users
+      const socket2 = io(server.info.uri);
+      const socket3 = io(server.info.uri);
+      let evtName = eventNames.socket.authSuccess;
+      const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+      const awaitForAuth3 = awaitSocketForEvent(true, socket3, evtName);
+      socket2.emit(eventNames.client.auth, { 
+        token: tokens2.accessToken,
+        workspaceId: workspace.id
+      });
+      socket3.emit(eventNames.client.auth, { 
+        token: tokens3.accessToken,
+        workspaceId: workspace.id 
+      });
+      await Promise.all([awaitForAuth2, awaitForAuth3]);
+
+      // user 1 requests full state of workspace
+      const response = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response.statusCode).equals(200);
+      const payload = JSON.parse(response.payload);
+      expect(payload.users.length).equals(3);
+      // check that user2 and user3 is online
+      expect(payload.users.find(u => u.id === user2.id).onlineStatus).equals('online');
+      expect(payload.users.find(u => u.id === user3.id).onlineStatus).equals('online');
+      // check that user1 is offline
+      expect(payload.users.find(u => u.id === user1.id).onlineStatus).equals('offline');
+
+      // disconnect user3
+      socket3.disconnect();
+      // wait some time
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const response2 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response.statusCode).equals(200);
+      const payload2 = JSON.parse(response2.payload);
+      expect(payload2.users.find(u => u.id === user3.id).onlineStatus).equals('offline');
+
+      // connect user1 with status 'idle'
+      // socket2 await about new online status
+      evtName = eventNames.socket.onlineStatusChanged;
+      const waitForChangedOnlineStatus = awaitSocketForEvent(true, socket2, evtName, data => {
+        expect(data.userId).equals(user1.id);
+        expect(data.onlineStatus).equals('idle');
+      });
+      const socket1 = io(server.info.uri);
+      evtName = eventNames.socket.authSuccess;
+      const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+      socket1.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: workspace.id,
+        onlineStatus: 'idle'
+      });
+      await Promise.all([awaitForAuth1, waitForChangedOnlineStatus]);
+
+      // user3 requests workspace full state
+      const response3 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens3)
+      });
+      expect(response3.statusCode).equals(200);
+      const payload3 = JSON.parse(response3.payload);
+      expect(payload3.users.find(u => u.id === user1.id).onlineStatus).equals('idle');
+
+      // ok, user1 change online-status to 'offline' by POST-request
+      evtName = eventNames.socket.onlineStatusChanged;
+      const waitOnlineStatusChangedBySocket2 = awaitSocketForEvent(true, socket2, evtName, data => {
+        expect(data.userId).equals(user1.id);
+        expect(data.onlineStatus).equals('offline');
+      });
+      const response4 = await server.inject({
+        method: 'POST',
+        url: `/user/online-status?socketId=${socket1.id}`,
+        ...helpers.withAuthorization(tokens1),
+        payload: { onlineStatus: 'offline' }
+      });
+      expect(response4.statusCode).equals(200);
+      await waitOnlineStatusChangedBySocket2;
+    });
+  });
 });
 
 /**

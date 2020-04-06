@@ -137,7 +137,7 @@ socket.on('user-unselected-channel', data => {
 })
 ```
 
-### user-changed-device
+### user-changed-device (активный разговор на другом устройстве)
 
 Если пользователь был в канале на одном устройстве, а затем присоединился к каналу в другом устройстве, то все клиенты пользователя получают сообщение о том, что девайс изменен. И тот клиент, который сейчас неактивен, но находится в активном разговоре - отсоединятся от Janus сервера
 
@@ -147,7 +147,7 @@ socket.on('user-changed-device', data => {
 })
 ```
 
-### online-status-updated
+### online-status-updated (новый онлайн-статус пользователя)
 
 ```
 socket.on('online-status-updated', data => {
@@ -156,7 +156,7 @@ socket.on('online-status-updated', data => {
 })
 ```
 
-### media-state-updated
+### media-state-updated (обновление медиа-состояния пользователя)
 
 ```
 socket.on('media-state-updated', data => {

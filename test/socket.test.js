@@ -102,7 +102,7 @@ describe('Test socket', () => {
         const { workspace: workspace2 } = await workspaceService.createWorkspace(user2, 'name2');
         const transaction = uuid4();
         const awaitTransactionError = awaitSocketForEvent(true, socket, `socket-api-error-${transaction}`, data => {
-          expect(data).equals(`Can't listen workspace events`);
+          expect(data.message).equals(`Can't listen workspace events`);
         });
         socket.emit(eventNames.client.auth, {
           token: tokens.accessToken,

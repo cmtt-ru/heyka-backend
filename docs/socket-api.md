@@ -92,7 +92,7 @@ socket.on('channel-deleted', data => {
 })
 ```
 
-## Пользователя
+## Пользователи
 
 ### user-joined (новый пользователь в воркспейсе)
 
@@ -107,5 +107,60 @@ socket.on('user-joined', data => {
 ```
 socket.on('user-leaved-workspace', data => {
   // data.userId: {String} id покинувшего воркспейс пользователя
+})
+```
+
+### user-updated (обновление профиля пользователя)
+
+```
+socket.on('user-updated', data => {
+  // data.user: {UserSchame} обновленное состояние пользователя
+})
+```
+
+### user-selected-channel (юзер вошёл в канал)
+
+```
+socket.on('user-selected-channel', data => {
+  // data.userId: {string} id пользователя
+  // data.channelId: {string} id канала
+  // data.userMediaState: {UserMediaStateSchema} состояние медиа пользователя
+})
+```
+
+### user-unselected-channel (юзер вышел из канала)
+
+```
+socket.on('user-unselected-channel', data => {
+  // data.userId: {string} id пользователя
+  // data.channelId: {string} id канала
+})
+```
+
+### user-changed-device
+
+Если пользователь был в канале на одном устройстве, а затем присоединился к каналу в другом устройстве, то все клиенты пользователя получают сообщение о том, что девайс изменен. И тот клиент, который сейчас неактивен, но находится в активном разговоре - отсоединятся от Janus сервера
+
+```
+socket.on('user-changed-device', data => {
+  // data: null
+})
+```
+
+### online-status-updated
+
+```
+socket.on('online-status-updated', data => {
+  // data.userId: {string} id пользователя
+  // data.onlineStatus: {Enum['online', 'idle', 'offline']}
+})
+```
+
+### media-state-updated
+
+```
+socket.on('media-state-updated', data => {
+  // data.userId: {string} id пользователя
+  // data.userMediaState: {UserMediaStateSchema} состояние медиа пользователя
 })
 ```

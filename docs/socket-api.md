@@ -32,7 +32,8 @@ socket.on(eventName, data => {
 ```
 socket.emit('auth', {
   transaction: String, // Уникальная строка, опционально
-  data: String, // Access token, который клиент получил после аутентификации на сервере
+  token: String, // Access token, который клиент получил после аутентификации на сервере
+  workspaceId: String, // Workspace id на события которого подписывается подключение
   onlineStatus: Enum['online', 'idle', 'offline'] // опционально, по умолчанию - 'online'
 })
 ```

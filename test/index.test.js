@@ -755,9 +755,9 @@ describe('Test routes', () => {
         expect(response2.statusCode).equals(200);
 
         const payload = JSON.parse(response2.payload);
-        expect(payload.length).equals(2);
-        expect(payload.find(u => u.userId === user.id)).exists();
-        expect(payload.find(u => u.userId === user2.id)).equals({ ...mediaState, userId: user2.id });
+        expect(payload.userMediaStates.length).equals(2);
+        expect(payload.userMediaStates.find(u => u.userId === user.id)).exists();
+        expect(payload.userMediaStates.find(u => u.userId === user2.id)).equals({ ...mediaState, userId: user2.id });
       });
     });
   });

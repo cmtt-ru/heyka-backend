@@ -617,6 +617,159 @@ describe('Test socket', () => {
         await waitEvent;
       });
     });
+    describe('User select channel and then dicsonnect socket', () => {
+      it('All workspace memebers should be notified about user disconnect channel', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'admin@world.net' });
+        const user2 = await userService.signup({ email: 'user@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user1.id, {
+          isPrivate: false,
+          name: 'testChannel'
+        });
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // authenticate 2 users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let eventName = eventNames.socket.authSuccess;
+        const awaitSocket1Auth = awaitSocketForEvent(true, socket1, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const awaitSocket2Auth = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data).includes('userId');
+        });
+        socket1.emit(eventNames.client.auth, {
+          token: tokens1.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, {
+          token: tokens2.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        await Promise.all([awaitSocket1Auth, awaitSocket2Auth]);
+        
+        /**
+         * Пользователь 1 подключается к каналу, второй юзер узнает об этом
+         */
+        eventName = eventNames.socket.userSelectedChannel;
+        const socket2NotifiedAboutSelect = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.channelId).equals(channel.id);
+          expect(data.userId).equals(user1.id);
+        });
+        await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(tokens1),
+          payload: helpers.defaultUserState()
+        });
+        await socket2NotifiedAboutSelect;
+
+        /**
+         * Пользователь 1 дисконнектится сокетом, юзер 2 узнает об этом
+         */
+        eventName = eventNames.socket.userUnselectedChannel;
+        const socket2NotifiedAboutUnselect = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.channelId).equals(channel.id);
+          expect(data.userId).equals(user1.id);
+        });
+        socket1.disconnect();
+        await socket2NotifiedAboutUnselect;
+      });
+    });
+    describe('User connected from two sockets, one of sockets if disconnected', ( )=> {
+      it('User shouldnt be unselected from channel if not main socket is disconnected', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'admin@world.net' });
+        const user2 = await userService.signup({ email: 'user@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user1.id, {
+          isPrivate: false,
+          name: 'testChannel'
+        });
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // authenticate 3 users
+        const socket1 = io(server.info.uri);
+        const socket1a = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let eventName = eventNames.socket.authSuccess;
+        const awaitSocket1Auth = awaitSocketForEvent(true, socket1, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const awaitSocket1aAuth = awaitSocketForEvent(true, socket1a, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const awaitSocket2Auth = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data).includes('userId');
+        });
+        socket1.emit(eventNames.client.auth, {
+          token: tokens1.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket1a.emit(eventNames.client.auth, {
+          token: tokens1.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, {
+          token: tokens2.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        await Promise.all([awaitSocket1Auth, awaitSocket1aAuth, awaitSocket2Auth]);
+        
+        /**
+         * Пользователь 1 подключается к каналу, второй юзер узнает об этом
+         */
+        eventName = eventNames.socket.userSelectedChannel;
+        const socket2NotifiedAboutSelect = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.channelId).equals(channel.id);
+          expect(data.userId).equals(user1.id);
+        });
+        await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(tokens1),
+          payload: helpers.defaultUserState()
+        });
+        await socket2NotifiedAboutSelect;
+
+        /**
+         * Пользователь 1 дисконнектится НЕ главным сокетом, юзера не должно отдисконнектить
+         */
+        eventName = eventNames.socket.userUnselectedChannel;
+        const socket2NotNotifiedAboutUnselect = awaitSocketForEvent(false, socket2, eventName);
+        socket1a.disconnect();
+        await Promise.race([
+          new Promise(resolve => setTimeout(resolve, 100)),
+          socket2NotNotifiedAboutUnselect
+        ]);
+
+        /**
+         * Пользователь 1 дисконнектится ГЛАВНЫМ сокетом, юзер должен отдисконнектиться
+         */
+        eventName = eventNames.socket.userUnselectedChannel;
+        const socket2NotifiedAboutUnselect = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.userId).equals(user1.id);
+        });
+        socket1.disconnect();
+        await socket2NotifiedAboutUnselect;
+      });
+    });
   });
 
   describe('Testing update user media state', () => {

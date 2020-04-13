@@ -690,6 +690,7 @@ describe('Test socket', () => {
         const user2Event = awaitSocketForEvent(true, socket2, eventName, data => {
           expect(data.userId).equals(user1.id);
           expect(data.userMediaState).equals(newMediaState);
+          expect(data.channelId).equals(channel.id);
         });
         const user3NotEvent = awaitSocketForEvent(false, socket3, eventName);
         // user1 updates media state

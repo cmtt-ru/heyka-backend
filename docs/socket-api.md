@@ -163,5 +163,6 @@ socket.on('online-status-updated', data => {
 socket.on('media-state-updated', data => {
   // data.userId: {string} id пользователя
   // data.userMediaState: {UserMediaStateSchema} состояние медиа пользователя
+  // data.channelId: {string} id канала, в котором сейчас находится пользователь
 })
 ```

@@ -126,6 +126,7 @@ socket.on('user-selected-channel', data => {
   // data.userId: {string} id пользователя
   // data.channelId: {string} id канала
   // data.userMediaState: {UserMediaStateSchema} состояние медиа пользователя
+  // data.socketId: {string} socket id девайса, с которого был переключен канал
 })
 ```
 
@@ -135,6 +136,7 @@ socket.on('user-selected-channel', data => {
 socket.on('user-unselected-channel', data => {
   // data.userId: {string} id пользователя
   // data.channelId: {string} id канала
+  // data.socketId: {string} socket id девайса, с которого был переключен канал
 })
 ```
 

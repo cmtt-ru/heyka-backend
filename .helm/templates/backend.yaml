@@ -26,6 +26,9 @@ spec:
             - -c
             - "yarn run migrate up"
           workingDir: /app/
+          env:
+{{ tuple "backend" . | include "werf_container_env" | indent 12 }}
+{{- include "backend_env" . | indent 12 }}
       containers:
         - name: backend
 {{ tuple "backend" . | include "werf_container_image" | indent 10 }}

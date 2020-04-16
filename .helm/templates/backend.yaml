@@ -21,11 +21,19 @@ spec:
       initContainers:
         - name: migrate
 {{ tuple "backend" . | include "werf_container_image" | indent 10 }}
-          command: ["yarn run migrate up"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - "yarn run migrate up"
+          workingDir: /app/
       containers:
         - name: backend
 {{ tuple "backend" . | include "werf_container_image" | indent 10 }}
-          command: ["yarn run dev"]
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - "yarn run dev"
+          workingDir: /app/
           resources:
             limits:
               memory: 1Gi

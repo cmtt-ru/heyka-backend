@@ -47,9 +47,12 @@ spec:
   ports:
     - targetPort: admin
       name: admin
+      port: 7088
     - targetPort: web
       name: web
+      port: 8088
     - targetPort: websocket
+      port: 8188
       name: websocket
   selector:
     app: janus-default

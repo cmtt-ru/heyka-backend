@@ -2,7 +2,7 @@ configVersion: 1
 project: heyka-backend
 deploy:
  helmRelease: "[[ project ]]-[[ env ]]"
- namespace: "[[ project ]]-[[ env ]]"
+ namespace: "heyka-[[ env ]]"
 
 ---
 image: backend

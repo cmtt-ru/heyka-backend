@@ -5,12 +5,7 @@ metadata:
   name: {{ .Chart.Name }}-config
 data:
   config.yml: |
-    PORT=5000
-    HOST=localhost
-    REDIS_URI=redis://redis:26379
-    DATABASE_URL=postgres://pg:strongpassword@postgres:6432/heyka
     COOKIE_PASSWORD=you_have_to_set_very_long_string_and_it_should_be_protected_as_a_zenitsa_oka
-    DEFAULT_JANUS_URL=http://janus
 
     # Token lifespan
     ACCESS_TOKEN_LIFESPAN = {{ pluck .Values.global.env .Values.backend.access_token_lifespan | first | default .Values.backend.access_token_lifespan._default | toString }}

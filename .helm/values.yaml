@@ -2,13 +2,13 @@ redis:
   host:
     _default: redis
   port:
-    _default: 6379
+    _default: 26379
 
 postgres:
   host:
     _default: postgres
   port:
-    _default: 5432
+    _default: 6432
 
 janus:
   host:

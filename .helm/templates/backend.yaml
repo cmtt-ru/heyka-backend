@@ -48,6 +48,7 @@ metadata:
 spec:
   ports:
     - targetPort: web
+      port: 80
       name: web
   selector:
     app: {{ .Chart.Name }}

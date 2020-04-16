@@ -13,7 +13,7 @@ spec:
       - path: /
         backend:
           serviceName: {{ .Chart.Name }}
-          servicePort: http
+          servicePort: web
   tls:
   - hosts:
       - {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.backend.domain_base) }}

@@ -1,0 +1,37 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  tags:
+    - v*
+
+jobs:
+  buildAndDeployTest:
+    name: "Build and Deploy Test"
+    runs-on: self-hosted
+    env:
+      WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
+      ENV: "test"
+    steps:
+      - uses: actions/checkout@v2
+
+#      - name: Checkout
+#        run: |
+#          cd ~/heyka-runner/_work/heyka
+#          git fetch ; git checkout $(echo $GITHUB_REF | cut -d '/' -f 3) && git pull
+
+      - name: Docker login
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: werf build and publish
+        run: |
+          type multiwerf && source <(multiwerf use 1.0 beta)
+          werf build-and-publish --stages-storage :local --images-repo docker.pkg.github.com/${{ github.repository }}/ --tagging-strategy=stages-signature
+
+      - name: werf deploy
+        run: |
+          type multiwerf && source <(multiwerf use 1.0 beta)
+          werf deploy --stages-storage :local --env $ENV --images-repo docker.pkg.github.com/${{ github.repository }}/ --tagging-strategy=stages-signature

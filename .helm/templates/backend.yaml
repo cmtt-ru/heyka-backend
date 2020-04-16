@@ -1,0 +1,53 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+spec:
+  replicas: {{ pluck .Values.global.env .Values.backend.replicas | first | default .Values.backend.replicas._default }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+    spec:
+      serviceAccountName: {{ .Chart.Name }}-sa
+      imagePullSecrets:
+        - name: registrysecret
+      initContainers:
+        - name: migrate
+{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
+          command: ["yarn run migrate up"]
+      containers:
+        - name: backend
+{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
+          command: ["yarn run dev"]
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              memory: 512Mi
+          env:
+{{ tuple "backend" . | include "werf_container_env" | indent 12 }}
+{{- include "backend_env" . | indent 12 }}
+          ports:
+            - containerPort: 5000
+              name: web
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ .Chart.Name }}
+  name: {{ .Chart.Name }}
+spec:
+  ports:
+    - targetPort: web
+      name: web
+  selector:
+    app: {{ .Chart.Name }}

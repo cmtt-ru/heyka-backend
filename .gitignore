@@ -3,3 +3,5 @@ node_modules
 scripts/data
 .DS_Store
 .idea
+
+.werf_secret_key

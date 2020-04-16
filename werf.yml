@@ -1,0 +1,32 @@
+configVersion: 1
+project: heyka
+deploy:
+ helmRelease: "[[ project ]]-[[ env ]]"
+ namespace: "[[ project ]]-[[ env ]]"
+
+---
+image: backend
+from: node:alpine
+docker:
+  ENV:
+    LANG: C.UTF-8
+git:
+  - add: /
+    to: /app
+    stageDependencies:
+      install:
+      - "package.json"
+      - "yarn.lock"
+      setup:
+      - "**/*"
+ansible:
+  install:
+   - name: Install packages
+     shell: yarn
+     args:
+       chdir: /app
+
+---
+image: janus
+dockerfile: docker/janus/Dockerfile
+context: docker/janus/

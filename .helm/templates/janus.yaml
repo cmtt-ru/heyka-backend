@@ -1,0 +1,55 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: janus-default
+  labels:
+    app: janus-default
+spec:
+  replicas: {{ pluck .Values.global.env .Values.janus.replicas | first | default .Values.janus.replicas._default }}
+  selector:
+    matchLabels:
+      app: janus-default
+  template:
+    metadata:
+      labels:
+        app: janus-default
+    spec:
+      imagePullSecrets:
+        - name: registrysecret
+      containers:
+        - name: gateway
+{{ tuple "janus" . | include "werf_container_image" | indent 10 }}
+          command: ["/opt/janus/bin/janus", "--nat-1-1=${POD_IP}"]
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              memory: 1Gi
+          env:
+{{ tuple "janus" . | include "werf_container_env" | indent 12 }}
+          ports:
+            - containerPort: 7088
+              name: admin
+            - containerPort: 8088
+              name: web
+            - containerPort: 8188
+              name: websocket
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: janus-default
+  name: janus-default
+spec:
+  ports:
+    - targetPort: admin
+      name: admin
+    - targetPort: web
+      name: web
+    - targetPort: websocket
+      name: websocket
+  selector:
+    app: janus-default

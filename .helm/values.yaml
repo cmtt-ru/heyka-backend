@@ -1,0 +1,21 @@
+redis:
+  host:
+    _default: redis
+  port:
+    _default: 6379
+
+postgres:
+  host:
+    _default: postgres
+  port:
+    _default: 5432
+
+janus:
+  host:
+    _default: janus
+
+backend:
+  url: {}
+  domain_base: dev.k8s.heyka.io
+  replicas:
+    _default: 1

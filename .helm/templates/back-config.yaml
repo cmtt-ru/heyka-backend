@@ -4,7 +4,7 @@ kind: ConfigMap
 metadata:
   name: {{ .Chart.Name }}-config
 data:
-  config.yml: |
+  dotenv: |
     COOKIE_PASSWORD=you_have_to_set_very_long_string_and_it_should_be_protected_as_a_zenitsa_oka
 
     # Token lifespan

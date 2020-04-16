@@ -13,6 +13,8 @@ postgres:
 janus:
   host:
     _default: janus
+  replicas:
+    _default: 1
 
 backend:
   url: {}

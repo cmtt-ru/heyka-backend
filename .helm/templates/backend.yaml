@@ -46,8 +46,17 @@ spec:
 {{ tuple "backend" . | include "werf_container_env" | indent 12 }}
 {{- include "backend_env" . | indent 12 }}
           ports:
-            - containerPort: 5000
+            - containerPort: {{ .Values.backend.port }}
               name: web
+          volumeMounts:
+            - name: app-config
+              mountPath: /app/.env
+              subPath: dotenv
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ .Chart.Name }}-config
+
 
 ---
 apiVersion: v1

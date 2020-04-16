@@ -1,5 +1,5 @@
 configVersion: 1
-project: heyka
+project: heyka-backend
 deploy:
  helmRelease: "[[ project ]]-[[ env ]]"
  namespace: "[[ project ]]-[[ env ]]"

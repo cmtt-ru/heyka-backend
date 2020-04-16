@@ -18,6 +18,15 @@ janus:
 
 backend:
   url: {}
+  port: 5000
+  access_token_lifespan:
+    _default: "3600000"
+  refresh_token_lifespan:
+    _default: "2678400000"
+  email_verification_code_lifespan:
+    _default: "3600000"
+  auth_link_lifespan:
+    _default: "600000"
   domain_base: dev.k8s.heyka.io
   replicas:
     _default: 1

@@ -1,8 +1,8 @@
 redis:
   host:
-    _default: redis
+    _default: redis-sentinel-proxy
   port:
-    _default: 26379
+    _default: 6379
 
 postgres:
   host:

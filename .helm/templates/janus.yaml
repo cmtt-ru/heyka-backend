@@ -20,7 +20,7 @@ spec:
       containers:
         - name: gateway
 {{ tuple "janus" . | include "werf_container_image" | indent 10 }}
-          command: ["/opt/janus/bin/janus", "--nat-1-1=${POD_IP}"]
+          command: ["/opt/janus/bin/janus", "--nat-1-1=$MY_POD_IP"]
           resources:
             limits:
               memory: 2Gi
@@ -28,6 +28,10 @@ spec:
               memory: 1Gi
           env:
 {{ tuple "janus" . | include "werf_container_env" | indent 12 }}
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
           ports:
             - containerPort: 7088
               name: admin
@@ -35,6 +39,13 @@ spec:
               name: web
             - containerPort: 8188
               name: websocket
+          volumeMounts:
+            - name: configmap
+              mountPath: /opt/janus/etc/janus
+      volumes:
+        - name: configmap
+          configMap:
+            name: janus-config
 
 ---
 apiVersion: v1

@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: janus-config
+data:
+{{ (.Files.Glob "janus/conf/*").AsConfig | indent 2 }}

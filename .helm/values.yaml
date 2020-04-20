@@ -14,6 +14,11 @@ app:
   domain_base: dev.k8s.heyka.io
 
 janus:
+  rtp_port:
+    min:
+      _default: 32210
+    max:
+      _default: 32220
   public_url: {}
   admin_port:
     _default: 7088

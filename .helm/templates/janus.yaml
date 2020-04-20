@@ -1,3 +1,6 @@
+{{ $rtp_min_port := pluck .Values.global.env .Values.janus.rtp_port.min | first | default .Values.janus.rtp_port.min._default }}
+{{ $rtp_max_port := pluck .Values.global.env .Values.janus.rtp_port.max | first | default .Values.janus.rtp_port.max._default }}
+
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -24,7 +27,8 @@ spec:
       containers:
         - name: gateway
 {{ tuple "janus" . | include "werf_container_image" | indent 10 }}
-          command: ["/opt/janus/bin/janus", "--nat-1-1=$(MY_POD_IP)"]
+          command: ["/opt/janus/bin/janus"]
+          args: ["--rtp-port-range={{ pluck .Values.global.env .Values.janus.rtp_port.min | first | default .Values.janus.rtp_port.min._default }}-{{ pluck .Values.global.env .Values.janus.rtp_port.max | first | default .Values.janus.rtp_port.max._default }}", "--nat-1-1=$(MY_POD_IP)"]
           resources:
             limits:
               memory: 2Gi
@@ -43,6 +47,11 @@ spec:
               name: web
             - containerPort: 8188
               name: websocket
+{{- range $i, $e := until (add 1 (sub $rtp_max_port $rtp_min_port) | int) }}
+            - containerPort: {{ add $rtp_min_port $i }}
+              name: {{ printf "rtp%d" $i }}
+              protocol: UDP
+{{- end }}
           volumeMounts:
             - name: configmap
               mountPath: /opt/janus/etc/janus
@@ -69,5 +78,25 @@ spec:
     - targetPort: websocket
       port: 8188
       name: websocket
+  selector:
+    app: janus-default
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: janus-default
+  name: {{ pluck .Values.global.env .Values.janus.host | first | default .Values.janus.host._default }}-public
+spec:
+  type: NodePort
+  ports:
+{{- range $i, $e := until ( add 1 (sub $rtp_max_port $rtp_min_port) | int) }}
+  - name: {{ printf "rtp%d" $i }}
+    port: {{ add $rtp_min_port $i }}
+    nodePort: {{ add $rtp_min_port $i }}
+    targetPort: {{ add $rtp_min_port $i }}
+    protocol: UDP
+{{- end }}
   selector:
     app: janus-default

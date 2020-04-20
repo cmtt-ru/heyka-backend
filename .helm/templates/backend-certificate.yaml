@@ -1,0 +1,19 @@
+---
+apiVersion: certmanager.k8s.io/v1alpha1
+kind: Certificate
+metadata:
+  name: {{ printf "tls-%s" .Chart.Name  | quote }}
+spec:
+  secretName: {{ printf "tls-%s" .Chart.Name | quote }}
+  issuerRef:
+    kind: ClusterIssuer
+    name: letsencrypt
+  commonName: {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+  dnsNames:
+  - {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+  acme:
+    config:
+    - http01:
+        ingressClass: nginx
+      domains:
+      - {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}

@@ -7,7 +7,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-  - host: {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.backend.domain_base) }}
+  - host: {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
     http:
       paths:
       - path: /
@@ -16,5 +16,5 @@ spec:
           servicePort: web
   tls:
   - hosts:
-      - {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.backend.domain_base) }}
+      - {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
     secretName: {{ printf "tls-%s" .Chart.Name | quote }}

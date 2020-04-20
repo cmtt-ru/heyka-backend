@@ -5,6 +5,8 @@ metadata:
   name: janus-default
   labels:
     app: janus-default
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/janus-config.yaml") . | sha256sum }}
 spec:
   replicas: {{ pluck .Values.global.env .Values.janus.replicas | first | default .Values.janus.replicas._default }}
   selector:
@@ -14,13 +16,15 @@ spec:
     metadata:
       labels:
         app: janus-default
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/janus-config.yaml") . | sha256sum }}
     spec:
       imagePullSecrets:
         - name: registrysecret
       containers:
         - name: gateway
 {{ tuple "janus" . | include "werf_container_image" | indent 10 }}
-          command: ["/opt/janus/bin/janus", "--nat-1-1=$MY_POD_IP"]
+          command: ["/opt/janus/bin/janus", "--nat-1-1=$(MY_POD_IP)"]
           resources:
             limits:
               memory: 2Gi
@@ -33,7 +37,7 @@ spec:
               fieldRef:
                 fieldPath: status.podIP
           ports:
-            - containerPort: 7088
+            - containerPort: {{ pluck .Values.global.env .Values.janus.admin_port | first | default .Values.janus.admin_port._default }}
               name: admin
             - containerPort: 8088
               name: web
@@ -53,12 +57,12 @@ kind: Service
 metadata:
   labels:
     app: janus-default
-  name: janus-default
+  name: {{ pluck .Values.global.env .Values.janus.host | first | default .Values.janus.host._default }}
 spec:
   ports:
     - targetPort: admin
       name: admin
-      port: 7088
+      port: {{ pluck .Values.global.env .Values.janus.admin_port | first | default .Values.janus.admin_port._default }}
     - targetPort: web
       name: web
       port: 8088

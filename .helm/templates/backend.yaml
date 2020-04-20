@@ -5,6 +5,8 @@ metadata:
   name: {{ .Chart.Name }}
   labels:
     app: {{ .Chart.Name }}
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/backend-config.yaml") . | sha256sum }}
 spec:
   replicas: {{ pluck .Values.global.env .Values.backend.replicas | first | default .Values.backend.replicas._default }}
   selector:
@@ -15,7 +17,7 @@ spec:
       labels:
         app: {{ .Chart.Name }}
       annotations:
-        checksum/app-config: {{ include (print $.Template.BasePath "/back-config.yaml") . | sha256sum }}
+        checksum/config: {{ include (print $.Template.BasePath "/backend-config.yaml") . | sha256sum }}
     spec:
       serviceAccountName: {{ .Chart.Name }}-sa
       imagePullSecrets:

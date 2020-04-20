@@ -24,7 +24,9 @@
 - name: REDIS_URI
   value: "redis://ignored:$(S_REDIS_PASS)@{{ pluck .Values.global.env .Values.redis.host | first | default .Values.redis.host._default }}:{{ pluck .Values.global.env .Values.redis.port | first | default .Values.redis.port._default }}"
 - name: DEFAULT_JANUS_URL
-  value: "http://{{ pluck .Values.global.env .Values.janus.host | first | default .Values.janus.host._default }}"
+  value: "http://{{ pluck .Values.global.env .Values.janus.host | first | default .Values.janus.host._default }}:{{ pluck .Values.global.env .Values.janus.admin_port | first | default .Values.janus.admin_port._default }}"
+- name: DEFAULT_PUBLIC_JANUS_URL
+  value: "https://{{ pluck .Values.global.env .Values.janus.public_url | first | default (printf "janus-%s.%s" .Values.global.env .Values.app.domain_base) }}"
 - name: PORT
   value: {{ .Values.backend.port | quote }}
 - name: HOST

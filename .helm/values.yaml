@@ -10,9 +10,15 @@ postgres:
   port:
     _default: 6432
 
+app:
+  domain_base: dev.k8s.heyka.io
+
 janus:
+  public_url: {}
+  admin_port:
+    _default: 7088
   host:
-    _default: janus
+    _default: janus-default
   replicas:
     _default: 1
 
@@ -27,6 +33,5 @@ backend:
     _default: "3600000"
   auth_link_lifespan:
     _default: "600000"
-  domain_base: dev.k8s.heyka.io
   replicas:
     _default: 1

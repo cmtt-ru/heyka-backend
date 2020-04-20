@@ -22,7 +22,11 @@ module.exports = {
       {
         plugin: 'hapi-redis2',
         options: {
-          settings: config.redis.uri,
+          settings: config.redis.sentinels ? {
+            sentinels: config.redis.sentinels,
+            sentinelPassword: config.redis.sentinelPassword,
+            name: config.redis.name
+          } : config.redis.uri,
           decorate: true
         }
       },

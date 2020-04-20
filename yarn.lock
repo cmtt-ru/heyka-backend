@@ -2030,6 +2030,21 @@ inquirer@^7.0.0:
     strip-ansi "^5.1.0"
     through "^2.3.6"
 
+ioredis@^4.16.2:
+  version "4.16.2"
+  resolved "https://registry.yarnpkg.com/ioredis/-/ioredis-4.16.2.tgz#29ae301885e493c4642d2fb1998761c576e27462"
+  integrity sha512-hlRK9q9K8pWpYIxUh079dWUWECiGNdI7+/AR21pgeqIBXQzjVKFnz0wXvmhEQZV3Hvv4saQpvJww9SkjwvPXZA==
+  dependencies:
+    cluster-key-slot "^1.1.0"
+    debug "^4.1.1"
+    denque "^1.1.0"
+    lodash.defaults "^4.2.0"
+    lodash.flatten "^4.4.0"
+    redis-commands "1.5.0"
+    redis-errors "^1.2.0"
+    redis-parser "^3.0.0"
+    standard-as-callback "^2.0.1"
+
 ioredis@^4.9.3:
   version "4.14.1"
   resolved "https://registry.yarnpkg.com/ioredis/-/ioredis-4.14.1.tgz#b73ded95fcf220f106d33125a92ef6213aa31318"

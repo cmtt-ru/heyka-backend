@@ -5,6 +5,9 @@ require('dotenv').config();
 module.exports = {
   port: process.env.PORT || 5000,
   host: process.env.HOST || 'localhost',
+  leonardo: {
+    uploadUrl: process.env.LEONARDO_UPLOAD_URL || 'https://leonardo-direct.osnova.io/upload/files'
+  },
   credentials: {
     cookiePassword: process.env.COOKIE_PASSWORD,
     google: {

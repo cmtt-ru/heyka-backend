@@ -33,6 +33,7 @@
     "@slack/web-api": "^5.7.0",
     "bcryptjs": "^2.4.3",
     "bell": "^10.0.0",
+    "busboy": "^0.3.1",
     "crypto-promise": "^2.1.0",
     "dotenv": "^8.2.0",
     "hapi-auth-bearer-token": "^6.2.1",

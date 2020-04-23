@@ -25,6 +25,7 @@ const stubbedMethods = {
 const pathToEmailService = path.resolve(__dirname, '../lib/services/email.js');
 const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
 const pathToSlackService = path.resolve(__dirname, '../lib/services/slack.js');
+const pathToFileService = path.resolve(__dirname, '../lib/services/file.js');
 mockery.enable({
   warnOnReplace: true,
   warnOnUnregistered: false // disable warnings on unmocked modules
@@ -77,6 +78,14 @@ mockery.registerMock(
     }
     gainAccessTokenByOAuthCode() {
       return {};
+    }
+  }
+);
+mockery.registerMock(
+  pathToFileService,
+  class FileService extends Schmervice.Service {
+    upload() {
+      return 'https://leonardo.osnova.io/794af87c-195d-c9ee-40d6-14131c4c43a6/';
     }
   }
 );

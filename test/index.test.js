@@ -9,6 +9,7 @@ const crypto = require('crypto-promise');
 const serviceHelpers = require('../lib/services/helpers');
 const { methods: stubbedMethods } = require('./stub_external');
 const helpers = require('./helpers');
+const errorMessages = require('../lib/error_messages');
 
 describe('Test routes', () => {
   let server = null;
@@ -74,7 +75,7 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).to.be.equal(401);
         const payload = JSON.parse(response.payload);
-        expect(payload.message).equals('Token is expired');
+        expect(payload.message).equals(errorMessages.accessTokenExpired);
       });
     });
 

@@ -20,6 +20,9 @@
 {
   "statusCode": 401,
   "error": "Unauthorized"
+  "message": "Missing authentication" //(если не была заголовка)
+  "message": "Access token is expired" //(если просрочился токен)
+  "message": "Bad token" //(если такого токена вообще не существует)
 }
 ```
 

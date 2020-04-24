@@ -12,6 +12,7 @@ const helpers = require('./helpers');
 const IMAGE_EXAMPLE = Buffer.from('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAACXBIWXMAA'
   + 'AGKAAABigEzlzBYAAAAB3RJTUUH5AQXDwEOjLBhqQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAALElEQVQI'
   + '1yXHsRHAQAzDMEbn/Sf0KBbvi6DDt7tt1STT9u5UIID6f4AkMwM8YOUadrVD1GUAAAAASUVORK5CYII=', 'base64');
+const errorMessages = require('../lib/error_messages');
 
 describe('Test routes', () => {
   let server = null;
@@ -77,7 +78,7 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).to.be.equal(401);
         const payload = JSON.parse(response.payload);
-        expect(payload.message).equals('Token is expired');
+        expect(payload.message).equals(errorMessages.accessTokenExpired);
       });
     });
 

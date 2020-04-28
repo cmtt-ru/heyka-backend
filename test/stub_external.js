@@ -18,7 +18,9 @@ const stubbedMethods = {
   createServer: sinon.stub(),
 
   sendInviteToWorkspaceBySlack: sinon.stub(),
-  getConnectingSlackUrl: sinon.stub()
+  getConnectingSlackUrl: sinon.stub(),
+
+  uploadImageFromUrl: sinon.stub(),
 };
 
 // mock services that make requests to external APIs
@@ -85,6 +87,10 @@ mockery.registerMock(
   pathToFileService,
   class FileService extends Schmervice.Service {
     upload() {
+      return 'https://leonardo.osnova.io/794af87c-195d-c9ee-40d6-14131c4c43a6/';
+    }
+    uploadImageFromUrl() {
+      stubbedMethods.uploadImageFromUrl(...arguments);
       return 'https://leonardo.osnova.io/794af87c-195d-c9ee-40d6-14131c4c43a6/';
     }
   }

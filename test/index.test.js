@@ -284,7 +284,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user);
 
         const newName = 'newName';
-        const avatar = 'http://leonardo.osnova.ru/picture/8hiua8h3h8fh9a9ur938rjaoe9r93uja0';
+        const avatar = 'https://leonardo.osnova.io/6be46ea9-d042-19cb-a130-bb4e5add21eb/';
         const response = await server.inject({
           method: 'POST',
           url: '/profile',
@@ -298,6 +298,35 @@ describe('Test routes', () => {
         const newUser = await udb.findById(user.id);
         expect(newUser.name).equals(newName);
         expect(newUser.avatar).equals(avatar);
+      });
+    });
+    describe('update profile and pass a not leonardo avatar', () => {
+      it('should download avatar from url and upload to leonardo', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+
+        const oldName = 'oldName';
+        const user = await userService.signup({ email: 'admin@admin.ru', name: oldName });
+        const tokens = await userService.createTokens(user);
+
+        const newName = 'newName';
+        const avatar = 'http://some-picture.from/external/internet.jpg';
+        const response = await server.inject({
+          method: 'POST',
+          url: '/profile',
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: newName,
+            avatar
+          }
+        });
+        expect(response.statusCode).equals(200);
+        const newUser = await udb.findById(user.id);
+        expect(newUser.name).equals(newName);
+        expect(newUser.avatar).contain('leonardo.osnova.io');
+        expect(stubbedMethods.uploadImageFromUrl.calledOnce).true();
       });
     });
   });

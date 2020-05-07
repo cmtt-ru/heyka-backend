@@ -6,6 +6,9 @@ module.exports = {
   server: {
     port: config.port,
     host: config.host,
+    routes: {
+      cors: true
+    },
     debug: process.env.NODE_ENV === 'development' ? {
       log: '*',
       request: '*'

@@ -34,8 +34,7 @@ jobs:
         - 6379:6379
 
     steps:
-    - uses: actions/checkout@v1
-    - uses: actions/setup-python@v1
+    - uses: actions/checkout@v2
     - run: yarn
     - run: yarn run migrate up
       env:

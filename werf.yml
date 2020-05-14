@@ -37,3 +37,12 @@ ansible:
 image: janus
 dockerfile: docker/janus/Dockerfile
 context: docker/janus/
+git:
+  - add: /.werffiles/entrypoint.sh
+    to: /entrypoint.sh
+ansible:
+  setup:
+    - name: "Change rights for scripts"
+      file:
+        path: "/entrypoint.sh"
+        mode: 0755

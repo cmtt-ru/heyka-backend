@@ -19,6 +19,8 @@ spec:
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/backend-config.yaml") . | sha256sum }}
     spec:
+      nodeSelector:
+        node-role.kubernetes.io/node: ""
       serviceAccountName: {{ .Chart.Name }}-sa
       imagePullSecrets:
         - name: registrysecret

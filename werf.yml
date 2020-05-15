@@ -44,7 +44,22 @@ fromImage: janus-docker
 git:
   - add: /.werffiles/entrypoint.sh
     to: /entrypoint.sh
+    stageDependencies:
+      setup:
+        - "**/*"
 ansible:
+  beforeSetup:
+    - name: install common packages
+      apt:
+        update_cache: yes
+        state: present
+        name: [
+          'tzdata',
+          'curl'
+        ]
+    - name: "Set timezone"
+      timezone:
+        name: Europe/Moscow
   setup:
     - name: "Change rights for scripts"
       file:

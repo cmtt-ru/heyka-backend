@@ -13,6 +13,13 @@ const IMAGE_EXAMPLE = Buffer.from('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgA
   + 'AGKAAABigEzlzBYAAAAB3RJTUUH5AQXDwEOjLBhqQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAALElEQVQI'
   + '1yXHsRHAQAzDMEbn/Sf0KBbvi6DDt7tt1STT9u5UIID6f4AkMwM8YOUadrVD1GUAAAAASUVORK5CYII=', 'base64');
 const errorMessages = require('../lib/error_messages');
+const generateFakeConnection = (userId, workspaceId) => ({
+  connectionId: uuid4(),
+  userId,
+  workspaceId,
+  onlineStatus: 'online',
+  localTime: 'GMT+3'
+});
 
 describe('Test routes', () => {
   let server = null;
@@ -594,7 +601,7 @@ describe('Test routes', () => {
         expect(payload.channels.length).equals(2);
       });
       it('should return media state of users that are selected channels', async () => {
-        const { userService, workspaceService } = server.services();
+        const { userService, workspaceService, connectionService } = server.services();
         const user = await userService.signup({ email: 'user@heyka.com', name: 'n' });
         const user2 = await userService.signup({ email: 'user2@heyka.com', name: 'n' });
         const tokens = await userService.createTokens({ id: user.id });
@@ -602,10 +609,17 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'workspace1');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
         const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test', isPrivate: false });
+
+        // add fake connections for users
+        const conn1 = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn1);
+        const conn2 = generateFakeConnection(user2.id, workspace.id);
+        await connectionService.setConnectionObject(conn2);
+
         // user2 select the channel
         const responseForSelecting = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          url: `/channels/${channel.id}/select?socketId=${conn2.connectionId}`,
           ...helpers.withAuthorization(tokens2),
           payload: helpers.defaultUserState()
         });
@@ -653,7 +667,8 @@ describe('Test routes', () => {
       it('should response with error (cant leave the workspace when is on active conv.', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          connectionService
         } = server.services();
         const admin = await userService.signup({ email: 'admin@heyka.ru'});
         const user = await userService.signup({ email: 'user@heyka.ru' });
@@ -664,10 +679,15 @@ describe('Test routes', () => {
           isPrivate: false
         });
         const tokens = await userService.createTokens(user);
+
+        // add connection for user
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
+
         // user select the channel
         const selectResponse = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
           payload: helpers.defaultUserState(),
           ...helpers.withAuthorization(tokens)
         });
@@ -749,7 +769,7 @@ describe('Test routes', () => {
         const {
           userService,
           workspaceService,
-          channelDatabaseService
+          connectionService
         } = server.services();
         const user = await userService.signup({ email: 'test@user.ru' });
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
@@ -758,15 +778,17 @@ describe('Test routes', () => {
           isPrivate: false
         });
         const tokens = await userService.createTokens(user);
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
         const response = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
           ...helpers.withAuthorization(tokens),
           payload: helpers.defaultUserState()
         });
         expect(response.statusCode).equals(200);
-        const users = await channelDatabaseService.getAllUsersInChannel(channel.id);
-        expect(users).includes(user.id);
+        const connections = await connectionService.getChannelConnections(channel.id);
+        expect(connections.map(c => c.userId)).includes(user.id);
       });
     });
     describe('Select channel when user was in another channel', () => {
@@ -774,7 +796,7 @@ describe('Test routes', () => {
         const {
           userService,
           workspaceService,
-          channelDatabaseService
+          connectionService
         } = server.services();
         const user = await userService.signup({ email: 'test@user.ru' });
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
@@ -786,71 +808,31 @@ describe('Test routes', () => {
           name: 'test2',
           isPrivate: false
         });
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
         const tokens = await userService.createTokens(user);
         // select first channel
         await server.inject({
           method: 'POST',
-          url: `/channels/${channel1.id}/select?socketId=${uuid4()}`,
+          url: `/channels/${channel1.id}/select?socketId=${conn.connectionId}`,
           ...helpers.withAuthorization(tokens),
           payload: helpers.defaultUserState()
         });
         // expect that user was appeared in the first channel
-        let list = await channelDatabaseService.getAllUsersInChannel(channel1.id);
-        expect(list).includes(user.id);
+        let list = await connectionService.getChannelConnections(channel1.id);
+        expect(list.map(c => c.userId)).includes(user.id);
         // select the second channel
         await server.inject({
           method: 'POST',
-          url: `/channels/${channel2.id}/select?socketId=${uuid4()}`,
+          url: `/channels/${channel2.id}/select?socketId=${conn.connectionId}`,
           ...helpers.withAuthorization(tokens),
           payload: helpers.defaultUserState()
         });
         // expect that user was appeared in the second channel and was disappeared from the first
-        list = await channelDatabaseService.getAllUsersInChannel(channel1.id);
-        expect(list).not.includes(user.id);
-        list = await channelDatabaseService.getAllUsersInChannel(channel2.id);
-        expect(list).includes(user.id);
-      });
-    });
-    describe('User select channel, the second user select the same channel too', () => {
-      it('the second user gets media state of all users of the channel', async () => {
-        const {
-          userService,
-          workspaceService
-        } = server.services();
-
-        const user = await userService.signup({ email: 'user@world.ru' });
-        const tokens = await userService.createTokens(user);
-        const { workspace } = await workspaceService.createWorkspace(user, 'test');
-        const channel = await workspaceService.createChannel(workspace.id, user.id, {
-          name: 'testChannel',
-          isPrivate: false
-        });
-        const mediaState = helpers.defaultUserState();
-        mediaState.microphone = true;
-        const socketId = uuid4();
-        const response1 = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${socketId}`,
-          ...helpers.withAuthorization(tokens),
-          payload: mediaState
-        });
-        expect(response1.statusCode).equals(200);
-
-        const user2 = await userService.signup({ email: 'user2@world.ru' });
-        const tokens2 = await userService.createTokens(user2);
-        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
-        const response2 = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${socketId}`,
-          ...helpers.withAuthorization(tokens2),
-          payload: mediaState
-        });
-        expect(response2.statusCode).equals(200);
-
-        const payload = JSON.parse(response2.payload);
-        expect(payload.userMediaStates.length).equals(2);
-        expect(payload.userMediaStates.find(u => u.userId === user.id)).exists();
-        expect(payload.userMediaStates.find(u => u.userId === user2.id)).equals({ ...mediaState, userId: user2.id });
+        list = await connectionService.getChannelConnections(channel1.id);
+        expect(list.map(c => c.userId)).not.includes(user.id);
+        list = await connectionService.getChannelConnections(channel2.id);
+        expect(list.map(c => c.userId)).includes(user.id);
       });
     });
   });
@@ -886,7 +868,8 @@ describe('Test routes', () => {
       it('should return 400 Bad request', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          connectionService
         } = server.services();
 
         const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
@@ -897,10 +880,14 @@ describe('Test routes', () => {
           lifespan: 2000
         });
         const tokens = await userService.createTokens(user);
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
+        const conn2 = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn2);
         // select the channel
         const selectResponse = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
           ...helpers.withAuthorization(tokens),
           payload: helpers.defaultUserState()
         });
@@ -908,12 +895,12 @@ describe('Test routes', () => {
         // try to unselect the channel
         const response = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/unselect?socketId=${uuid4()}`,
+          url: `/channels/${channel.id}/unselect?socketId=${conn2}`,
           ...helpers.withAuthorization(tokens)
         });
         expect(response.statusCode).equals(400);
         const payload = JSON.parse(response.payload);
-        expect(payload.message).equals('Channel was selected by another device');
+        expect(payload.message).equals('Channel is not selected');
       });
     });
     describe('User unselect channel that was tmp', () => {
@@ -921,7 +908,8 @@ describe('Test routes', () => {
         const {
           userService,
           workspaceService,
-          channelDatabaseService: chdb
+          channelDatabaseService: chdb,
+          connectionService
         } = server.services();
 
         const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
@@ -932,11 +920,12 @@ describe('Test routes', () => {
           lifespan: 1
         });
         const tokens = await userService.createTokens(user);
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
         // select the channel
-        const socketId ='socketId';
         const selectResponse = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${socketId}`,
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
           ...helpers.withAuthorization(tokens),
           payload: helpers.defaultUserState()
         });
@@ -945,7 +934,7 @@ describe('Test routes', () => {
         // try to unselect the channel
         const response = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/unselect?socketId=${socketId}`,
+          url: `/channels/${channel.id}/unselect?socketId=${conn.connectionId}`,
           ...helpers.withAuthorization(tokens)
         });
 
@@ -960,7 +949,8 @@ describe('Test routes', () => {
         const {
           userService,
           workspaceService,
-          channelDatabaseService: chdb
+          channelDatabaseService: chdb,
+          connectionService
         } = server.services();
 
         const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
@@ -974,11 +964,14 @@ describe('Test routes', () => {
         });
         const tokens = await userService.createTokens(user);
         const tokens2 = await userService.createTokens(user2);
+        const conn = generateFakeConnection(user.id, workspace.id);
+        const conn2 = generateFakeConnection(user2.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
+        await connectionService.setConnectionObject(conn2);
         // select the channel
-        const socketId ='socketId';
         const selectResponse = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${socketId}`,
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
           ...helpers.withAuthorization(tokens),
           payload: helpers.defaultUserState()
         });
@@ -986,7 +979,7 @@ describe('Test routes', () => {
         // select channel by another user
         const selectResponse2 = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          url: `/channels/${channel.id}/select?socketId=${conn2.connectionId}`,
           ...helpers.withAuthorization(tokens2),
           payload: helpers.defaultUserState()
         });
@@ -995,7 +988,7 @@ describe('Test routes', () => {
         // try to unselect the channel
         const response = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/unselect?socketId=${socketId}`,
+          url: `/channels/${channel.id}/unselect?socketId=${conn.connectionId}`,
           ...helpers.withAuthorization(tokens)
         });
 
@@ -1012,7 +1005,8 @@ describe('Test routes', () => {
       it('should response with error', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          connectionService
         } = server.services();
         const user = await userService.signup({ email: 'user@admin.ru' });
         const tokens = await userService.createTokens(user);
@@ -1021,9 +1015,11 @@ describe('Test routes', () => {
           name: 'test',
           isPrivate: false
         });
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
         const selectResponse = await server.inject({
           method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${uuid4()}`,
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
           payload: helpers.defaultUserState(),
           ...helpers.withAuthorization(tokens)
         });
@@ -1068,7 +1064,8 @@ describe('Test routes', () => {
         const {
           userService,
           workspaceService,
-          channelService
+          channelService,
+          connectionService
         } = server.services();
         const user = await userService.signup({ email: 'test@user.ru' });
         const user2 = await userService.signup({ email: 'test2@user.ru' });
@@ -1079,7 +1076,9 @@ describe('Test routes', () => {
           isPrivate: false
         });
         const tokens = await userService.createTokens(user);
-        await channelService.selectChannel(channel.id, user2.id, uuid4(), helpers.defaultUserState());
+        const conn2 = generateFakeConnection(user2.id, workspace.id);
+        await connectionService.setConnectionObject(conn2);
+        await channelService.selectChannel(channel.id, user2.id, conn2.connectionId, helpers.defaultUserState());
         const response = await server.inject({
           method: 'GET',
           url: `/channels/${channel.id}/active-users`,

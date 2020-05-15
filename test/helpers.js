@@ -2,6 +2,7 @@
 
 exports.defaultUserState = defaultUserState;
 exports.withAuthorization = withAuthorization;
+exports.skipSomeTime = skipSomeTime;
 
 /**
  * Returns object with default user media state
@@ -24,4 +25,13 @@ function withAuthorization (tokens) {
   return {
     headers: { Authorization: `Bearer ${tokens.accessToken}` }
   };
+}
+
+/**
+ * Returns promise that resolves after given ms
+ * @param {Number} ms Skip certain number
+ * @returns {Promise<void>}
+ */
+async function skipSomeTime(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }

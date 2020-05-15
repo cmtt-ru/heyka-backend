@@ -4,16 +4,53 @@ kind: ServiceAccount
 metadata:
   name: {{ .Chart.Name }}-sa
   namespace: {{ printf "heyka-%s" .Values.global.env  }}
+
 ---
-kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: {{ .Chart.Name }}-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - "nodes"
+  verbs:
+  - "get"
+  - "watch"
+  - "list"
+- apiGroups:
+  - "extensions"
+  - "apps"
+  resources:
+  - "deployments"
+  verbs:
+  - "get"
+  - "watch"
+  - "list"
+- apiGroups:
+  - heyka.kmtt.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+- apiGroups:
+  - kmtt.io
+  resources:
+  - "*"
+  verbs:
+  - "*"
+
+---
+kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1beta1
 metadata:
-  name: {{ .Chart.Name }}-{{ .Values.global.env }}-binding
+  name: {{ .Chart.Name }}-binding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: heyka-role
+  kind: Role
+  name: {{ .Chart.Name }}-role
 subjects:
 - kind: ServiceAccount
   name: {{ .Chart.Name }}-sa
-  namespace: {{ printf "heyka-%s" .Values.global.env  }}
+  namespace: {{ printf "heyka-%s" .Values.global.env }}

@@ -34,9 +34,13 @@ ansible:
 
 
 ---
-image: janus
+image: janus-docker
 dockerfile: docker/janus/Dockerfile
 context: docker/janus/
+
+---
+image: janus
+fromImage: janus-docker
 git:
   - add: /.werffiles/entrypoint.sh
     to: /entrypoint.sh

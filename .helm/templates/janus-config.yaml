@@ -10,7 +10,7 @@ data:
     plugins_folder = /opt/janus/lib/janus/plugins		; Plugins folder
     transports_folder = /opt/janus/lib/janus/transports	; Transports folder
     events_folder = /opt/janus/lib/janus/events			; Event handlers folder
-    ;log_to_stdout = false				; Whether the Janus output should be written
+    log_to_stdout = true				; Whether the Janus output should be written
     ; to stdout or not (default=true)
     ;log_to_file = /path/to/janus.log	; Whether to use a log file or not
     ;daemonize = true					; Whether Janus should run as a daemon

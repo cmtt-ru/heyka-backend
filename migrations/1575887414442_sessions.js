@@ -10,11 +10,11 @@ exports.up = (pgm) => {
       primaryKey: true
     },
     access_token: {
-      type: 'uuid',
+      type: 'string',
       unique: true,
     },
     refresh_token: {
-      type: 'uuid',
+      type: 'string',
       unique: true
     },
     user_id: {

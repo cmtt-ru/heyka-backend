@@ -9,6 +9,10 @@ const crypto = require('crypto-promise');
 const serviceHelpers = require('../lib/services/helpers');
 const { methods: stubbedMethods } = require('./stub_external');
 const helpers = require('./helpers');
+const IMAGE_EXAMPLE = Buffer.from('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAACXBIWXMAA'
+  + 'AGKAAABigEzlzBYAAAAB3RJTUUH5AQXDwEOjLBhqQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAALElEQVQI'
+  + '1yXHsRHAQAzDMEbn/Sf0KBbvi6DDt7tt1STT9u5UIID6f4AkMwM8YOUadrVD1GUAAAAASUVORK5CYII=', 'base64');
+const errorMessages = require('../lib/error_messages');
 
 describe('Test routes', () => {
   let server = null;
@@ -74,7 +78,7 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).to.be.equal(401);
         const payload = JSON.parse(response.payload);
-        expect(payload.message).equals('Token is expired');
+        expect(payload.message).equals(errorMessages.accessTokenExpired);
       });
     });
 
@@ -280,7 +284,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user);
 
         const newName = 'newName';
-        const avatar = 'http://leonardo.osnova.ru/picture/8hiua8h3h8fh9a9ur938rjaoe9r93uja0';
+        const avatar = 'https://leonardo.osnova.io/6be46ea9-d042-19cb-a130-bb4e5add21eb/';
         const response = await server.inject({
           method: 'POST',
           url: '/profile',
@@ -294,6 +298,35 @@ describe('Test routes', () => {
         const newUser = await udb.findById(user.id);
         expect(newUser.name).equals(newName);
         expect(newUser.avatar).equals(avatar);
+      });
+    });
+    describe('update profile and pass a not leonardo avatar', () => {
+      it('should download avatar from url and upload to leonardo', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+
+        const oldName = 'oldName';
+        const user = await userService.signup({ email: 'admin@admin.ru', name: oldName });
+        const tokens = await userService.createTokens(user);
+
+        const newName = 'newName';
+        const avatar = 'http://some-picture.from/external/internet.jpg';
+        const response = await server.inject({
+          method: 'POST',
+          url: '/profile',
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: newName,
+            avatar
+          }
+        });
+        expect(response.statusCode).equals(200);
+        const newUser = await udb.findById(user.id);
+        expect(newUser.name).equals(newName);
+        expect(newUser.avatar).contain('leonardo.osnova.io');
+        expect(stubbedMethods.uploadImageFromUrl.calledOnce).true();
       });
     });
   });
@@ -319,6 +352,66 @@ describe('Test routes', () => {
         const payload = JSON.parse(response.payload);
         expect(payload.id).equals(user.id);
         expect(payload.email).equals(userInfo.email);
+      });
+    });
+  });
+
+  describe('POST /image', () => {
+    describe('User tries to upload image without files', () => {
+      it('should return an error', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'u@example.org', name: 'UserExample' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/image',
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(415);
+      });
+    });
+    describe('User tries to upload file in unsupported media type', () => {
+      it('should return an error', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'u@example.org', name: 'UserExample' });
+        const tokens = await userService.createTokens(user);
+        const withAuth = helpers.withAuthorization(tokens);
+        withAuth.headers['Content-Type'] = 'multipart/form-data; boundary=TEST';
+        const payload = '--TEST\r\n'
+          + 'Content-Disposition: form-data; name="image"; filename="text.txt"\r\n'
+          + 'Content-Type: text/plain\r\n\r\n'
+          + 'just plain text\r\n'
+          + '--TEST\r\n';
+        const response = await server.inject({
+          method: 'POST',
+          url: '/image',
+          ...withAuth,
+          payload
+        });
+        expect(response.statusCode).equals(415);
+      });
+    });
+    describe('Upload a valid image', () => {
+      it('should return url of image', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'u@example.org', name: 'UserExample' });
+        const tokens = await userService.createTokens(user);
+        const withAuth = helpers.withAuthorization(tokens);
+        withAuth.headers['Content-Type'] = 'multipart/form-data; boundary=TEST';
+        const payload = '--TEST\r\n'
+          + 'Content-Disposition: form-data; name="image"; filename="image/png\r\n'
+          + 'Content-Type: image/png\r\n\r\n'
+          + IMAGE_EXAMPLE.toString() + '\r\n'
+          + '--TEST\r\n';
+        const response = await server.inject({
+          method: 'POST',
+          url: '/image',
+          ...withAuth,
+          payload
+        });
+        expect(response.statusCode).equals(200);
+        const result = JSON.parse(response.payload);
+        expect(result.image).exists();
       });
     });
   });

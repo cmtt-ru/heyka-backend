@@ -45,6 +45,10 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: status.podIP
+          - name: RTP_PORT_MIN
+            value: {{ $rtp_min_port | quote }}
+          - name: RTP_PORT_MAX
+            value: {{ $rtp_max_port | quote }}
           ports:
             - containerPort: {{ pluck .Values.global.env .Values.janus.admin_port | first | default .Values.janus.admin_port._default }}
               name: admin

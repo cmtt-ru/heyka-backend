@@ -465,23 +465,6 @@ describe('Test routes', () => {
         const workspaceState = await workspaceService.getWorkspaceStateForUser(payload.workspace.id, user.id);
         expect(workspaceState.channels.length).equals(1);
       });
-      it('should grant token on creating workspace and register it in Janus', async () => {
-        const { userService } = server.services();
-        const user = await userService.signup({ email: 'big_brother_is@watching.you' });
-        const tokens = await userService.createTokens({ id: user.id });
-        const response = await server.inject({
-          method: 'POST',
-          url: '/workspaces',
-          headers: {
-            'Authorization': `Bearer ${tokens.accessToken}`
-          },
-          payload: {
-            name: 'TestWorkspace'
-          }
-        });
-        expect(response.statusCode).to.be.equal(200);
-        expect(stubbedMethods.addAuthTokenForWorkspace.calledOnce).true();
-      });
     });
   });
 
@@ -726,14 +709,6 @@ describe('Test routes', () => {
         // there shouldnt be any relation between user and worskpaces
         const userWorkspaces = await wdb.getWorkspacesByUserId(user.id);
         expect(userWorkspaces).length(0);
-
-        // janus auth tokens should be deleted for all channels and workspaces
-        expect(stubbedMethods.deleteAuthTokenForWorkspace.calledOnce).true();
-        //there should be remove auth token action
-        const call = stubbedMethods.manageAuthTokensForChannel.getCalls().find(call => {
-          return call.args[0][0] === 'remove';
-        });
-        expect(call).exists();
       });
     });
   });
@@ -790,6 +765,44 @@ describe('Test routes', () => {
         expect(response.statusCode).equals(200);
         const connections = await connectionService.getChannelConnections(channel.id);
         expect(connections.map(c => c.userId)).includes(user.id);
+      });
+      it('should return 200 and add auth tokens of workspace and channel for user', async () => {
+        const {
+          userService,
+          workspaceService,
+          connectionService
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        const tokens = await userService.createTokens(user);
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(response.statusCode).equals(200);
+        const connections = await connectionService.getChannelConnections(channel.id);
+        expect(connections.map(c => c.userId)).includes(user.id);
+        
+        // auth token should be added
+        expect(stubbedMethods.addAuthTokenForWorkspace.calledOnce).true();
+        // rooms should be created
+        expect(stubbedMethods.createAudioVideoRooms.calledOnce).true();
+        // tokens for channels should be added
+        expect(stubbedMethods.manageAuthTokensForChannel.calledOnce).true();
+
+        // check auth tokens
+        const connection = await connectionService.getConnection(conn.connectionId);
+        expect(stubbedMethods.addAuthTokenForWorkspace.firstCall.args[0][0]).equals(connection.janusServerAuthToken);
+        expect(stubbedMethods.manageAuthTokensForChannel.firstCall.args[0][1][0])
+          .equals(connection.janusChannelAuthToken);
       });
     });
     describe('Select channel when user was in another channel', () => {
@@ -944,6 +957,46 @@ describe('Test routes', () => {
         const channelFromDb = await chdb.getChannelById(channel.id);
         expect(channelFromDb).not.exists();
       });
+      it('should delete channel from janus too', async () => {
+        const {
+          userService,
+          workspaceService,
+          connectionService,
+          channelDatabaseService: chdb
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'testChannel',
+          isPrivate: false,
+          lifespan: 1
+        });
+        const tokens = await userService.createTokens(user);
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
+        // select the channel
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
+        await new Promise(resolve => setTimeout(resolve, 1));
+        // try to unselect the channel
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/unselect?socketId=${conn.connectionId}`,
+          ...helpers.withAuthorization(tokens)
+        });
+
+        expect(response.statusCode).equals(200);
+        // channel should be deleted from janus
+        expect(stubbedMethods.deleteAudioVideoRooms.getCalls().length).equals(1);
+        const janusOpts = await chdb.getJanusForChannel(channel.id);
+        expect(stubbedMethods.deleteAudioVideoRooms.firstCall.args[0][0].audioRoomId).equals(janusOpts.audioRoomId);
+      });
     });
     describe('User unselect channel that was tmp, but there are another users which are in the channel', () => {
       it('shouldnt delete channel', async () => {
@@ -997,6 +1050,63 @@ describe('Test routes', () => {
         // channel should be deleted
         const channelFromDb = await chdb.getChannelById(channel.id);
         expect(channelFromDb).exists();
+      });
+      it('shouldnt delete only auth tokens for that user', async () => {
+        const {
+          userService,
+          workspaceService,
+          connectionService
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const user2 = await userService.signup({ email: 'admin2@admin.ru', name: 'name' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'testChannel',
+          isPrivate: false,
+          lifespan: 1
+        });
+        const tokens = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user2);
+        const conn = generateFakeConnection(user.id, workspace.id);
+        const conn2 = generateFakeConnection(user2.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
+        await connectionService.setConnectionObject(conn2);
+        // select the channel
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
+        // select channel by another user
+        const selectResponse2 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${conn2.connectionId}`,
+          ...helpers.withAuthorization(tokens2),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse2.statusCode).equals(200);
+        await new Promise(resolve => setTimeout(resolve, 1));
+        const userConn1 = await connectionService.getConnection(conn.connectionId);
+        // try to unselect the channel
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/unselect?socketId=${conn.connectionId}`,
+          ...helpers.withAuthorization(tokens)
+        });
+
+        expect(response.statusCode).equals(200);
+
+        // check that channel wasnt deleted from janus
+        expect(stubbedMethods.deleteAudioVideoRooms.notCalled).true();
+        // check that tokens was deleted
+        expect(stubbedMethods.manageAuthTokensForChannel.thirdCall.args[0][0]).equals('remove');
+        expect(stubbedMethods.manageAuthTokensForChannel.thirdCall.args[0][1][0])
+          .equals(userConn1.janusChannelAuthToken);
+        expect(stubbedMethods.deleteAuthTokenForWorkspace.firstCall.args[0][0]).equals(userConn1.janusServerAuthToken);
       });
     });
   });

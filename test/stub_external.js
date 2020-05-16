@@ -36,6 +36,24 @@ mockery.registerMock(
   pathToJanusService,
   class JanusWorkspaceService extends Schmervice.Service {
     initJanusNodes() {}
+    prepareJanusChannel () {
+      return {
+        url: 'http://localhost',
+        publicUrl: 'http://localhost',
+        apiPath: 'janus',
+        apiPort: 8088,
+        adminPath: 'admin',
+        adminPort: 7088,
+        adminSecret: 'wowwhattheheck',
+        pluginSecrets: {
+          audiobridge: 'superse2cret',
+          videoroom: 'supersecret'
+        },
+        audioRoomId: 1,
+        videoRoomId: 2,
+        secret: 'secret'
+      };
+    }
     createServer() {
       stubbedMethods.createServer(arguments);
       return { url: 'http://192.168.0.13:8088' };

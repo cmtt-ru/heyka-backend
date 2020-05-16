@@ -447,7 +447,7 @@ describe('Test routes', () => {
         expect(payload).includes('workspace');
       });
       it('should create default channels for that workspace and grant tokens for it', async () => {
-        const { userService } = server.services();
+        const { userService, workspaceService } = server.services();
         const user = await userService.signup({ email: 'big_brother_is@watching.you' });
         const tokens = await userService.createTokens({ id: user.id });
         const response = await server.inject({
@@ -461,8 +461,9 @@ describe('Test routes', () => {
           }
         });
         expect(response.statusCode).to.be.equal(200);
-        expect(stubbedMethods.createAudioVideoRooms.calledOnce).true();
-        expect(stubbedMethods.manageAuthTokensForChannel.calledOnce).true();
+        const payload = JSON.parse(response.payload);
+        const workspaceState = await workspaceService.getWorkspaceStateForUser(payload.workspace.id, user.id);
+        expect(workspaceState.channels.length).equals(1);
       });
       it('should grant token on creating workspace and register it in Janus', async () => {
         const { userService } = server.services();

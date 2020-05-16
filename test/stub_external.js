@@ -35,6 +35,7 @@ mockery.enable({
 mockery.registerMock(
   pathToJanusService,
   class JanusWorkspaceService extends Schmervice.Service {
+    initJanusNodes() {}
     createServer() {
       stubbedMethods.createServer(arguments);
       return { url: 'http://192.168.0.13:8088' };

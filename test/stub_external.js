@@ -36,6 +36,7 @@ mockery.registerMock(
   pathToJanusService,
   class JanusWorkspaceService extends Schmervice.Service {
     initJanusNodes() {}
+    decrementJanusChannelsFor() {}
     prepareJanusChannel () {
       return {
         url: 'http://localhost',

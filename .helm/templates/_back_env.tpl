@@ -28,5 +28,5 @@
 - name: HOST
   value: "0.0.0.0"
 - name: K8S_CLUSTER_HOST
-  value: {{ .Values.kubernetes.host | first | default .Values.kubernetes.host._default }}
+  value: {{ pluck .Values.global.env .Values.kubernetes.host | first | default .Values.kubernetes.host._default }}
 {{ end }}

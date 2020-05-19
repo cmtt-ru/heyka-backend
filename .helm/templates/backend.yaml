@@ -41,7 +41,7 @@ spec:
           command: ["/bin/sh"]
           args:
             - -c
-            - "yarn run dev"
+            - "yarn run dev:node"
           workingDir: /app/
           resources:
             limits:

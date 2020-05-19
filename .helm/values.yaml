@@ -15,7 +15,7 @@ app:
 
 kubernetes:
   host:
-    _default: kubernetes
+    _default: kubernetes.default
 
 janus:
   rtp_port:

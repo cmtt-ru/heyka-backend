@@ -20,7 +20,9 @@ describe('Test socket', () => {
   before(async () => {
     server = await createServer();
     socketIO = await socketAPI.getSocketIO(server);
-    socketIO.attach(server.listener);
+    socketIO.attach(server.listener, {
+      pingInterval: 5
+    });
     server.start();
     socket = io(`${server.info.uri}`);
     await new Promise(resolve => {
@@ -52,6 +54,7 @@ describe('Test socket', () => {
         const user = await userService.signup({ email: 'hello@world.net' });
         const tokens = await userService.createTokens(user);
         const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        const socket = io(`${server.info.uri}`);
         const transaction = uuid4();
         const awaitSuccess = awaitSocketForEvent(true, socket, eventNames.socket.authSuccess, data => {
           expect(data).includes('userId');
@@ -69,6 +72,8 @@ describe('Test socket', () => {
           awaitTransactionError,
           awaitGeneralError
         ]);
+
+        socket.disconnect();
       });
     });
     
@@ -78,6 +83,7 @@ describe('Test socket', () => {
         const user = await userService.signup({ email: 'hello@world.net' });
         const tokens = await userService.createTokens(user, -2019, -2019);
         const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        const socket = io(`${server.info.uri}`);
         const transaction = uuid4();
         const socketError = `socket-api-error-${transaction}`;
         const awaitTransactionError = awaitSocketForEvent(true, socket, socketError);
@@ -89,6 +95,8 @@ describe('Test socket', () => {
         });
         // the both errors should be fired
         await Promise.all([awaitTransactionError, awaitGeneralError]);
+
+        socket.disconnect();
       });
     });
 
@@ -100,6 +108,7 @@ describe('Test socket', () => {
         const user2 = await userService.signup({ email: 'hello2@world.net' });
         const tokens = await userService.createTokens(user);
         const { workspace: workspace2 } = await workspaceService.createWorkspace(user2, 'name2');
+        const socket = io(`${server.info.uri}`);
         const transaction = uuid4();
         const awaitTransactionError = awaitSocketForEvent(true, socket, `socket-api-error-${transaction}`, data => {
           expect(data.message).equals(`Can't listen workspace events`);
@@ -110,6 +119,8 @@ describe('Test socket', () => {
           workspaceId: workspace2.id
         });
         await awaitTransactionError;
+
+        socket.disconnect();
       });
     });
   });
@@ -185,6 +196,11 @@ describe('Test socket', () => {
           ]),
           socket3ShouldntBeNotified
         ]);
+
+
+        socket1.disconnect();
+        socket2.disconnect();
+        socket3.disconnect();
       });
     });
   });
@@ -218,6 +234,8 @@ describe('Test socket', () => {
         // we are awaiting the event
         await workspaceService.addUserToWorkspace(workspace.id, user.id);
         await notifyAboutJoinedUser;
+
+        adminSocket.disconnect();
       });
     });
   });
@@ -300,6 +318,10 @@ describe('Test socket', () => {
           ]),
           notAwaitUserSelected
         ]);
+
+        adminSocket.disconnect();
+        memberSocket.disconnect();
+        notMemberSocket.disconnect();
       });
       it('All members get media state of the user who just connected', async () => {
         const {
@@ -358,6 +380,9 @@ describe('Test socket', () => {
         });
         expect(response.statusCode).equals(200);
         await user1Notified;
+
+        adminSocket.disconnect();
+        user1Socket.disconnect();
       });
     });
     describe('User was in a private channel, selects a publisc channel', () => {
@@ -497,6 +522,10 @@ describe('Test socket', () => {
           ]),
           notMemberNotNotified
         ]);
+
+        adminSocket.disconnect();
+        memberSocket.disconnect();
+        notMemberSocket.disconnect();
       });
     });
     describe('User has two connections, try to select several channels', () => {
@@ -558,6 +587,9 @@ describe('Test socket', () => {
         });
         expect(response2.statusCode).equals(200);
         await waitEvent;
+
+        firstSocket.disconnect();
+        secondSocket.disconnect();
       });
     });
     describe('User has two connections, try to select the same channel with two connections', () => {
@@ -615,6 +647,9 @@ describe('Test socket', () => {
         });
         expect(response2.statusCode).equals(200);
         await waitEvent;
+
+        firstSocket.disconnect();
+        secondSocket.disconnect();
       });
     });
     describe('User select channel and then dicsonnect socket', () => {
@@ -682,6 +717,9 @@ describe('Test socket', () => {
         });
         socket1.disconnect();
         await socket2NotifiedAboutUnselect;
+
+        socket1.disconnect();
+        socket2.disconnect();
       });
     });
     describe('User connected from two sockets, one of sockets if disconnected', ( )=> {
@@ -768,6 +806,10 @@ describe('Test socket', () => {
         });
         socket1.disconnect();
         await socket2NotifiedAboutUnselect;
+
+        socket1.disconnect();
+        socket1a.disconnect();
+        socket2.disconnect();
       });
     });
   });
@@ -858,6 +900,10 @@ describe('Test socket', () => {
           user2Event,
           user3NotEvent
         ]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+        socket3.disconnect();
       });
     });
   });
@@ -927,6 +973,10 @@ describe('Test socket', () => {
         });
         const user3NotNotified = awaitSocketForEvent(false, socket3, eventName);
         await Promise.race([user1Notified, user3NotNotified]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+        socket3.disconnect();
       });
     });
   });
@@ -982,6 +1032,9 @@ describe('Test socket', () => {
         });
         expect(response.statusCode).equals(200);
         await Promise.all([awaitForNotify1, awaitForNotify2]);
+
+        socket1.disconnect();
+        socket2.disconnect();
       });
     });
   });
@@ -1027,6 +1080,9 @@ describe('Test socket', () => {
         const deleteChannelEvent2 = awaitSocketForEvent(true, socket2, evtName, checkData);
         await workspaceService.deleteChannel(channel.id);
         await Promise.all([deleteChannelEvent1, deleteChannelEvent2]);
+
+        socket1.disconnect();
+        socket2.disconnect();
       });
     });
   });
@@ -1135,6 +1191,63 @@ describe('Test socket', () => {
       });
       expect(response4.statusCode).equals(200);
       await waitOnlineStatusChangedBySocket2;
+
+      socket1.disconnect();
+      socket2.disconnect();
+      socket3.disconnect();
+    });
+  });
+
+  describe('Testing that connection is kept alive automatically', () => {
+    it('connect to the workspace, check connections after a while it should be online', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+        // set process.env.ONLINE_STATUS_LIFESPAN for testing
+      process.env.ONLINE_STATUS_LIFESPAN = 10; // 10 ms
+  
+      const user = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+      const { workspace } = await workspaceService.createWorkspace(user, 'name');
+      // create token
+      const tokens = await userService.createTokens(user);
+      // connect user
+      const socket = io(server.info.uri);
+      let evtName = eventNames.socket.authSuccess;
+      const awaitForAuth = awaitSocketForEvent(true, socket, evtName);
+      socket.emit(eventNames.client.auth, { 
+        token: tokens.accessToken,
+        workspaceId: workspace.id
+      });
+      await awaitForAuth;
+      await helpers.skipSomeTime(10);
+  
+      // user 1 requests full state of workspace
+      const response = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(200);
+      const payload = JSON.parse(response.payload);
+  
+      expect(payload.users.filter(u => u.onlineStatus === 'online').length).equals(1);
+      await helpers.skipSomeTime(10);
+  
+      const response2 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response2.statusCode).equals(200);
+      const payload2 = JSON.parse(response.payload);
+  
+      expect(payload2.users.filter(u => u.onlineStatus === 'online').length).equals(1);
+  
+      // delete process.env.ONLINE_STATUS_LIFESPAN
+      delete process.env.ONLINE_STATUS_LIFESPAN;
+        
+      socket.disconnect();
     });
   });
 });

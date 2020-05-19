@@ -44,6 +44,7 @@
     "haute-couture": "^3.4.0",
     "ioredis": "^4.16.2",
     "joi-md-doc": "^0.1.0",
+    "kubernetes-client": "^9.0.0",
     "mailgun-js": "^0.22.0",
     "node-pg-migrate": "^3.23.3",
     "pg-promise": "^10.3.1",

@@ -16,6 +16,8 @@ app:
 kubernetes:
   host:
     _default: kubernetes.default
+  janus_node_label:
+    _default: "node-role.kubernetes.io/janus="
 
 janus:
   rtp_port:

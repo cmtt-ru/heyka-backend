@@ -11,7 +11,6 @@ metadata:
   annotations:
     checksum/config: {{ include (print $.Template.BasePath "/janus-config.yaml") . | sha256sum }}
 spec:
-  replicas: {{ pluck .Values.global.env .Values.janus.replicas | first | default .Values.janus.replicas._default }}
   selector:
     matchLabels:
       app: janus

@@ -13,6 +13,10 @@ postgres:
 app:
   domain_base: dev.k8s.heyka.io
 
+kubernetes:
+  host:
+    _default: kubernetes
+
 janus:
   rtp_port:
     min:

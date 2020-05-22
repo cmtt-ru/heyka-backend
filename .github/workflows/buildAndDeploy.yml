@@ -2,13 +2,13 @@ name: Build and deploy
 
 on:
   push:
-    branches: [ master ]
+    branches: [ stage ]
   pull_request:
-    branches: [ master ]
+    branches: [ stage ]
 
 jobs:
-  buildAndDeployTest:
-    name: "Build and Deploy Test"
+  buildAndDeploy2Dev:
+    name: "Build and Deploy to Dev"
     runs-on: self-hosted
     env:
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
@@ -16,19 +16,12 @@ jobs:
     steps:
       - uses: actions/checkout@v1
 
-#       - name: Checkout
-#         run: |
-#           cd ${{ runner.workspace }}/${GITHUB_REPOSITORY##*/}/
-#           git fetch origin +refs/heads/*:refs/remotes/origin/* +refs/pull/*:refs/remotes/pull/*;  git checkout --force ${{ github.sha }}
-
       - name: Docker login
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
 
       - name: werf build and publish
         run: |
-          ls -la 
           cd ${{ runner.workspace }}/${GITHUB_REPOSITORY##*/}/
-          pwd
           type multiwerf && source <(multiwerf use 1.1 beta)
           werf build-and-publish --stages-storage :local --images-repo docker.pkg.github.com/${{ github.repository }}/ --tag-by-stages-signature
 

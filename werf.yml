@@ -25,43 +25,9 @@ ansible:
      shell: yarn
      args:
        chdir: /app
-  setup:
+  beforeSetup:
     - name: Install ynadex cert for mdb
       shell: |
         mkdir -p ~/.postgresql
         wget "https://storage.yandexcloud.net/cloud-certs/CA.pem" -O ~/.postgresql/root.crt
         chmod 0600 ~/.postgresql/root.crt
-
-
----
-image: janus-docker
-dockerfile: docker/janus/Dockerfile
-context: docker/janus/
-
----
-image: janus
-fromImage: janus-docker
-git:
-  - add: /.werffiles/entrypoint.sh
-    to: /entrypoint.sh
-    stageDependencies:
-      setup:
-        - "**/*"
-ansible:
-  beforeSetup:
-    - name: install common packages
-      apt:
-        update_cache: yes
-        state: present
-        name: [
-          'tzdata',
-          'curl'
-        ]
-    - name: "Set timezone"
-      timezone:
-        name: Europe/Moscow
-  setup:
-    - name: "Change rights for scripts"
-      file:
-        path: "/entrypoint.sh"
-        mode: 0755

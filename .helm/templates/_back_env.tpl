@@ -24,7 +24,7 @@
 - name: REDIS_URI
   value: "redis://ignored:$(S_REDIS_PASS)@{{ pluck .Values.global.env .Values.redis.host | first | default .Values.redis.host._default }}:{{ pluck .Values.global.env .Values.redis.port | first | default .Values.redis.port._default }}"
 - name: PORT
-  value: {{ .Values.backend.port | quote }}
+  value: {{ .Values.app.port | quote }}
 - name: HOST
   value: "0.0.0.0"
 - name: K8S_CLUSTER_HOST

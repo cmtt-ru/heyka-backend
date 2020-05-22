@@ -8,7 +8,7 @@ metadata:
   annotations:
     checksum/config: {{ include (print $.Template.BasePath "/backend-config.yaml") . | sha256sum }}
 spec:
-  replicas: {{ pluck .Values.global.env .Values.backend.replicas | first | default .Values.backend.replicas._default }}
+  replicas: {{ pluck .Values.global.env .Values.app.replicas | first | default .Values.app.replicas._default }}
   selector:
     matchLabels:
       app: {{ .Chart.Name }}
@@ -44,16 +44,31 @@ spec:
             - "yarn run dev:node"
           workingDir: /app/
           resources:
-            limits:
-              memory: 1Gi
             requests:
-              memory: 512Mi
+              memory: {{ pluck .Values.global.env .Values.app.requests.memory | first | default .Values.app.requests.memory._default | quote }}
+              cpu: {{ pluck .Values.global.env .Values.app.requests.cpu | first | default .Values.app.requests.cpu._default | quote }}
+            limits:
+              memory: {{ pluck .Values.global.env .Values.app.limits.memory | first | default .Values.app.limits.memory._default | quote }}
           env:
 {{ tuple "backend" . | include "werf_container_env" | indent 12 }}
 {{- include "backend_env" . | indent 12 }}
           ports:
-            - containerPort: {{ .Values.backend.port }}
+            - containerPort: {{ .Values.app.port }}
               name: web
+          readinessProbe:
+            httpGet:
+              path: /
+              port: web
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /
+              port: web
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 3
           volumeMounts:
             - name: app-config
               mountPath: /app/.env

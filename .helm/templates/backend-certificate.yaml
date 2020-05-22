@@ -8,12 +8,12 @@ spec:
   issuerRef:
     kind: ClusterIssuer
     name: letsencrypt
-  commonName: {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+  commonName: {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
   dnsNames:
-  - {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+  - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
   acme:
     config:
     - http01:
         ingressClass: nginx
       domains:
-      - {{ pluck .Values.global.env .Values.backend.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+      - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}

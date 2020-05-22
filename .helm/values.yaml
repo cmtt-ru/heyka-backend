@@ -10,30 +10,14 @@ postgres:
   port:
     _default: 6432
 
-app:
-  domain_base: dev.k8s.heyka.io
-
 kubernetes:
   host:
     _default: kubernetes.default
   janus_node_label:
     _default: "node-role.kubernetes.io/janus="
 
-janus:
-  rtp_port:
-    min:
-      _default: 32210
-    max:
-      _default: 32220
-  public_url: {}
-  admin_port:
-    _default: 7088
-  host:
-    _default: janus-default
-  replicas:
-    _default: 1
-
-backend:
+app:
+  domain_base: dev.k8s.heyka.i
   url: {}
   port: 5000
   access_token_lifespan:
@@ -46,3 +30,15 @@ backend:
     _default: "600000"
   replicas:
     _default: 1
+  requests:
+    cpu:
+      _default: "500m"
+      production: "1"
+    memory:
+      _default: "512Mi"
+      production: "2Gi"
+  limits:
+    memory:
+      _default: "1Gi"
+      production: "4Gi"
+

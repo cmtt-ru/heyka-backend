@@ -17,7 +17,7 @@ kubernetes:
     _default: "node-role.kubernetes.io/janus="
 
 app:
-  domain_base: dev.k8s.heyka.i
+  domain_base: dev.k8s.heyka.io
   url: {}
   port: 5000
   access_token_lifespan:

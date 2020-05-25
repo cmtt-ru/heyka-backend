@@ -58,9 +58,6 @@ describe('Unit tests: workspaceService', () => {
       expect(workspaceDatabaseService.insertWorkspace.calledOnce).true();
       expect(workspaceDatabaseService.addWorkspaceMember.calledOnce).true();
       expect(workspaceDatabaseService.addWorkspaceMember.firstCall.args[0].user_id).equals('userUUID');
-      expect(workspaceDatabaseService.updateWorkspace.calledOnce).true();
-      expect(workspaceDatabaseService.updateWorkspace.firstCall.args[1]).equals({ janus: 'janus-info-JSON' });
-      expect(channelService.createDefaultChannels.calledOnce).true();
     });
   });
 

@@ -34,5 +34,11 @@ module.exports = {
   },
   pg: {
     uri: process.env.DATABASE_URL || 'postgres://pg:strongpassword@localhost:5432/heyka'
+  },
+  janus: {
+    defaultJanusUrl: process.env.DEFAULT_JANUS_URL || 'http://localhost',
+    defaultPublicJanusUrl: process.env.DEFAULT_PUBLIC_JANUS_URL || 'http://localhost',
+    k8sClusterHost: process.env.K8S_CLUSTER_HOST || null,
+    k8sJanusLabelSelector: process.env.K8S_JANUS_LABEL_SELECTOR || null
   }
 };

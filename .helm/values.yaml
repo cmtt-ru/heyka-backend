@@ -29,7 +29,7 @@ app:
   auth_link_lifespan:
     _default: "600000"
   replicas:
-    _default: 1
+    _default: 2
   requests:
     cpu:
       _default: "500m"

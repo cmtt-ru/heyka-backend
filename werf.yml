@@ -1,0 +1,33 @@
+configVersion: 1
+project: heyka-backend
+deploy:
+ helmRelease: "[[ project ]]-[[ env ]]"
+ namespace: "heyka-[[ env ]]"
+
+---
+image: backend
+from: node:alpine
+docker:
+  ENV:
+    LANG: C.UTF-8
+git:
+  - add: /
+    to: /app
+    stageDependencies:
+      install:
+      - "package.json"
+      - "yarn.lock"
+      setup:
+      - "**/*"
+ansible:
+  install:
+   - name: Install packages
+     shell: yarn
+     args:
+       chdir: /app
+  beforeSetup:
+    - name: Install ynadex cert for mdb
+      shell: |
+        mkdir -p ~/.postgresql
+        wget "https://storage.yandexcloud.net/cloud-certs/CA.pem" -O ~/.postgresql/root.crt
+        chmod 0600 ~/.postgresql/root.crt

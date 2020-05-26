@@ -1220,6 +1220,7 @@ describe('Test socket', () => {
         workspaceId: workspace.id
       });
       await awaitForAuth;
+      await helpers.skipSomeTime(10);
   
       // user 1 requests full state of workspace
       const response = await server.inject({

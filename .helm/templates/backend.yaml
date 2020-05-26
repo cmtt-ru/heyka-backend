@@ -1,0 +1,95 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    app: {{ .Chart.Name }}
+  annotations:
+    checksum/config: {{ include (print $.Template.BasePath "/backend-config.yaml") . | sha256sum }}
+spec:
+  replicas: {{ pluck .Values.global.env .Values.app.replicas | first | default .Values.app.replicas._default }}
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/backend-config.yaml") . | sha256sum }}
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/node: ""
+      serviceAccountName: {{ .Chart.Name }}-sa
+      imagePullSecrets:
+        - name: registrysecret
+      initContainers:
+        - name: migrate
+{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - "yarn run migrate up"
+          workingDir: /app/
+          env:
+{{ tuple "backend" . | include "werf_container_env" | indent 12 }}
+{{- include "backend_env" . | indent 12 }}
+      containers:
+        - name: backend
+{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - "yarn run dev:node"
+          workingDir: /app/
+          resources:
+            requests:
+              memory: {{ pluck .Values.global.env .Values.app.requests.memory | first | default .Values.app.requests.memory._default | quote }}
+              cpu: {{ pluck .Values.global.env .Values.app.requests.cpu | first | default .Values.app.requests.cpu._default | quote }}
+            limits:
+              memory: {{ pluck .Values.global.env .Values.app.limits.memory | first | default .Values.app.limits.memory._default | quote }}
+          env:
+{{ tuple "backend" . | include "werf_container_env" | indent 12 }}
+{{- include "backend_env" . | indent 12 }}
+          ports:
+            - containerPort: {{ .Values.app.port }}
+              name: web
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: web
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: web
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 3
+          volumeMounts:
+            - name: app-config
+              mountPath: /app/.env
+              subPath: dotenv
+      volumes:
+        - name: app-config
+          configMap:
+            name: {{ .Chart.Name }}-config
+
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ .Chart.Name }}
+  name: {{ .Chart.Name }}
+spec:
+  ports:
+    - targetPort: web
+      port: 80
+      name: web
+  selector:
+    app: {{ .Chart.Name }}

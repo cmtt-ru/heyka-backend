@@ -1,0 +1,44 @@
+redis:
+  host:
+    _default: redis-sentinel-proxy
+  port:
+    _default: 6379
+
+postgres:
+  host:
+    _default: postgres
+  port:
+    _default: 6432
+
+kubernetes:
+  host:
+    _default: kubernetes.default
+  janus_node_label:
+    _default: "node-role.kubernetes.io/janus="
+
+app:
+  domain_base: dev.k8s.heyka.io
+  url: {}
+  port: 5000
+  access_token_lifespan:
+    _default: "3600000"
+  refresh_token_lifespan:
+    _default: "2678400000"
+  email_verification_code_lifespan:
+    _default: "3600000"
+  auth_link_lifespan:
+    _default: "600000"
+  replicas:
+    _default: 1
+  requests:
+    cpu:
+      _default: "500m"
+      production: "1"
+    memory:
+      _default: "512Mi"
+      production: "2Gi"
+  limits:
+    memory:
+      _default: "1Gi"
+      production: "4Gi"
+

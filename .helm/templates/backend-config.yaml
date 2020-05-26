@@ -1,0 +1,30 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Chart.Name }}-config
+data:
+  dotenv: |
+    COOKIE_PASSWORD=you_have_to_set_very_long_string_and_it_should_be_protected_as_a_zenitsa_oka
+
+    # Token lifespan
+    ACCESS_TOKEN_LIFESPAN = {{ pluck .Values.global.env .Values.app.access_token_lifespan | first | default .Values.app.access_token_lifespan._default | toString }}
+    REFRESH_TOKEN_LIFESPAN = {{ pluck .Values.global.env .Values.app.refresh_token_lifespan | first | default .Values.app.refresh_token_lifespan._default | toString }}
+    EMAIL_VERIFICATION_CODE_LIFESPAN = {{ pluck .Values.global.env .Values.app.email_verification_code_lifespan | first | default .Values.app.email_verification_code_lifespan._default |  toString }}
+    AUTH_LINK_LIFESPAN = {{ pluck .Values.global.env .Values.app.auth_link_lifespan | first | default .Values.app.auth_link_lifespan._default | toString }}
+
+    # External authenticator credentials
+
+    GOOGLE_CLIENT_ID={{ pluck .Values.global.env .Values.app.google.id | first | default .Values.app.google.id._default | quote }}
+    GOOGLE_CLIENT_SECRET={{ pluck .Values.global.env .Values.app.google.secret | first | default .Values.app.google.secret._default | quote }}
+
+    SLACK_CLIENT_ID={{ pluck .Values.global.env .Values.app.slack.id | first | default .Values.app.slack.id._default | quote }}
+    SLACK_CLIENT_SECRET={{ pluck .Values.global.env .Values.app.slack.secret | first | default .Values.app.slack.secret._default | quote }}
+    SLACK_VERIFICATION_TOKEN={{ pluck .Values.global.env .Values.app.slack.verification_token | first | default .Values.app.slack.verification_token._default | quote }}
+
+    FACEBOOK_CLIENT_ID={{ pluck .Values.global.env .Values.app.facebook.id | first | default .Values.app.facebook.id._default | quote }}
+    FACEBOOK_CLIENT_SECRET={{ pluck .Values.global.env .Values.app.facebook.secret | first | default .Values.app.facebook.secret._default | quote }}
+
+    # @mailgun parameters
+    MAILGUN_DOMAIN={{ pluck .Values.global.env .Values.app.mailgun.domain | first | default .Values.app.mailgun.domain._default | quote }}
+    MAILGUN_APIKEY={{ pluck .Values.global.env .Values.app.mailgun.apikey | first | default .Values.app.mailgun.apikey._default | quote }}

@@ -29,10 +29,25 @@ module.exports = {
       apikey: process.env.MAILGUN_APIKEY
     }
   },
-  redis: {
+  redis: process.env.SENTINELS ? {
+    sentinels: process.env.SENTINELS
+      .split(',')
+      .map(item => ({
+        host: item.split(':')[0],
+        port: parseInt(item.split(':')[1], 10)
+      })),
+    name: 'mymaster',
+    sentinelPassword: process.env.SENTINEL_PASSWORD
+  } : {
     uri: process.env.REDIS_URI || 'redis://127.0.0.1:6379'
   },
   pg: {
     uri: process.env.DATABASE_URL || 'postgres://pg:strongpassword@localhost:5432/heyka'
+  },
+  janus: {
+    defaultJanusUrl: process.env.DEFAULT_JANUS_URL || 'http://localhost',
+    defaultPublicJanusUrl: process.env.DEFAULT_PUBLIC_JANUS_URL || 'http://localhost',
+    k8sClusterHost: process.env.K8S_CLUSTER_HOST || null,
+    k8sJanusLabelSelector: process.env.K8S_JANUS_LABEL_SELECTOR || null
   }
 };

@@ -37,7 +37,7 @@ mockery.registerMock(
   class JanusWorkspaceService extends Schmervice.Service {
     initJanusNodes() {}
     decrementJanusChannelsFor() {}
-    prepareJanusChannel () {
+    getJanus () {
       return {
         url: 'http://localhost',
         publicUrl: 'http://localhost',
@@ -49,10 +49,7 @@ mockery.registerMock(
         pluginSecrets: {
           audiobridge: 'superse2cret',
           videoroom: 'supersecret'
-        },
-        audioRoomId: 1,
-        videoRoomId: 2,
-        secret: 'secret'
+        }
       };
     }
     createServer() {

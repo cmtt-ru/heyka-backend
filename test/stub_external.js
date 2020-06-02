@@ -57,7 +57,7 @@ mockery.registerMock(
     }
     createServer() {
       stubbedMethods.createServer(arguments);
-      return { url: 'http://192.168.0.13:8088' };
+      return { url: 'http://192.168.0.13:7088', public_url: 'http://192.168.0.13:8088' };
     }
     createAudioVideoRooms() {
       stubbedMethods.createAudioVideoRooms(arguments);

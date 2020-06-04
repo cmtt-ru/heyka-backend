@@ -1491,9 +1491,11 @@ describe('Test socket', () => {
         expect(payload.messageId).exists();
 
         // prepare promise for waiting no-response-event
-        evtName = eventNames.socket.noMessageResponse(payload.messageId);
+        evtName = eventNames.socket.messageResponse;
         const waitForNoResponse = awaitSocketForEvent(true, socket1, evtName, data => {
           expect(data.userId).equals(user2.id);
+          expect(data.messageId).equals(payload.messageId);
+          expect(data.response).equals('no-response');
         });
 
         await waitForNoResponse;
@@ -1562,10 +1564,11 @@ describe('Test socket', () => {
         await socket2WaitMessage;
 
         // prepare promise that wait response
-        evtName = eventNames.socket.messageResponse(payload.messageId);
+        evtName = eventNames.socket.messageResponse;
         const socket1WaitResponse = awaitSocketForEvent(true, socket1, evtName, data => {
           expect(data.userId).equals(user2.id);
           expect(data.response.data).equals(responseMessage.data);
+          expect(data.messageId).equals(payload.messageId);
         });
 
         // send response from second user

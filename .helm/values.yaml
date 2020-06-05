@@ -32,13 +32,16 @@ app:
     _default: 1
   requests:
     cpu:
-      _default: "500m"
+      _default: "250m"
+      stage: "500m"
       production: "1"
     memory:
       _default: "512Mi"
+      stage: "1Gi"
       production: "2Gi"
   limits:
     memory:
       _default: "1Gi"
+      stage: "2Gi"
       production: "4Gi"
 

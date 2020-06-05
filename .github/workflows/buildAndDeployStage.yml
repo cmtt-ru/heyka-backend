@@ -2,7 +2,8 @@ name: Build and deploy to stage
 
 on:
   push:
-    branches: [ stage ]
+    branches:
+    - stage
 
 jobs:
   buildAndDeploy2Stage:

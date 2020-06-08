@@ -27,7 +27,7 @@ app:
   email_verification_code_lifespan:
     _default: "3600000"
   auth_link_lifespan:
-    _default: "600000"
+    _default: "2592000000"
   replicas:
     _default: 1
   requests:

@@ -44,6 +44,8 @@ describe('Test socket', () => {
     await db.none('DELETE FROM sessions');
     await server.redis.client.flushdb();
     Object.values(stubbedMethods).forEach(m => m.reset());
+
+    process.env.DISCONNECT_TIMEOUT = '0';
   });
 
   describe('Testing socket authentication', () => {

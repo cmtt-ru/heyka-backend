@@ -168,3 +168,26 @@ socket.on('media-state-updated', data => {
   // data.channelId: {string} id канала, в котором сейчас находится пользователь
 })
 ```
+
+## Сообщения
+
+
+### message (новое сообщение)
+
+```
+socket.on('message', data => {
+  // data.messageId: {uuid} Уникальный идентификатор сообщения (для ответа на него, например)
+  // data.isResponseNeeded: {boolean} Нужен ли ответ по этому сообщению
+  // data.userId: {uuid} Кто отправил сообщение
+  // data.message: {object} Произвольный JS-объект
+})
+```
+
+### message-response (ответ на сообщение)
+```
+socket.on('message-response', data => {
+  // data.messageId: {uuid} Уникальный идентификатор сообщения, на который пришел ответ
+  // data.userId: {uuid} Кто ответил
+  // data.response: {object} Произвольный JS-объект
+})
+```

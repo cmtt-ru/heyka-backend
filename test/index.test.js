@@ -713,6 +713,45 @@ describe('Test routes', () => {
     });
   });
 
+  describe('POST /workspaces/{workspaceId}/private-talk', () => {
+    describe('Create private talk for several users', () => {
+      it('channel name contains first names of all users', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        // create users
+        const user1 = await userService.signup({ email: 'user1@user.net', name: 'Admin Kurat' });
+        const user2 = await userService.signup({ email: 'user2@user.net', name: 'Tester Popov' });
+
+        // create tokens
+        const tokens = await userService.createTokens(user1);
+
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
+        
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          payload: {
+            users: [user2.id],
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+
+        const channels = await wdb.getWorkspaceChannelsForUser(workspace.id, user2.id);
+
+        const ch = channels.find(el => el.is_tmp);
+        expect(ch.name).equals('Admin, Tester');
+      });
+    });
+  });
+
   /**
    * Channels
    */
@@ -1240,6 +1279,58 @@ describe('Test routes', () => {
         const payload = JSON.parse(response.payload);
         expect(payload.length).equals(1);
         expect(payload[0].userId).equals(user2.id);
+      });
+    });
+  });
+
+  describe('GET /channels/{channelId}', () => {
+    describe('User who hasnt acces to channel try to request', () => {
+      it('return 403 error', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: true
+        });
+        const tokens = await userService.createTokens(user2);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/channels/${channel.id}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('Request channel info', () => {
+      it('return 403 error', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: true,
+          isTemporary: true
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/channels/${channel.id}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.name).equals('test');
+        expect(payload.isPrivate).equals(true);
+        expect(payload.isTemporary).equals(true);
       });
     });
   });

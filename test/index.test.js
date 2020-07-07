@@ -1109,6 +1109,47 @@ describe('Test routes', () => {
         expect(stubbedMethods.deleteAuthTokenForWorkspace.firstCall.args[0][0]).equals(userConn1.janusServerAuthToken);
       });
     });
+    describe('User unselect channel that was tmp without lifespan', () => {
+      it('should delete channel', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelDatabaseService: chdb,
+          connectionService
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'name');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'testChannel',
+          isPrivate: true,
+          isTemporary: true
+        });
+        const tokens = await userService.createTokens(user);
+        const conn = generateFakeConnection(user.id, workspace.id);
+        await connectionService.setConnectionObject(conn);
+        // select the channel
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
+          ...helpers.withAuthorization(tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
+        await new Promise(resolve => setTimeout(resolve, 1));
+        // try to unselect the channel
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/unselect?socketId=${conn.connectionId}`,
+          ...helpers.withAuthorization(tokens)
+        });
+
+        expect(response.statusCode).equals(200);
+        // channel should be deleted
+        const channelFromDb = await chdb.getChannelById(channel.id);
+        expect(channelFromDb).not.exists();
+      });
+    });
   });
 
   describe('POST /channels/{channelId}/leave', () => {

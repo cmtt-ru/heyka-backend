@@ -780,7 +780,6 @@ describe('Test routes', () => {
         const {
           userService,
           workspaceService,
-          workspaceDatabaseService: wdb
         } = server.services();
         // create users
         const user1 = await userService.signup({ email: 'user1@user.net', name: 'Admin Kurat' });

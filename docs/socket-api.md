@@ -193,3 +193,10 @@ socket.on('message-response', data => {
   // data.response: {object} Произвольный JS-объект
 })
 ```
+
+### message-cancelled (определенное сообщение было отменено)
+```
+socket.on('message-cancelled', data => {
+  // data.messageId: {uuid} Уникальный идентификатор сообщения, которое было отменено
+})
+```

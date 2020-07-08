@@ -1647,6 +1647,75 @@ describe('Test socket', () => {
         socket1.disconnect();
         socket2.disconnect();
       });
+      it('Both users should be subscribed for event of this channel', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // connect both users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // await events for new channel
+        evtName = eventNames.socket.channelCreated;
+        const awaitNewChannel1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitNewChannel2 = awaitSocketForEvent(true, socket2, evtName);
+
+        // start private talk from first user
+        const startTalkResponse = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          ...helpers.withAuthorization(tokens1),
+          payload: {
+            users: [user2.id]
+          }
+        });
+        expect (startTalkResponse.statusCode).equals(200);
+        const payload = JSON.parse(startTalkResponse.payload);
+
+        await Promise.all([awaitNewChannel1, awaitNewChannel2]);
+
+        // second user selects the channel, the both should receive message about it
+        evtName = eventNames.socket.userSelectedChannel;
+        const checkFunc = data => {
+          expect(data.channelId).equals(payload.channel.id);
+        };
+        const awaitUserSelected1 = awaitSocketForEvent(true, socket1, evtName, checkFunc);
+        const awaitUserSelected2 = awaitSocketForEvent(true, socket2, evtName, checkFunc);
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${payload.channel.id}/select?socketId=${socket2.id}`,
+          ...helpers.withAuthorization(tokens2),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
+        await Promise.all([awaitUserSelected1, awaitUserSelected2]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
     });
   });
 });

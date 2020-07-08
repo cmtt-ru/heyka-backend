@@ -179,6 +179,8 @@ socket.on('message', data => {
   // data.messageId: {uuid} Уникальный идентификатор сообщения (для ответа на него, например)
   // data.isResponseNeeded: {boolean} Нужен ли ответ по этому сообщению
   // data.userId: {uuid} Кто отправил сообщение
+  // data.workspaceId: {uuid} К какому workspace имеет отношение сообщение
+  // data.channelId: {uuid} К какому каналу имеет отношение сообщение
   // data.message: {object} Произвольный JS-объект
 })
 ```

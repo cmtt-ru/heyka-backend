@@ -1347,7 +1347,8 @@ describe('Test socket', () => {
       it('should return 400 User is not connected', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          workspaceDatabaseService: wdb,
         } = server.services();
         const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
         const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
@@ -1357,6 +1358,8 @@ describe('Test socket', () => {
   
         // create tokens for user
         const tokens1 = await userService.createTokens(user1);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
         // send message to second user
         const response = await server.inject({
@@ -1366,7 +1369,9 @@ describe('Test socket', () => {
           payload: {
             userId: user2.id,
             isResponseNeeded: true,
-            message: { data: 'somedata' }
+            message: { data: 'somedata' },
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
           }
         });
         expect(response.statusCode).equals(400);
@@ -1378,7 +1383,8 @@ describe('Test socket', () => {
       it('All user devices should get message', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          workspaceDatabaseService: wdb,
         } = server.services();
         const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
         const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
@@ -1386,6 +1392,8 @@ describe('Test socket', () => {
         const { workspace } = await workspaceService.createWorkspace(user1, 'name');
         const { workspace: w2 } = await workspaceService.createWorkspace(user2, 'name');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
         // create tokens for user
         const tokens1 = await userService.createTokens(user1);
@@ -1428,7 +1436,9 @@ describe('Test socket', () => {
           payload: {
             userId: user2.id,
             isResponseNeeded: true,
-            message
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
           }
         });
         expect(response.statusCode).equals(200);
@@ -1445,13 +1455,16 @@ describe('Test socket', () => {
       it('Sender should get a no-response-message event', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          workspaceDatabaseService: wdb
         } = server.services();
         const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
         const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
   
         const { workspace } = await workspaceService.createWorkspace(user1, 'name');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
         // create tokens for user
         const tokens1 = await userService.createTokens(user1);
@@ -1485,7 +1498,9 @@ describe('Test socket', () => {
           payload: {
             userId: user2.id,
             isResponseNeeded: true,
-            message
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
           }
         });
         expect(response.statusCode).equals(200);
@@ -1510,13 +1525,16 @@ describe('Test socket', () => {
       it('Sender should receive a response for his message', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          workspaceDatabaseService: wdb
         } = server.services();
         const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
         const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
   
         const { workspace } = await workspaceService.createWorkspace(user1, 'name');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
         // create tokens for user
         const tokens1 = await userService.createTokens(user1);
@@ -1556,7 +1574,9 @@ describe('Test socket', () => {
           payload: {
             userId: user2.id,
             isResponseNeeded: true,
-            message
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
           }
         });
         expect(response.statusCode).equals(200);

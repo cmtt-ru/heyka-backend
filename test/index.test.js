@@ -526,6 +526,33 @@ describe('Test routes', () => {
         expect(result.channel.id).exists();
         expect(result.channel.name).exists();
       });
+      it('check "creatorId" field exists', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(admin);
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/channels`,
+          payload: {
+            isPrivate: false,
+            name: 'testChannel'
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const result = JSON.parse(response.payload);
+        expect(result.channel.creatorId).exists();
+        expect(result.channel.creatorId).equals(admin.id);
+      });
     });
   });
 

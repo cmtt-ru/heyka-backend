@@ -179,6 +179,8 @@ socket.on('message', data => {
   // data.messageId: {uuid} Уникальный идентификатор сообщения (для ответа на него, например)
   // data.isResponseNeeded: {boolean} Нужен ли ответ по этому сообщению
   // data.userId: {uuid} Кто отправил сообщение
+  // data.workspaceId: {uuid} К какому workspace имеет отношение сообщение
+  // data.channelId: {uuid} К какому каналу имеет отношение сообщение
   // data.message: {object} Произвольный JS-объект
 })
 ```
@@ -189,5 +191,12 @@ socket.on('message-response', data => {
   // data.messageId: {uuid} Уникальный идентификатор сообщения, на который пришел ответ
   // data.userId: {uuid} Кто ответил
   // data.response: {object} Произвольный JS-объект
+})
+```
+
+### message-cancelled (определенное сообщение было отменено)
+```
+socket.on('message-cancelled', data => {
+  // data.messageId: {uuid} Уникальный идентификатор сообщения, которое было отменено
 })
 ```

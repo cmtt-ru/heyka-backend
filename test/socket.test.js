@@ -1347,7 +1347,8 @@ describe('Test socket', () => {
       it('should return 400 User is not connected', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          workspaceDatabaseService: wdb,
         } = server.services();
         const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
         const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
@@ -1357,6 +1358,8 @@ describe('Test socket', () => {
   
         // create tokens for user
         const tokens1 = await userService.createTokens(user1);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
         // send message to second user
         const response = await server.inject({
@@ -1366,7 +1369,9 @@ describe('Test socket', () => {
           payload: {
             userId: user2.id,
             isResponseNeeded: true,
-            message: { data: 'somedata' }
+            message: { data: 'somedata' },
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
           }
         });
         expect(response.statusCode).equals(400);
@@ -1378,7 +1383,8 @@ describe('Test socket', () => {
       it('All user devices should get message', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          workspaceDatabaseService: wdb,
         } = server.services();
         const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
         const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
@@ -1386,6 +1392,8 @@ describe('Test socket', () => {
         const { workspace } = await workspaceService.createWorkspace(user1, 'name');
         const { workspace: w2 } = await workspaceService.createWorkspace(user2, 'name');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
         // create tokens for user
         const tokens1 = await userService.createTokens(user1);
@@ -1428,7 +1436,9 @@ describe('Test socket', () => {
           payload: {
             userId: user2.id,
             isResponseNeeded: true,
-            message
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
           }
         });
         expect(response.statusCode).equals(200);
@@ -1445,13 +1455,16 @@ describe('Test socket', () => {
       it('Sender should get a no-response-message event', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          workspaceDatabaseService: wdb
         } = server.services();
         const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
         const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
   
         const { workspace } = await workspaceService.createWorkspace(user1, 'name');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
         // create tokens for user
         const tokens1 = await userService.createTokens(user1);
@@ -1485,7 +1498,9 @@ describe('Test socket', () => {
           payload: {
             userId: user2.id,
             isResponseNeeded: true,
-            message
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
           }
         });
         expect(response.statusCode).equals(200);
@@ -1510,13 +1525,16 @@ describe('Test socket', () => {
       it('Sender should receive a response for his message', async () => {
         const {
           userService,
-          workspaceService
+          workspaceService,
+          workspaceDatabaseService: wdb
         } = server.services();
         const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
         const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
   
         const { workspace } = await workspaceService.createWorkspace(user1, 'name');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
         // create tokens for user
         const tokens1 = await userService.createTokens(user1);
@@ -1548,7 +1566,7 @@ describe('Test socket', () => {
         });
 
         // send message to second user
-        process.env.NO_MESSAGE_RESPONSE_TIMEOUT = 100;
+        process.env.NO_MESSAGE_RESPONSE_TIMEOUT = 200;
         const response = await server.inject({
           method: 'POST',
           url: `/message`,
@@ -1556,7 +1574,9 @@ describe('Test socket', () => {
           payload: {
             userId: user2.id,
             isResponseNeeded: true,
-            message
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
           }
         });
         expect(response.statusCode).equals(200);
@@ -1591,6 +1611,331 @@ describe('Test socket', () => {
         socket2.disconnect();
       });
     });
+    describe('Send message with response needed and delete channel', () => {
+      it('sender should not get no-response-message', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // connect sockets
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // prepare message object
+        const message = { data: 'somedata' };
+
+        // send message to second user
+        process.env.NO_MESSAGE_RESPONSE_TIMEOUT = 40;
+        const response = await server.inject({
+          method: 'POST',
+          url: `/message`,
+          ...helpers.withAuthorization(tokens1),
+          payload: {
+            userId: user2.id,
+            isResponseNeeded: true,
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
+          }
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.messageId).exists();
+
+        // wait that user1 not get no-response message
+        evtName = eventNames.socket.messageResponse;
+        const waitForNoResponseNotFired = awaitSocketForEvent(false, socket1, evtName);
+
+        await workspaceService.deleteChannel(chnls[0].id);
+
+        await Promise.race([
+          new Promise(resolve => setTimeout(resolve, 10)),
+          waitForNoResponseNotFired
+        ]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+      it('receiver should get message-cancelled event', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // connect sockets
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // prepare message object
+        const message = { data: 'somedata' };
+
+        // send message to second user
+        process.env.NO_MESSAGE_RESPONSE_TIMEOUT = 40;
+        const response = await server.inject({
+          method: 'POST',
+          url: `/message`,
+          ...helpers.withAuthorization(tokens1),
+          payload: {
+            userId: user2.id,
+            isResponseNeeded: true,
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
+          }
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.messageId).exists();
+
+        // wait that user1 not get no-response message
+        evtName = eventNames.socket.messageResponse;
+        const waitForNoResponseNotFired = awaitSocketForEvent(false, socket1, evtName);
+
+        // wait the user2 get message-cancelled event
+        evtName = eventNames.socket.messageCancelled;
+        const waitForMessageCancelled = awaitSocketForEvent(true, socket2, evtName, data => {
+          expect(data.messageId).equals(payload.messageId);
+        });
+
+        await workspaceService.deleteChannel(chnls[0].id);
+
+        await Promise.race([
+          waitForMessageCancelled,
+          waitForNoResponseNotFired
+        ]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
+  });
+
+  describe('Testing private talks', () => {
+    describe('Start private talk with two users', () => {
+      it('Both users should receive message about created channel', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // connect both users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // await events for new channel
+        evtName = eventNames.socket.channelCreated;
+        const awaitNewChannel1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitNewChannel2 = awaitSocketForEvent(true, socket2, evtName);
+
+        // start private talk from first user
+        const startTalkResponse = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          ...helpers.withAuthorization(tokens1),
+          payload: {
+            users: [user2.id]
+          }
+        });
+        expect (startTalkResponse.statusCode).equals(200);
+
+        await Promise.all([awaitNewChannel1, awaitNewChannel2]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+      it('Both users should be subscribed for event of this channel', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // connect both users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // await events for new channel
+        evtName = eventNames.socket.channelCreated;
+        const awaitNewChannel1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitNewChannel2 = awaitSocketForEvent(true, socket2, evtName);
+
+        // start private talk from first user
+        const startTalkResponse = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          ...helpers.withAuthorization(tokens1),
+          payload: {
+            users: [user2.id]
+          }
+        });
+        expect (startTalkResponse.statusCode).equals(200);
+        const payload = JSON.parse(startTalkResponse.payload);
+
+        await Promise.all([awaitNewChannel1, awaitNewChannel2]);
+
+        // second user selects the channel, the both should receive message about it
+        evtName = eventNames.socket.userSelectedChannel;
+        const checkFunc = data => {
+          expect(data.channelId).equals(payload.channel.id);
+        };
+        const awaitUserSelected1 = awaitSocketForEvent(true, socket1, evtName, checkFunc);
+        const awaitUserSelected2 = awaitSocketForEvent(true, socket2, evtName, checkFunc);
+        const selectResponse = await server.inject({
+          method: 'POST',
+          url: `/channels/${payload.channel.id}/select?socketId=${socket2.id}`,
+          ...helpers.withAuthorization(tokens2),
+          payload: helpers.defaultUserState()
+        });
+        expect(selectResponse.statusCode).equals(200);
+        await Promise.all([awaitUserSelected1, awaitUserSelected2]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+      it('Second user should receive push message with invite', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // connect both users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // await push message from 2nd socket
+        const awaitPush = awaitSocketForEvent(true, socket2, eventNames.socket.message, data => {
+          expect(data.workspaceId).equals(workspace.id);
+          expect(data.userId).equals(user1.id);
+        });
+
+        // start private talk from first user
+        const startTalkResponse = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          ...helpers.withAuthorization(tokens1),
+          payload: {
+            users: [user2.id]
+          }
+        });
+        expect (startTalkResponse.statusCode).equals(200);
+
+        await awaitPush;
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
   });
 });
 
@@ -1609,7 +1954,7 @@ function awaitSocketForEvent(
   socket,
   event,
   dataCheckFunction = null,
-  pause = 10,
+  pause = 100,
 ) {
   return new Promise((resolve, reject) => {
     /**

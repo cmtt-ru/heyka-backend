@@ -169,34 +169,34 @@ socket.on('media-state-updated', data => {
 })
 ```
 
-## Сообщения
+## Пуши
 
 
-### message (новое сообщение)
+### invite (новое приглашение в канал)
 
 ```
-socket.on('message', data => {
-  // data.messageId: {uuid} Уникальный идентификатор сообщения (для ответа на него, например)
-  // data.isResponseNeeded: {boolean} Нужен ли ответ по этому сообщению
-  // data.userId: {uuid} Кто отправил сообщение
-  // data.workspaceId: {uuid} К какому workspace имеет отношение сообщение
-  // data.channelId: {uuid} К какому каналу имеет отношение сообщение
+socket.on('invite', data => {
+  // data.inviteId: {uuid} Уникальный идентификатор инвайта (для ответа на него, например)
+  // data.isResponseNeeded: {boolean} Нужен ли ответ по этому инвайту
+  // data.userId: {uuid} Кто отправил инвайт
+  // data.workspaceId: {uuid} К какому workspace имеет отношение инвайт
+  // data.channelId: {uuid} К какому каналу имеет отношение инвайт
   // data.message: {object} Произвольный JS-объект
 })
 ```
 
-### message-response (ответ на сообщение)
+### invite-response (ответ на инвайт)
 ```
-socket.on('message-response', data => {
-  // data.messageId: {uuid} Уникальный идентификатор сообщения, на который пришел ответ
+socket.on('invite-response', data => {
+  // data.inviteId: {uuid} Уникальный идентификатор сообщения, на который пришел ответ
   // data.userId: {uuid} Кто ответил
   // data.response: {object} Произвольный JS-объект
 })
 ```
 
-### message-cancelled (определенное сообщение было отменено)
+### invite-cancelled (определенный инвайт был отменен)
 ```
-socket.on('message-cancelled', data => {
-  // data.messageId: {uuid} Уникальный идентификатор сообщения, которое было отменено
+socket.on('invite-cancelled', data => {
+  // data.inviteId: {uuid} Уникальный идентификатор сообщения, которое было отменено
 })
 ```

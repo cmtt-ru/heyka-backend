@@ -27,18 +27,21 @@ app:
   email_verification_code_lifespan:
     _default: "3600000"
   auth_link_lifespan:
-    _default: "600000"
+    _default: "2592000000"
   replicas:
     _default: 1
   requests:
     cpu:
-      _default: "500m"
+      _default: "250m"
+      stage: "500m"
       production: "1"
     memory:
       _default: "512Mi"
+      stage: "1Gi"
       production: "2Gi"
   limits:
     memory:
       _default: "1Gi"
+      stage: "2Gi"
       production: "4Gi"
 

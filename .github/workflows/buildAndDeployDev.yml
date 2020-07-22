@@ -1,14 +1,16 @@
-name: Build and deploy
+name: Build and deploy to dev
 
 on:
   push:
-    branches: [ stage ]
+    branches:
+      - develop
   pull_request:
-    branches: [ stage ]
+    branches:
+      - develop
 
 jobs:
   buildAndDeploy2Dev:
-    name: "Build and Deploy to Dev"
+    name: "Build and Deploy to dev"
     runs-on: self-hosted
     env:
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}

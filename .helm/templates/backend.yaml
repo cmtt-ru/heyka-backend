@@ -36,6 +36,7 @@ spec:
 {{ tuple "backend" . | include "werf_container_env" | indent 12 }}
 {{- include "backend_env" . | indent 12 }}
         - name: build
+{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
           command: ["/bin/sh"]
           args:
             - -c

@@ -2,6 +2,7 @@
   <div class="wrapper">
     <img
       width="200"
+      height="200"
       alt="Vue logo"
       src="../assets/logo.png"
     >

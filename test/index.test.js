@@ -20,6 +20,7 @@ const generateFakeConnection = (userId, workspaceId) => ({
   onlineStatus: 'online',
   localTime: 'GMT+3'
 });
+const config = require('../config');
 
 describe('Test routes', () => {
   let server = null;
@@ -419,6 +420,38 @@ describe('Test routes', () => {
         expect(response.statusCode).equals(200);
         const result = JSON.parse(response.payload);
         expect(result.image).exists();
+      });
+    });
+    describe('Upload more than limit files', () => {
+      it('should return 403 error after 10th file', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ email: 'u@example.org', name: 'UserExample' });
+        const tokens = await userService.createTokens(user);
+        const withAuth = helpers.withAuthorization(tokens);
+        withAuth.headers['Content-Type'] = 'multipart/form-data; boundary=TEST';
+        const payload = '--TEST\r\n'
+          + 'Content-Disposition: form-data; name="image"; filename="image/png\r\n'
+          + 'Content-Type: image/png\r\n\r\n'
+          + IMAGE_EXAMPLE.toString() + '\r\n'
+          + '--TEST\r\n';
+        for (let i = 0; i < config.files.limitPerUser; ++i) {
+          const response = await server.inject({
+            method: 'POST',
+            url: '/image',
+            ...withAuth,
+            payload
+          });
+          expect(response.statusCode).equals(200);
+        }
+        const response = await server.inject({
+          method: 'POST',
+          url: '/image',
+          ...withAuth,
+          payload
+        });
+        expect(response.statusCode).equals(403);
+        const result = JSON.parse(response.payload);
+        expect(result.message).equals(errorMessages.limitReached);
       });
     });
   });

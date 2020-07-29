@@ -103,8 +103,11 @@ mockery.registerMock(
 mockery.registerMock(
   pathToFileService,
   class FileService extends Schmervice.Service {
-    upload() {
+    uploadLeonardo() {
       return 'https://leonardo.osnova.io/794af87c-195d-c9ee-40d6-14131c4c43a6/';
+    }
+    uploadS3() {
+      return '794af87c-195d-c9ee-40d6-14131c4c43a6.png';
     }
     uploadImageFromUrl() {
       stubbedMethods.uploadImageFromUrl(...arguments);

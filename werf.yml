@@ -26,9 +26,9 @@ ansible:
      args:
        chdir: /app
    - name: Install client packages
-    shell: npm install
-    args:
-      chdir: /app/client
+     shell: yarn
+     args:
+       chdir: /app
   beforeSetup:
     - name: Install ynadex cert for mdb
       shell: |

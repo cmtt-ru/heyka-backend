@@ -5,7 +5,9 @@
       alt="Vue logo"
       src="../assets/logo.png"
     >
-    <p class="title">Heyka {{ version }}</p>
+    <p class="title">
+      Heyka {{ version }}
+    </p>
 
     <div class="download">
       <a href="">macOS</a>
@@ -19,13 +21,13 @@
 
 export default {
   name: 'Home',
+  components: {
+
+  },
   data() {
     return {
       version: '0.1.1',
     };
-  },
-  components: {
-
   },
 };
 </script>

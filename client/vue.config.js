@@ -27,6 +27,15 @@ module.exports = {
         spriteFilename: 'img/icons.svg',
       },
     },
+    prerenderSpa: {
+      registry: undefined,
+      renderRoutes: [
+        '/',
+      ],
+      useRenderEvent: true,
+      headless: true,
+      onlyProduction: true,
+    },
   },
 
   chainWebpack: config => {

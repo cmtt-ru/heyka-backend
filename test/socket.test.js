@@ -2021,6 +2021,84 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('Testing "Mute For All" feature', () => {
+    describe('Send command about muting', () => {
+      it('Addressee should receive event with proper socketId and fromUserId', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb,
+          channelService
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // connect second user from different devices
+        const socket1 = io(server.info.uri);
+        const socket2a = io(server.info.uri);
+        const socket2b = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2a = awaitSocketForEvent(true, socket2a, evtName);
+        const awaitForAuth2b = awaitSocketForEvent(true, socket2b, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2a.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2b.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2a, awaitForAuth2b]);
+
+        // select the channel for both users
+        await channelService.selectChannel(chnls[0].id, user1.id, socket1.id, helpers.defaultUserState());
+        await channelService.selectChannel(chnls[0].id, user2.id, socket2a.id, helpers.defaultUserState());
+
+        // wait event from both 2-nd sockets about muting
+        evtName = eventNames.socket.mutedForAll;
+        const waitMutingCommand2a = awaitSocketForEvent(true, socket2a, evtName, data => {
+          expect(data.fromUserId).equals(user1.id);
+          expect(data.socketId).equals(socket2a.id);
+        });
+        const waitMutingCommand2b = awaitSocketForEvent(true, socket2b, evtName);
+
+        // send POST command
+        const response = await server.inject({
+          method: 'POST',
+          url: `/mute-for-all?socketId=${socket1.id}`,
+          payload: {
+            userId: user2.id
+          },
+          ...helpers.withAuthorization(tokens1)
+        });
+        expect(response.statusCode).equals(200);
+
+        await Promise.all([
+          waitMutingCommand2a,
+          waitMutingCommand2b
+        ]);
+
+        socket2a.disconnect();
+        socket2b.disconnect();
+        socket1.disconnect();
+      });
+    });
+  });
 });
 
 /**

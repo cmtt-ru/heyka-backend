@@ -1089,6 +1089,65 @@ describe('Test socket', () => {
     });
   });
 
+  describe('Testing update channel', () => {
+    describe('Channel is updated', () => {
+      it('All users of that channel should be notified', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelService,
+        } = server.services();
+        const user1 = await userService.signup({ email: 'adm@adm.ru', name: 'n1' });
+        const user2 = await userService.signup({ email: 'adm2@adm.ru', name: 'n2' });
+        const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'workspace1');
+        await workspaceService.addUserToWorkspace(w1.id, user2.id);
+        const channel = await workspaceService.createChannel(w1.id, user1.id, {
+          name: 'test',
+          isPrivate: false
+        });
+        
+        // authenticate user1 and user2 to sockets
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: w1.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: w1.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // update channel, wait for event
+        const updateData = {
+          name: 'new-name',
+          description: 'new-description',
+        };
+        
+        evtName = eventNames.socket.channelUpdated;
+        const checkData = data => {
+          expect(data.channel.name).equals(updateData.name);
+          expect(data.channel.description).equals(updateData.description);
+        };
+        const updateChannelEvent1 = awaitSocketForEvent(true, socket1, evtName, checkData);
+        const updateChannelEvent2 = awaitSocketForEvent(true, socket2, evtName, checkData);
+
+        await channelService.updateChannelInfo(channel.id, updateData);
+
+        await Promise.all([updateChannelEvent1, updateChannelEvent2]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
+  });
+
   describe('Testing updating online statuses', () => {
     it('testing different scenarious', async () => {
       const {

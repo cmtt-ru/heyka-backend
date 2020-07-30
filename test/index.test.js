@@ -423,6 +423,132 @@ describe('Test routes', () => {
     });
   });
 
+  describe('GET /check-permissions', () => {
+    describe('Check permissions when everything goes right', () => {
+      it('admin user wants to update and delete channel, should return list of true', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru'
+        };
+        const user = await userService.signup(userInfo);
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channels = await wdb.getWorkspaceChannels(workspace.id);
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check-permissions?actions=channel.delete,channel.update&channelId=${channels[0].id}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload['channel.update']).true();
+        expect(payload['channel.delete']).true();
+      });
+    });
+    describe('Check permissions when an action is permitted but another isnt', () => {
+      it('should return payload with different results for different actions', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru'
+        };
+        const user = await userService.signup(userInfo);
+        const anotherUser = await userService.signup({ name: 'test2', email: 'test2@mail.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const { workspace: anotherWorkspace } = await workspaceService.createWorkspace(anotherUser, 'test2');
+        const channels = await wdb.getWorkspaceChannels(workspace.id);
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check-permissions?actions=channel.delete,workspace.createChannel`
+            + `&channelId=${channels[0].id}&workspaceId=${anotherWorkspace.id}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload['channel.delete']).true();
+        expect(payload['workspace.createChannel']).false();
+      });
+    });
+    describe('Send action which not exists', () => {
+      it('should return 400 and object with errors', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru'
+        };
+        const user = await userService.signup(userInfo);
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check-permissions?actions=workspace.makeEverybodyHappier&workspaceId=${workspace.id}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(400);
+        const payload = JSON.parse(response.payload);
+        expect(payload.data['workspace.makeEverybodyHappier']).equals('Unknow action');
+      });
+    });
+    describe('Send action without corresponding entityId', () => {
+      it('should return 400 and object with errors', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru'
+        };
+        const user = await userService.signup(userInfo);
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check-permissions?actions=workspace.createChannel,channel.delete&workspaceId=${workspace.id}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(400);
+        const payload = JSON.parse(response.payload);
+        expect(payload.data['channel.delete']).equals('Query parameter "channelId" is required');
+      });
+    });
+    describe('Send action without corresponding entityId and send unknow action', () => {
+      it('should return 400 and object with errors', async () => {
+        const {
+          userService,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru'
+        };
+        const user = await userService.signup(userInfo);
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/check-permissions?actions=workspace.makeEverybodyHappier,channel.delete`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(400);
+        const payload = JSON.parse(response.payload);
+        expect(payload.data['channel.delete']).equals('Query parameter "channelId" is required');
+        expect(payload.data['workspace.makeEverybodyHappier']).equals('Unknow action');
+      });
+    });
+  });
+
   /**
    * Workspaces
    */
@@ -1319,6 +1445,157 @@ describe('Test routes', () => {
         expect(response.statusCode).equals(200);
         const channelFromDb = await chdb.getChannelById(channel.id);
         expect(channelFromDb).not.exist();
+      });
+    });
+  });
+
+  describe('POST /channels/{channelId}', () => {
+    describe('Try to modify channel by not admin user and not creator', () => {
+      it('should return 403 error', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: true
+        });
+        const tokens = await userService.createTokens(user2);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'test-modified',
+            description: 'set description'
+          }
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('Modify channel by admin, moderator and creator', () => {
+      it('channel should be modified', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelDatabaseService: chdb,
+        } = server.services();
+        const admin = await userService.signup({ email: 'admin@user.ru' });
+        const moderator = await userService.signup({ email: 'moderator@user.ru' });
+        const creator = await userService.signup({ email: 'creator@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, moderator.id, 'moderator');
+        await workspaceService.addUserToWorkspace(workspace.id, creator.id);
+        const channel = await workspaceService.createChannel(workspace.id, creator.id, {
+          name: 'test',
+          description: 'desc',
+          isPrivate: false
+        });
+
+        // creator modify channel
+        const creatorTokens = await userService.createTokens(creator);
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}`,
+          ...helpers.withAuthorization(creatorTokens),
+          payload: {
+            name: 'creator-modified-channel',
+            description: 'creator-modified-channel'
+          }
+        });
+        expect(response1.statusCode).equals(200);
+        const ch1 = await chdb.getChannelById(channel.id);
+        expect(ch1.name).equals('creator-modified-channel');
+        expect(ch1.description).equals('creator-modified-channel');
+
+        // moderator modify channel
+        const moderatorTokens = await userService.createTokens(moderator);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}`,
+          ...helpers.withAuthorization(moderatorTokens),
+          payload: {
+            name: 'moderator-modified-channel',
+            description: 'moderator-modified-channel'
+          }
+        });
+        expect(response2.statusCode).equals(200);
+        const ch2 = await chdb.getChannelById(channel.id);
+        expect(ch2.name).equals('moderator-modified-channel');
+        expect(ch2.description).equals('moderator-modified-channel');
+
+        // admin modify channel
+        const adminTokens = await userService.createTokens(moderator);
+        const response3 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}`,
+          ...helpers.withAuthorization(adminTokens),
+          payload: {
+            name: 'admin-modified-channel',
+            description: 'admin-modified-channel'
+          }
+        });
+        expect(response3.statusCode).equals(200);
+        const ch3 = await chdb.getChannelById(channel.id);
+        expect(ch3.name).equals('admin-modified-channel');
+        expect(ch3.description).equals('admin-modified-channel');
+      });
+    });
+  });
+
+  describe('DELETE /channels/{channelId}', () => {
+    describe('Try to delete channel by not admin user and not creator', () => {
+      it('should return 403 error', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'test',
+          isPrivate: true
+        });
+        const tokens = await userService.createTokens(user2);
+        const response = await server.inject({
+          method: 'DELETE',
+          url: `/channels/${channel.id}`,
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('Delete channel by admin, moderator and creator', () => {
+      it('channel should be deleted', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelDatabaseService: chdb,
+        } = server.services();
+        const admin = await userService.signup({ email: 'admin@user.ru' });
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, admin.id, {
+          name: 'test',
+          description: 'desc',
+          isPrivate: false
+        });
+
+        // creator delete channel
+        const tokens = await userService.createTokens(admin);
+        const response1 = await server.inject({
+          method: 'DELETE',
+          url: `/channels/${channel.id}`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response1.statusCode).equals(200);
+        const ch1 = await chdb.getChannelById(channel.id);
+        expect(ch1).not.exists();
       });
     });
   });

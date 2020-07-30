@@ -208,3 +208,11 @@ socket.on('invite-cancelled', data => {
   // data.inviteId: {uuid} Уникальный идентификатор сообщения, которое было отменено
 })
 ```
+
+### muted-for-all (вас кто-то хочет замьютить)
+```
+socket.on('muted-for-all', data => {
+  // data.fromUserId: {uuid} Id пользователя, который хочет вас замьютить
+  // data.socketId: {string} Id коннекта, который должен быть замьючен
+})
+```

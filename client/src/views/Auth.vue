@@ -1,8 +1,5 @@
 <template>
-  <div class="wrapper">
-    Auth {{ $t('test') }}
-    <svg-icon name="lock" />
-  </div>
+  <router-view />
 </template>
 
 <script>

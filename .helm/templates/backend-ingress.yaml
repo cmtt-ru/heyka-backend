@@ -5,6 +5,7 @@ metadata:
   name: {{ .Chart.Name }}
   annotations:
     kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
   - host: {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
@@ -18,7 +19,7 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
-      - path: /\.(js|css|ico|woff2|png|jpeg|jpg|gif)
+        path: /.+\.(js|css|ico|woff2|png|jpeg|jpg|gif)
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static

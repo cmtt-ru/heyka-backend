@@ -9,6 +9,8 @@ import axios from 'axios';
  *
  * @returns {object} result data
  */
-export default function (social, params) {
-  return axios.post(`/signin/${social}`, params).then(res => res.data);
+export default function (social) {
+  return axios.get(`/signin/${social}`, {
+    maxRedirects: 0,
+  }).then(res => res.data);
 }

@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper">
-    Auth form
+    Auth {{ $t('test') }}
   </div>
 </template>
 

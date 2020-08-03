@@ -99,7 +99,7 @@ ansible:
       chmod 0600 ~/.postgresql/root.crt
 
 ---
-image: nginx
+image: static
 from: nginx:stable
 
 import:

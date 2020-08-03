@@ -74,7 +74,7 @@ spec:
               mountPath: /app/.env
               subPath: dotenv
         - name: nginx
-{{ tuple "nginx" . | include "werf_container_image" | indent 10 }}
+{{ tuple "static" . | include "werf_container_image" | indent 10 }}
           lifecycle:
             preStop:
               exec:

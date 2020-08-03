@@ -19,7 +19,7 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
-        path: /.+\.(js|css|ico|woff2|png|jpeg|jpg|gif)
+      - path: /.+\.(js|css|ico|woff2|png|jpeg|jpg|gif)
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static

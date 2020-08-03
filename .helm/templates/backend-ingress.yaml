@@ -19,7 +19,7 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
-      - path: /.+\.(js|css|ico|woff2|png|jpeg|jpg|gif|svg)
+      - path: /.+\.(js|css|ico|woff2|png|jpeg|jpg|gif|svg)$
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
@@ -27,6 +27,11 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: web
+      - path: /swaggerui/.+\.(js|css|ico|woff2|png|jpeg|jpg|gif|svg)$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: web
+        
   tls:
   - hosts:
       - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}

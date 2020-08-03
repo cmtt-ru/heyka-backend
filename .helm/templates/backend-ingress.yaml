@@ -10,6 +10,18 @@ spec:
   - host: {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
     http:
       paths:
+      - path: /$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
+      - path: /(auth|guest)$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
+      - path: /\.(js|css|ico|woff2|png|jpeg|jpg|gif)
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
       - path: /
         backend:
           serviceName: {{ .Chart.Name }}

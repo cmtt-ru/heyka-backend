@@ -5,7 +5,7 @@
 </template>
 
 <script>
-// import Cookies from 'js-cookie';
+import Cookies from 'js-cookie';
 
 export default {
   name: 'Home',
@@ -21,7 +21,9 @@ export default {
     },
   },
   async mounted() {
+    Cookies.remove('heyka-access-token');
     console.log(this.$route);
+    document.location.href = 'heyka://join/1234';
   },
 };
 </script>

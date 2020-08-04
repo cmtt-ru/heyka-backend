@@ -10,6 +10,7 @@ exports.up = (pgm) => {
       primaryKey: true
     },
     filename: 'varchar(255)',
+    type: 'varchar(30)',
     user_id: {
       type: 'uuid',
       references: 'users(id)',

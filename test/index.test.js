@@ -419,7 +419,7 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).equals(200);
         const result = JSON.parse(response.payload);
-        expect(result.image).exists();
+        expect(result.fileId).exists();
       });
     });
     describe('Upload more than limit files', () => {

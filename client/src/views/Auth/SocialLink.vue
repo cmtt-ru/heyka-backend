@@ -5,6 +5,7 @@
 </template>
 
 <script>
+import Cookies from 'js-cookie';
 
 export default {
   name: 'Home',
@@ -21,10 +22,14 @@ export default {
   },
   async mounted() {
     const res = await this.$API.auth.signinByLink(this.authCode);
-    console.log('signinByLink', res);
 
-    const res2 = await this.$API.auth.signinBySocial(this.socialName);
-    console.log('signinBySocial', res2);
+    if (res.data && res.data.accessToken) {
+      Cookies.set('heyka-access-token', res.data.accessToken);
+
+      const baseUrl = IS_DEV ? process.env.VUE_APP_DEV_URL : process.env.VUE_APP_PROD_URL;
+
+      document.location.href = `${baseUrl}/signin/${this.socialName}`;
+    }
   },
 };
 </script>

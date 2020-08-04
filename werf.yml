@@ -53,7 +53,7 @@ ansible:
   install:
   - name: "npm install"
     shell: |
-      npm install
+      npm ci
     args:
       chdir: /app/client
   - name: Install packages

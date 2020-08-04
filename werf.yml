@@ -17,6 +17,10 @@ from: node:alpine
 git:
 - add: /
   to: /app
+  excludePaths:
+  - .helm
+  - werf.yaml
+  - .github
   stageDependencies:
     install:
     - "package.json"

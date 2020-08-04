@@ -26,9 +26,7 @@ export default {
     if (res.data && res.data.accessToken) {
       Cookies.set('heyka-access-token', res.data.accessToken);
 
-      const baseUrl = IS_DEV ? process.env.VUE_APP_DEV_URL : process.env.VUE_APP_PROD_URL;
-
-      document.location.href = `${baseUrl}/signin/${this.socialName}`;
+      document.location.href = `/signin/${this.socialName}`;
     }
   },
 };

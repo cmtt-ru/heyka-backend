@@ -29,7 +29,7 @@ const routes = [
     component: Auth,
     children: [
       {
-        path: 'social/callback/:code',
+        path: 'social/callback',
         name: 'auth-social-callback',
         component: SocialCallback,
       },

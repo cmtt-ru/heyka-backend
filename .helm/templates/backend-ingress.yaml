@@ -44,7 +44,7 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
-      - path: /(auth|guest)$
+      - path: /(auth|guest)
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static

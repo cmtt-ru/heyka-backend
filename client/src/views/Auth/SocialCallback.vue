@@ -1,6 +1,6 @@
 <template>
   <div class="wrapper">
-    Redirecting to App with code {{ authCode }}
+    Status {{ status }}. Redirecting to App with code {{ authCode }}
   </div>
 </template>
 
@@ -14,11 +14,14 @@ export default {
   },
   computed: {
     authCode() {
-      return this.$route.params.code;
+      return this.$route.query.authlink;
+    },
+    status() {
+      return this.$route.query.success;
     },
   },
   async mounted() {
-    console.log(this.authCode);
+    console.log(this.$route);
   },
 };
 </script>

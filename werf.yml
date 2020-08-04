@@ -56,10 +56,6 @@ ansible:
       npm ci
     args:
       chdir: /app/client
-  - name: Install packages
-    shell: yarn
-    args:
-      chdir: /app
   setup:
   - name: "npm run"
     shell: |
@@ -76,14 +72,17 @@ from: node:alpine
 docker:
   ENV:
     LANG: C.UTF-8
-import:
-- artifact: build
-  add: /app
+git:
+- add: /
   to: /app
-  before: install
   excludePaths:
-    - ./client/node_modules
-    - ./node_modules
+  - .helm
+  - werf.yaml
+  - .github
+  stageDependencies:
+    install:
+    - "package.json"
+    - "yarn.lock"
 ansible:
   beforeInstall:
   - name: "Install dependencies"

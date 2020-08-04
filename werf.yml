@@ -1,8 +1,70 @@
 configVersion: 1
 project: heyka-backend
 deploy:
- helmRelease: "[[ project ]]-[[ env ]]"
- namespace: "heyka-[[ env ]]"
+  helmRelease: "[[ project ]]-[[ env ]]"
+  namespace: "heyka-[[ env ]]"
+
+{{- define "Set timezone" }}
+- name: "Set timezone"
+  timezone:
+   name: Europe/Moscow
+{{- end }}
+
+---
+artifact: build
+from: node:alpine
+
+git:
+- add: /
+  to: /app
+  stageDependencies:
+    install:
+    - "package.json"
+    - "**/package.json"
+    - "yarn.lock"
+    setup:
+    - "client/**"
+ansible:
+  beforeInstall:
+  - name: "Install dependencies"
+    apk:
+      name:
+        chromium,
+        nss,
+        freetype,
+        freetype-dev,
+        harfbuzz,
+        ca-certificates,
+        ttf-freefont,
+        nodejs,
+        yarn
+  - name: "Install puppeteer"
+    yarn:
+      name: puppeteer
+      version: '1.19.0'
+      global: yes
+    environment:
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser 
+  install:
+  - name: "npm install"
+    shell: |
+      npm install
+    args:
+      chdir: /app/client
+  - name: Install packages
+    shell: yarn
+    args:
+      chdir: /app
+  setup:
+  - name: "npm run"
+    shell: |
+      npm run build
+    args:
+      chdir: /app/client
+    environment:
+      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+      PUPPETEER_EXECUTABLE_PATH: /usr/bin/chromium-browser 
 
 ---
 image: backend
@@ -10,24 +72,61 @@ from: node:alpine
 docker:
   ENV:
     LANG: C.UTF-8
-git:
-  - add: /
-    to: /app
-    stageDependencies:
-      install:
-      - "package.json"
-      - "yarn.lock"
-      setup:
-      - "**/*"
+import:
+- artifact: build
+  add: /app
+  to: /app
+  before: install
+  excludePaths:
+    - ./client/node_modules
+    - ./node_modules
 ansible:
+  beforeInstall:
+  - name: "Install dependencies"
+    apk:
+      name:
+        postgresql-client
   install:
-   - name: Install packages
-     shell: yarn
-     args:
-       chdir: /app
+  - name: Install packages
+    shell: yarn
+    args:
+      chdir: /app
   beforeSetup:
-    - name: Install ynadex cert for mdb
-      shell: |
-        mkdir -p ~/.postgresql
-        wget "https://storage.yandexcloud.net/cloud-certs/CA.pem" -O ~/.postgresql/root.crt
-        chmod 0600 ~/.postgresql/root.crt
+  - name: Install ynadex cert for mdb
+    shell: |
+      mkdir -p ~/.postgresql
+      wget "https://storage.yandexcloud.net/cloud-certs/CA.pem" -O ~/.postgresql/root.crt
+      chmod 0600 ~/.postgresql/root.crt
+
+---
+image: static
+from: nginx:stable
+
+import:
+- artifact: build
+  add: /app/client
+  to: /app/client
+  before: install
+  owner: www-data
+  group: www-data
+  excludePaths:
+    - ./node_modules
+
+ansible:
+  beforeInstall:
+  - name: "Create non-root main application user"
+    user:
+      name: www-data
+      comment: "Non-root main application user"
+      uid: 7000
+      shell: /bin/bash
+      home: /app/client
+  - name: "Install build dependencies"
+    apt:
+      name: [
+        locales,
+        tzdata,
+        wget,
+      ]
+      update_cache: yes
+{{- include "Set timezone" . | indent 2 }}

@@ -6,6 +6,8 @@ module.exports = {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src/'),
+        '@api': path.resolve(__dirname, 'src/api'),
+        '@components': path.resolve(__dirname, 'src/components'),
       },
     },
     plugins: webpackPlugins,

@@ -1,7 +1,5 @@
 <template>
-  <div class="wrapper">
-    Auth form
-  </div>
+  <router-view />
 </template>
 
 <script>

@@ -4,6 +4,8 @@
 
 Универсальные [ошибки](docs/common-errors.md) API
 
+[Описание прав доступа](docs/permission-list.md)
+
 # Запуск
 
 1. Поставить пакетный менеджер Yarn (`npm install --global yarn`)

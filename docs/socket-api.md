@@ -85,6 +85,14 @@ socket.on('channel-created', data => {
 
 Подробную информацию о канале нужно запросить отдельно, потому что оповещение о созданном канале рассылается всем пользователям вокрспейса, но канал может быть приватный и не все пользователи имеют к нему доступ
 
+### channel-updated (информация о канале обновлена)
+
+```
+socket.on('channel-updated', data => {
+  // data.channel {ChannelSchema} Данные о канале
+})
+```
+
 ### channel-deleted (канал удалён)
 
 ```
@@ -198,5 +206,13 @@ socket.on('invite-response', data => {
 ```
 socket.on('invite-cancelled', data => {
   // data.inviteId: {uuid} Уникальный идентификатор сообщения, которое было отменено
+})
+```
+
+### muted-for-all (вас кто-то хочет замьютить)
+```
+socket.on('muted-for-all', data => {
+  // data.fromUserId: {uuid} Id пользователя, который хочет вас замьютить
+  // data.socketId: {string} Id коннекта, который должен быть замьючен
 })
 ```

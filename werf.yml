@@ -82,7 +82,7 @@ git:
   stageDependencies:
     install:
     - "package.json"
-    - "**/yarn.lock"
+    - "yarn.lock"
     setup:
     - "**/*"
 ansible:

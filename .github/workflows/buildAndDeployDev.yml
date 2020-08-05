@@ -13,20 +13,41 @@ jobs:
     name: "Build and Deploy to dev"
     runs-on: self-hosted
     env:
-      ENV: "dev"
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
-
+      ENV: "dev"
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+      - uses: actions/checkout@v1
 
-      - name: werf converge
-        uses: werf/actions/converge@master
-        with:
-          group: 1.1
-          channel: alpha
-          env: ${{ env.ENV }}
-        env:
-          WERF_STAGES_STORAGE: ":local"
+      - name: Docker login
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
+
+      - name: werf build and publish
+        run: |
+          cd ${{ runner.workspace }}/${GITHUB_REPOSITORY##*/}/
+          type multiwerf && source <(multiwerf use 1.1 beta)
+          werf build-and-publish --stages-storage :local --images-repo docker.pkg.github.com/${{ github.repository }}/ --tag-by-stages-signature
+
+      - name: werf deploy
+        run: |
+          cd ${{ runner.workspace }}/${GITHUB_REPOSITORY##*/}/
+          type multiwerf && source <(multiwerf use 1.1 beta)
+          werf deploy --stages-storage :local --env $ENV --images-repo docker.pkg.github.com/${{ github.repository }}/ --tag-by-stages-signature
+
+  #   env:
+  #     ENV: "dev"
+  #     WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
+
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
+
+  #     - name: werf converge
+  #       uses: werf/actions/converge@master
+  #       with:
+  #         group: 1.1
+  #         channel: alpha
+  #         env: ${{ env.ENV }}
+  #       env:
+  #         WERF_STAGES_STORAGE: ":local"

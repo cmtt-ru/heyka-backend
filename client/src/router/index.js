@@ -34,6 +34,11 @@ const routes = [
         component: SocialCallback,
       },
       {
+        path: 'social/:socialName/:action/',
+        name: 'auth-social-login',
+        component: SocialLogin,
+      },
+      {
         path: 'social/:socialName/:action/:code',
         name: 'auth-social-link',
         component: SocialLogin,

@@ -23,7 +23,7 @@ export default {
     console.log(this.$route);
 
     if (this.action === 'login') {
-      document.location.href = 'heyka://join/111111';
+      document.location.href = `heyka://login/${this.authCode}`;
     }
 
     if (this.action === 'link') {

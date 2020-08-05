@@ -24,13 +24,13 @@ jobs:
       - name: werf build and publish
         run: |
           cd ${{ runner.workspace }}/${GITHUB_REPOSITORY##*/}/
-          type multiwerf && source <(multiwerf use 1.1 beta)
+          type multiwerf && source <(multiwerf use 1.1 stable)
           werf build-and-publish --stages-storage :local --images-repo docker.pkg.github.com/${{ github.repository }}/ --tag-by-stages-signature
 
       - name: werf deploy
         run: |
           cd ${{ runner.workspace }}/${GITHUB_REPOSITORY##*/}/
-          type multiwerf && source <(multiwerf use 1.1 beta)
+          type multiwerf && source <(multiwerf use 1.1 stable)
           werf deploy --stages-storage :local --env $ENV --images-repo docker.pkg.github.com/${{ github.repository }}/ --tag-by-stages-signature
 
   #   env:

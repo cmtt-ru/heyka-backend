@@ -8,10 +8,6 @@
 import Cookies from 'js-cookie';
 
 export default {
-  name: 'Home',
-  components: {
-
-  },
   computed: {
     authCode() {
       return this.$route.query.authlink;
@@ -19,11 +15,21 @@ export default {
     status() {
       return this.$route.query.success;
     },
+    action() {
+      return Cookies.get('heyka-auth-action');
+    },
   },
   async mounted() {
-    Cookies.remove('heyka-access-token');
     console.log(this.$route);
-    document.location.href = 'heyka://join/1234';
+
+    if (this.action === 'login') {
+      document.location.href = 'heyka://join/111111';
+    }
+
+    if (this.action === 'link') {
+      Cookies.remove('heyka-access-token');
+      document.location.href = 'heyka://join/111111';
+    }
   },
 };
 </script>

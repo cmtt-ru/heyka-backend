@@ -3,7 +3,7 @@ import VueRouter from 'vue-router';
 const Landing = () => import(/* webpackChunkName: "main" */ '../views/Landing.vue');
 
 const Auth = () => import(/* webpackChunkName: "main" */ '../views/Auth.vue');
-const SocialLink = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialLink.vue');
+const SocialLogin = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialLogin.vue');
 const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialCallback.vue');
 
 const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest.vue');
@@ -34,9 +34,9 @@ const routes = [
         component: SocialCallback,
       },
       {
-        path: 'social/:socialName/link/:code',
+        path: 'social/:socialName/:action/:code',
         name: 'auth-social-link',
-        component: SocialLink,
+        component: SocialLogin,
       },
     ],
   },

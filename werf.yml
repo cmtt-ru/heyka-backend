@@ -82,7 +82,9 @@ git:
   stageDependencies:
     install:
     - "package.json"
-    - "yarn.lock"
+    - "**/yarn.lock"
+    setup:
+    - "**/*"
 ansible:
   beforeInstall:
   - name: "Install dependencies"
@@ -94,7 +96,7 @@ ansible:
     shell: yarn
     args:
       chdir: /app
-  beforeSetup:
+  setup:
   - name: Install ynadex cert for mdb
     shell: |
       mkdir -p ~/.postgresql

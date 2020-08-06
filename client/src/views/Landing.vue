@@ -1,20 +1,24 @@
 <template>
   <div class="wrapper">
-    <img
-      width="200"
-      height="200"
-      alt="Vue logo"
-      src="../assets/logo.png"
-    >
-    <p class="title">
-      Heyka {{ version }}
-    </p>
 
-    <div class="download">
-      <a href="">macOS</a>
-      <a href="">Windows</a>
-      <a href="">Linux</a>
+    <div class="content">
+      <img
+        width="200"
+        height="200"
+        alt="Vue logo"
+        src="../assets/logo.png"
+      >
+      <p class="title">
+        Heyka {{ version }}
+      </p>
+
+      <div class="download">
+        <a href="">macOS</a>
+        <a href="">Windows</a>
+        <a href="">Linux</a>
+      </div>
     </div>
+
   </div>
 </template>
 
@@ -33,15 +37,19 @@ export default {
 };
 </script>
 
-<style lang="stylus">
-  body
-    background #F1FAFF
-    line-height 1
-
+<style lang="stylus" scoped>
   .wrapper
+    display flex
+    background #F1FAFF
+    width 100vw
+    height 100vh
+    justify-content center
+
+  .content
     max-width 700px
-    margin 70px auto
     text-align center
+    line-height 1
+    margin-top 70px
 
     .title
       font-size 48px

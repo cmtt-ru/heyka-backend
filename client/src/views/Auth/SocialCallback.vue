@@ -1,7 +1,5 @@
 <template>
-  <div class="wrapper">
-    Status {{ status }}. Redirecting to App with code {{ authCode }}
-  </div>
+  <div />
 </template>
 
 <script>

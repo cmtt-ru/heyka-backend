@@ -1,7 +1,5 @@
 <template>
-  <div class="wrapper">
-    Redirecting to {{ socialName }} with code {{ authCode }}
-  </div>
+  <div />
 </template>
 
 <script>

@@ -6,6 +6,7 @@ metadata:
 data:
   dotenv: |
     COOKIE_PASSWORD=you_have_to_set_very_long_string_and_it_should_be_protected_as_a_zenitsa_oka
+    JWT_SECRET={{ pluck .Values.global.env .Values.app.jwt_secret | first | default .Values.app.jwt_secret | quote }}
 
     # Token lifespan
     ACCESS_TOKEN_LIFESPAN = {{ pluck .Values.global.env .Values.app.access_token_lifespan | first | default .Values.app.access_token_lifespan._default | toString }}

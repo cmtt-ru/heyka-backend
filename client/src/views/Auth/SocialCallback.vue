@@ -45,9 +45,11 @@ export default {
     }
   },
 
-  launchDeepLink(url) {
-    console.log('launchDeepLink', `heyka://${url}`);
-    document.location.href = `heyka://${url}`;
+  methods: {
+    launchDeepLink(url) {
+      console.log('launchDeepLink', `heyka://${url}`);
+      document.location.href = `heyka://${url}`;
+    },
   },
 };
 </script>

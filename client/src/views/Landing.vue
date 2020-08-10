@@ -12,11 +12,12 @@
       </p>
 
       <div class="download">
-        <a>macOS</a>
+        <a class="link">macOS</a>
         <a
+          class="link"
           @click="startPinging"
         >Windows</a>
-        <a>Linux</a>
+        <a class="link">Linux</a>
       </div>
     </div>
   </div>
@@ -33,6 +34,8 @@ export default {
   data() {
     return {
       version: '0.1.1',
+      pingInterval: null,
+      pingTime: 2000,
     };
   },
 
@@ -42,14 +45,20 @@ export default {
         const res = await this.$API.auth.link();
 
         console.log(res);
-        this.pingLocalWebServer(res.data.code);
-        // await fetch('http://127.0.0.1:9615/99999999', {mode: 'no-cors'});
+        this.pingInterval = setInterval(() => {
+          this.pingLocalWebServer(res.code);
+        }, this.pingTime);
       }
     },
     async pingLocalWebServer(authLink) {
-      const res = await fetch(`http://127.0.0.1:9615/${authLink}`, { mode: 'no-cors' });
+      try {
+        const res = await fetch(`http://127.0.0.1:9615/${authLink}`, { mode: 'no-cors' });
 
-      console.log(res);
+        console.log(res);
+        clearInterval(this.pingInterval);
+      } catch (err) {
+        console.log('ERRRRR', err);
+      }
     },
   },
 };
@@ -83,4 +92,5 @@ export default {
       color #777
       text-decoration none
       border-bottom 1px solid #ccc
+      cursor pointer
 </style>

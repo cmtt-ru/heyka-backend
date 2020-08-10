@@ -13,8 +13,8 @@ module.exports = {
       log: ['error'],
       request: ['error'],
     } : process.env.NODE_ENV === 'test' ? {
-      log: '*',
-      request: '*'
+      log: ['debug-error'],
+      request: ['debug-error'],
     } : undefined
   },
   register: {

@@ -8,7 +8,7 @@
     "dev": "NODE_ENV=development nodemon index.js",
     "dev:node": "NODE_ENV=development node index.js",
     "lint": "eslint ./",
-    "test": "yarn lab --verbose --leaks -m 3000 --coverage --coverage-all --coverage-pattern './lib/(routes|services|socket)/*'",
+    "test": "yarn lab --verbose --leaks -m 3000 --coverage --coverage-exclude config/index.js --coverage-exclude config/manifest.js --coverage-exclude lib/.hc.js --coverage-exclude lib/index.js",
     "test:integration": "yarn lab --verbose --leaks test/index.test.js test/socket.test.js",
     "test:unit": "yarn lab --verbose --leaks test/unit/*.js",
     "check": "yarn run lint && yarn run test",
@@ -65,6 +65,7 @@
     "@hapi/code": "^7.0.0",
     "@hapi/lab": "^21.0.0",
     "eslint": "^6.6.0",
+    "mockdate": "^3.0.2",
     "mockery": "^2.1.0",
     "nodemon": "^2.0.1",
     "sinon": "^7.5.0"

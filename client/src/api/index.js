@@ -1,14 +1,16 @@
 // import axios from 'axios';
 import authApi from './auth';
+import workspaceApi from './workspace';
 import { errorMessages } from './errors/types';
 import { handleError } from './errors';
 import { updateTokens, checkAndRefreshTokens } from './tokens';
+import axios from 'axios';
 
-// if (IS_DEV) {
-//   axios.defaults.baseURL = process.env.VUE_APP_DEV_URL;
-// } else {
-//   axios.defaults.baseURL = process.env.VUE_APP_PROD_URL;
-// }
+if (IS_DEV) {
+  axios.defaults.baseURL = process.env.VUE_APP_DEV_URL;
+} else {
+  axios.defaults.baseURL = process.env.VUE_APP_PROD_URL;
+}
 
 /**
  * Inject's middleware function in all api methods
@@ -61,4 +63,5 @@ function middleware(func, functionName) {
 
 export default {
   auth: injectMiddleware(authApi),
+  workspace: injectMiddleware(workspaceApi),
 };

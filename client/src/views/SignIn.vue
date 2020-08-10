@@ -187,7 +187,7 @@ export default {
       try {
         await this.$API.auth.signin({ credentials: this.login });
 
-        await this.$router.replace({
+        await this.$router.push({
           name: 'landing',
         });
       } catch (err) {

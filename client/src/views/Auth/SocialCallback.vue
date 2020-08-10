@@ -16,18 +16,40 @@ export default {
     action() {
       return Cookies.get('heyka-auth-action');
     },
+    error() {
+      if (this.$route.query.error) {
+        return this.$route.query.error;
+      }
+
+      return '';
+    },
   },
+
   async mounted() {
     console.log(this.$route);
 
     if (this.action === 'login') {
-      document.location.href = `heyka://login/${this.authCode}`;
+      this.launchDeepLink(`login/${this.authCode}`);
     }
 
     if (this.action === 'link') {
+      let deepLink = `social-link/${this.status}`;
+
+      if (this.error) {
+        deepLink += `/${encodeURIComponent(this.error)}`;
+      }
+
       Cookies.remove('heyka-access-token');
-      document.location.href = 'heyka://join/111111';
+
+      this.launchDeepLink(deepLink);
     }
+  },
+
+  methods: {
+    launchDeepLink(url) {
+      console.log('launchDeepLink', `heyka://${url}`);
+      document.location.href = `heyka://${url}`;
+    },
   },
 };
 </script>

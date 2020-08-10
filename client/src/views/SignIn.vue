@@ -1,5 +1,11 @@
 <template>
-  <div class="page">
+  <div class="page-wrapper">
+    <div class="image">
+      <img
+        class="sidebar-image"
+        :src="coverSrc"
+      >
+    </div>
     <div class="page l-p-18">
       <p class="l-fs-18">
         Welcome to Heyka
@@ -151,6 +157,18 @@ export default {
     };
   },
 
+  mounted() {
+    const hour = new Date().getHours();
+    const morning = 13;
+    const evening = 17;
+
+    if (hour < morning || hour > evening) {
+      this.coverSrc = require('@assets/img/cover_night.png');
+    } else {
+      this.coverSrc = require('@assets/img/cover_day.png');
+    }
+  },
+
   methods: {
 
     toggleReset() {
@@ -169,14 +187,12 @@ export default {
       try {
         await this.$API.auth.signin({ credentials: this.login });
 
-        await this.$store.dispatch('initial');
-
         await this.$router.replace({
-          name: 'workspace',
+          name: 'landing',
         });
       } catch (err) {
         console.log('ERROR:', err);
-        if (err.response.data.message === 'Invalid request payload input') {
+        if (err.response.data.message === 'Email or password are invalid') {
           const notification = {
             data: {
               text: 'Wrong email/password!',
@@ -211,22 +227,29 @@ export default {
 
 .sidebar-image
     width 100%
-    height 100%
+    height 100vh
     display block
     object-fit cover
     object-position 0 0
 
-.page
+.page-wrapper
     height 100%
     box-sizing border-box
     display flex
+    flex-direction row
+
+.page
+    height 100vh
+    box-sizing border-box
+    display flex
     flex-direction column
+    justify-content center
+    flex-grow 2
 
     &__content
         display flex
         flex-direction column
         justify-content center
-        flex-grow 2
 
 .or-delimiter
     width 100%
@@ -262,7 +285,7 @@ export default {
         cursor pointer
 
 .reset-form
-  min-height 180px
+  min-height 185px
   display flex
   flex-direction column
   justify-content top

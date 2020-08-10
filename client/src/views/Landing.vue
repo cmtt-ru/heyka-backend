@@ -12,15 +12,18 @@
       </p>
 
       <div class="download">
-        <a href="">macOS</a>
-        <a href="">Windows</a>
-        <a href="">Linux</a>
+        <a>macOS</a>
+        <a
+          @click="startPinging"
+        >Windows</a>
+        <a>Linux</a>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { authFileStore } from '@/store/localStore';
 
 export default {
   name: 'Home',
@@ -31,6 +34,23 @@ export default {
     return {
       version: '0.1.1',
     };
+  },
+
+  methods: {
+    async startPinging() {
+      if (authFileStore.get('accessToken')) {
+        const res = await this.$API.auth.link();
+
+        console.log(res);
+        this.pingLocalWebServer(res.data.code);
+        // await fetch('http://127.0.0.1:9615/99999999', {mode: 'no-cors'});
+      }
+    },
+    async pingLocalWebServer(authLink) {
+      const res = await fetch(`http://127.0.0.1:9615/${authLink}`, { mode: 'no-cors' });
+
+      console.log(res);
+    },
   },
 };
 </script>

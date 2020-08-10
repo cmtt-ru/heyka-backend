@@ -9,6 +9,7 @@ const Schmervice = require('schmervice');
 const stubbedMethods = {
   sendEmail: sinon.stub(),
   sendEmailWithInvite: sinon.stub(),
+  sendResetPasswordToken: sinon.stub(),
 
   addAuthTokenForWorkspace: sinon.stub(),
   deleteAuthTokenForWorkspace: sinon.stub(),
@@ -24,7 +25,7 @@ const stubbedMethods = {
 };
 
 // mock services that make requests to external APIs
-const pathToEmailService = path.resolve(__dirname, '../lib/services/email.js');
+const pathToEmailService = path.resolve(__dirname, '../lib/services/email/email.js');
 const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
 const pathToSlackService = path.resolve(__dirname, '../lib/services/slack.js');
 const pathToFileService = path.resolve(__dirname, '../lib/services/file.js');
@@ -82,6 +83,9 @@ mockery.registerMock(
     }
     sendInviteToWorkspace() {
       stubbedMethods.sendEmailWithInvite(arguments);
+    }
+    sendResetPasswordToken() {
+      stubbedMethods.sendResetPasswordToken(arguments);
     }
   }
 );

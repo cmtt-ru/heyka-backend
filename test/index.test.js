@@ -6,6 +6,7 @@ const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
 const crypto = require('crypto-promise');
+const MockDate = require('mockdate');
 const serviceHelpers = require('../lib/services/helpers');
 const { methods: stubbedMethods } = require('./stub_external');
 const helpers = require('./helpers');
@@ -13,6 +14,8 @@ const IMAGE_EXAMPLE = Buffer.from('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgA
   + 'AGKAAABigEzlzBYAAAAB3RJTUUH5AQXDwEOjLBhqQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAALElEQVQI'
   + '1yXHsRHAQAzDMEbn/Sf0KBbvi6DDt7tt1STT9u5UIID6f4AkMwM8YOUadrVD1GUAAAAASUVORK5CYII=', 'base64');
 const errorMessages = require('../lib/error_messages');
+const config = require('../config');
+const jwt = require('jsonwebtoken');
 const generateFakeConnection = (userId, workspaceId) => ({
   connectionId: uuid4(),
   userId,
@@ -546,6 +549,201 @@ describe('Test routes', () => {
         expect(payload.data['channel.delete']).equals('Query parameter "channelId" is required');
         expect(payload.data['workspace.makeEverybodyHappier']).equals('Unknow action');
       });
+    });
+  });
+
+  describe('POST /reset-password/init', () => {
+    describe('Reset password, init process', () => {
+      it('Valid email: should return 200 OK, email should be sent', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'testEmail@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
+      });
+      it('Email not found: should return 200 OK, email should not be sent', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'another.email@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).false();
+      });
+      it('Email not verified: should return 200 OK, email should not be sent', async () => {
+        const {
+          userService,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+        };
+        await userService.signup(userInfo);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'another.email@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).false();
+      });
+    });
+  });
+
+  describe('POST /reset-password', () => {
+    describe('Init process, reset password', () => {
+      it('should return "ok" and change password', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'admin@mail.ru',
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'admin@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
+        
+        const token = args[1];
+
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/reset-password',
+          payload: {
+            token,
+            password: 'new-password'
+          }
+        });
+        expect(response2.statusCode).equals(200);
+
+        // try signin with new password
+        await userService.signin({
+          email: 'admin@mail.ru',
+          password: 'new-password'
+        });
+      });
+    });
+    describe('Init process, reset password', () => {
+      it('Simulate a day spent, should return invalid token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'admin@mail.ru',
+          password: 'old-password',
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'admin@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
+        
+        const token = args[1];
+
+        MockDate.set(Date.now() + 24 * 60 * 60 * 1000 + 1);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/reset-password',
+          payload: {
+            token,
+            password: 'new-password'
+          }
+        });
+        MockDate.reset();
+        expect(response2.statusCode).equals(400);
+      
+
+        // try signin with old password
+        await userService.signin({
+          email: 'admin@mail.ru',
+          password: 'old-password',
+        });
+      });
+    });
+  });
+
+  describe('GET /check-token', () => {
+    it('Check valid token: result=true', async () => {
+      const token = jwt.sign({ data: 'somedata' }, config.jwt_secret, {
+        expiresIn: 60 // seconds
+      });
+      const response = await server.inject({
+        method: 'GET',
+        url: `/check-token?token=${token}`
+      });
+      expect(response.statusCode).equals(200);
+      const payload = JSON.parse(response.payload);
+      expect(payload.result).true();
+    });
+    it('Check invalid token: result=false', async () => {
+      const token = jwt.sign({ data: 'somedata' }, config.jwt_secret, {
+        expiresIn: 60 // seconds
+      });
+      MockDate.set(Date.now() + 60 * 1000 + 1);
+      const response = await server.inject({
+        method: 'GET',
+        url: `/check-token?token=${token}`
+      });
+      MockDate.reset();
+      expect(response.statusCode).equals(200);
+      const payload = JSON.parse(response.payload);
+      expect(payload.result).false();
     });
   });
 

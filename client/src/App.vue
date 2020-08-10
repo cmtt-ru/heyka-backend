@@ -3,11 +3,13 @@
 </template>
 
 <script>
+import { prepareTokens } from '@api/tokens';
 require.context('@/assets/icons', true, /[A-Za-z0-9-_,\s]+\.svg$/i);
 
 export default {
   created() {
     this.loadSvgSprite();
+    prepareTokens();
   },
   methods: {
     loadSvgSprite() {

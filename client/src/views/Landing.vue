@@ -1,6 +1,5 @@
 <template>
   <div class="wrapper">
-
     <div class="content">
       <img
         width="200"
@@ -18,7 +17,6 @@
         <a href="">Linux</a>
       </div>
     </div>
-
   </div>
 </template>
 

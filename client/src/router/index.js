@@ -8,6 +8,9 @@ const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Aut
 
 const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest.vue');
 
+const ManageLayout = () => import(/* webpackChunkName: "main" */ '../views/Manage');
+const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage/Manage');
+
 Vue.use(VueRouter);
 
 const routes = [
@@ -42,6 +45,19 @@ const routes = [
         path: 'social/:socialName/:action/:code',
         name: 'auth-social-link',
         component: SocialLogin,
+      },
+
+      {
+        path: 'manage',
+        name: 'manage',
+        component: ManageLayout,
+        children: [
+          {
+            path: '',
+            name: 'manage',
+            component: Manage,
+          },
+        ],
       },
     ],
   },

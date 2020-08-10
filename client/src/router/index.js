@@ -57,6 +57,11 @@ const routes = [
             name: 'manage',
             component: Manage,
           },
+          {
+            path: ':code',
+            name: 'manage',
+            component: Manage,
+          },
         ],
       },
     ],

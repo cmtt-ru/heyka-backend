@@ -15,47 +15,74 @@
 
     <div class="layout__wrapper">
       <div class="layout__col layout__col--workspaces">
-
-        <img
-          class="logo"
-          width="36"
-          height="36"
-          alt="Vue logo"
-          src="@assets/logo-2.png"
-        >
-
-        <img
-          class="logo"
-          width="36"
-          height="36"
-          alt="Vue logo"
-          src="@assets/logo-2.png"
-        >
-
+        <workspaces
+          :workspaces="workspaces"
+          @select="workspaceSelectHandler"
+        />
       </div>
 
       <div class="layout__col layout__col--content">
-        <p v-for="a in new Array(parseInt(1000))" :key="a">sdf</p>
+        <p class="workspace-name">
+          {{ selectedWorkspace.name }}
+        </p>
+
+        <users :users="workspaceUsers" />
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import Workspaces from '@components/Manage/Workspaces';
+import Users from '@components/Manage/Users';
 
 export default {
-  computed: {
 
+  components: {
+    Workspaces,
+    Users,
+  },
+
+  data() {
+    return {
+      workspaces: [],
+      selectedWorkspace: {},
+      workspaceUsers: [],
+    };
+  },
+
+  computed: {
+    authCode() {
+      return this.$route.params.code;
+    },
   },
 
   async mounted() {
-    const workspaces = await this.$API.workspace.getWorkspaces();
-
-    console.log(workspaces);
+    await this.authorize();
+    await this.loadWorkspaces();
   },
 
   methods: {
+    async authorize() {
+      if (this.authCode) {
+        return this.$API.auth.signinByLink(this.authCode);
+      }
+    },
 
+    async loadWorkspaces() {
+      this.workspaces = await this.$API.workspace.getWorkspaces();
+    },
+
+    async workspaceSelectHandler(workspace) {
+      this.selectedWorkspace = workspace;
+
+      const workspaceData = await this.$API.workspace.getWorkspaceByID(workspace.id);
+
+      if (workspaceData) {
+        this.workspaceUsers = workspaceData.users;
+        console.log(this.workspaceUsers);
+      }
+    },
   },
 };
 </script>
@@ -70,6 +97,7 @@ export default {
       margin 24px auto
       box-sizing border-box
       display flex
+      padding 0 12px
 
     &__col
       &--workspaces
@@ -97,4 +125,8 @@ export default {
     .title
       font-size 24px
       font-weight 500
+
+  .workspace-name
+    font-size 32px
+    font-weight 500
 </style>

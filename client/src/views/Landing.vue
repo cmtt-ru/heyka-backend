@@ -26,6 +26,9 @@
 <script>
 import { authFileStore } from '@/store/localStore';
 
+// eslint-disable-next-line no-magic-numbers
+const PORTS = [9615, 48757, 48852, 49057, 49086];
+
 export default {
   name: 'Home',
   components: {
@@ -46,13 +49,15 @@ export default {
 
         console.log(res);
         this.pingInterval = setInterval(() => {
-          this.pingLocalWebServer(res.code);
+          for (const port of PORTS) {
+            this.pingLocalWebServer(res.code, port);
+          }
         }, this.pingTime);
       }
     },
-    async pingLocalWebServer(authLink) {
+    async pingLocalWebServer(authLink, port) {
       try {
-        const res = await fetch(`http://127.0.0.1:9615/${authLink}`, { mode: 'no-cors' });
+        const res = await fetch(`http://127.0.0.1:${port}/${authLink}`, { mode: 'no-cors' });
 
         console.log(res);
         clearInterval(this.pingInterval);
@@ -63,34 +68,36 @@ export default {
   },
 };
 </script>
+<style lang="stylus">
+html
+  background #F1FAFF
+</style>
 
 <style lang="stylus" scoped>
-  .wrapper
-    display flex
-    background #F1FAFF
-    width 100vw
-    height 100vh
-    justify-content center
+.wrapper
+  display flex
+  height 100vh
+  justify-content center
 
-  .content
-    max-width 700px
-    text-align center
-    line-height 1
-    margin-top 70px
+.content
+  max-width 700px
+  text-align center
+  line-height 1
+  margin-top 70px
 
-    .title
-      font-size 48px
-      font-weight 500
-      margin-top 24px
-      color #151515
+  .title
+    font-size 48px
+    font-weight 500
+    margin-top 24px
+    color #151515
 
-  .download
-    margin-top 64px
+.download
+  margin-top 64px
 
-    a
-      margin 0 6px
-      color #777
-      text-decoration none
-      border-bottom 1px solid #ccc
-      cursor pointer
+  a
+    margin 0 6px
+    color #777
+    text-decoration none
+    border-bottom 1px solid #ccc
+    cursor pointer
 </style>

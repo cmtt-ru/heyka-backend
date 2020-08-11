@@ -289,4 +289,9 @@ export default {
   display flex
   flex-direction column
   justify-content top
+
+@media screen and (max-width: 850px)
+  .sidebar-image
+    display none
+
 </style>

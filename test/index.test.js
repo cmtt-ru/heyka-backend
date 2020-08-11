@@ -2256,4 +2256,42 @@ describe('Test routes', () => {
       });
     });
   });
+
+  describe('GET /admin/workspaces/{workspaceId}/users', () => {
+    it('should return all users with latest activity', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+
+      const creator = await userService.signup({ name: 'n1', email: 'a@admin.ru' });
+      const user1 = await userService.signup({ name: 'n2', email: 'n2@admin.ru' });
+      const user2 = await userService.signup({ name: 'n3', email: 'n3@admin.ru' });
+
+      const creatorTokens = await userService.createTokens(creator);
+      await userService.createTokens(user1);
+      await helpers.skipSomeTime(10);
+      const dateBeforeSecondToken = new Date();
+      await userService.createTokens(user1);
+
+      const { workspace: w } = await workspaceService.createWorkspace(creator, 'test');
+      await workspaceService.addUserToWorkspace(w.id, user1.id, 'user');
+      await workspaceService.addUserToWorkspace(w.id, user2.id, 'user');
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/admin/workspaces/${w.id}/users`,
+        ...helpers.withAuthorization(creatorTokens)
+      });
+      expect(response.statusCode).equals(200);
+      const payload = JSON.parse(response.payload);
+
+      expect(payload.users).array().length(3);
+      expect(payload.users.find(u => u.id === user1.id).latestActivityAt).exists();
+      expect(payload.users.find(u => u.id === user2.id).latestActivityAt).null();
+
+      const lastActivityDate = new Date(payload.users.find(u => u.id === user1.id).latestActivityAt);
+      expect(lastActivityDate).greaterThan(dateBeforeSecondToken);
+    });
+  });
 });

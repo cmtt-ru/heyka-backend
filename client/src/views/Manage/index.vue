@@ -99,27 +99,29 @@ export default {
 
 <style lang="stylus" scoped>
   .layout
+    display flex
+    flex-direction column
     width 100%
     min-height 100vh
 
     &__wrapper
       max-width 700px
-      margin 24px auto
       box-sizing border-box
       display flex
-      padding 0 12px
+      padding-right 12px
+      flex 1 1 auto
 
     &__col
       &--workspaces
-        position sticky
-        top 84px
         flex 0 0 60px
-        align-self flex-start
+        background #36A31D
+        padding-top 24px
 
       &--content
         flex 1 1 auto
         border-left 1px solid rgba(0,0,0,0.1)
-        padding-left 12px
+        padding-left 18px
+        padding-top 24px
 
   header
     position sticky
@@ -131,6 +133,7 @@ export default {
     height 60px
     background #fff
     box-shadow 0 4px 8px 0 rgba(0,0,0,0.08);
+    z-index 10
 
     .title
       font-size 24px
@@ -139,4 +142,6 @@ export default {
   .workspace-name
     font-size 32px
     font-weight 500
+    line-height 44px
+    margin-bottom 24px
 </style>

@@ -51,22 +51,27 @@ export default {
 };
 </script>
 
-<!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped lang="stylus">
   .workspaces
+    position sticky
+    top 84px
+    display flex
+    flex-direction column
+    align-items center
 
     &__item
       width 46px
       height 46px
-      border 1px solid #eee
+      border 1px solid rgba(255,255,255,0.4)
       padding 4px
       box-sizing border-box
       border-radius 4px
       cursor pointer
+      margin-bottom 8px
 
       &--selected
         cursor default
-        border-color #30B1F2
-        background alpha(#30B1F2, 0.1)
+        border-color #2e8014
+        background rgba(255,255,255,1)
 
 </style>

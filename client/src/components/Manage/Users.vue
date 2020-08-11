@@ -8,7 +8,7 @@
       <img
         class="user__avatar"
         loading="lazy"
-        :src="user.avatar"
+        :src="user.avatar|formImageUrl(32)"
         width="32"
         height="32"
       >

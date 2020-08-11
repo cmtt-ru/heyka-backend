@@ -16,6 +16,7 @@
     <div class="layout__wrapper">
       <div class="layout__col layout__col--workspaces">
         <workspaces
+          :selected-workspace="selectedWorkspace"
           :workspaces="workspaces"
           @select="workspaceSelectHandler"
         />
@@ -26,7 +27,11 @@
           {{ selectedWorkspace.name }}
         </p>
 
-        <users :users="workspaceUsers" />
+        <users
+          :workspace="selectedWorkspace"
+          :users="workspaceUsers"
+          @update="loadUsers"
+        />
       </div>
     </div>
   </div>
@@ -60,6 +65,7 @@ export default {
   async mounted() {
     await this.authorize();
     await this.loadWorkspaces();
+    await this.loadUsers();
   },
 
   methods: {
@@ -70,18 +76,22 @@ export default {
     },
 
     async loadWorkspaces() {
-      this.workspaces = await this.$API.workspace.getWorkspaces();
+      this.workspaces = await this.$API.admin.getWorkspaces();
+      this.selectedWorkspace = this.workspaces[0];
+    },
+
+    async loadUsers() {
+      const workspaceData = await this.$API.admin.getUsers(this.selectedWorkspace.id);
+
+      if (workspaceData) {
+        this.workspaceUsers = workspaceData.users;
+      }
     },
 
     async workspaceSelectHandler(workspace) {
       this.selectedWorkspace = workspace;
 
-      const workspaceData = await this.$API.workspace.getWorkspaceByID(workspace.id);
-
-      if (workspaceData) {
-        this.workspaceUsers = workspaceData.users;
-        console.log(this.workspaceUsers);
-      }
+      await this.loadUsers();
     },
   },
 };

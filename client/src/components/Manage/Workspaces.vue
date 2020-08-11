@@ -30,19 +30,23 @@ export default {
         return [];
       },
     },
-  },
 
-  data() {
-    return {
-      selectedWorkspace: {},
-    };
+    /**
+     * Selected workspace
+     */
+    selectedWorkspace: {
+      type: Object,
+      default: function () {
+        return {};
+      },
+    },
   },
 
   methods: {
     selectWorkspaceHandler(workspace) {
-      this.selectedWorkspace = workspace;
       this.$emit('select', workspace);
     },
+
   },
 };
 </script>

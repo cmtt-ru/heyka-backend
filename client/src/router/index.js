@@ -46,23 +46,26 @@ const routes = [
         name: 'auth-social-link',
         component: SocialLogin,
       },
+    ],
+  },
 
+  /**
+   * Manage pages
+   */
+  {
+    path: '/manage',
+    name: 'manage',
+    component: ManageLayout,
+    children: [
       {
-        path: 'manage',
+        path: '',
         name: 'manage',
-        component: ManageLayout,
-        children: [
-          {
-            path: '',
-            name: 'manage',
-            component: Manage,
-          },
-          {
-            path: ':code',
-            name: 'manage',
-            component: Manage,
-          },
-        ],
+        component: Manage,
+      },
+      {
+        path: ':code',
+        name: 'manage',
+        component: Manage,
       },
     ],
   },

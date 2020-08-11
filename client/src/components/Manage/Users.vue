@@ -17,7 +17,7 @@
       </div>
 
       <div class="user__date">
-        01.01.2012
+        {{ dateFormat(user.latestActivityAt) }}
       </div>
 
       <div
@@ -32,6 +32,7 @@
 
 <script>
 import cloneDeep from 'clone-deep';
+import dateFormat from 'dateformat';
 
 export default {
   props: {
@@ -42,6 +43,16 @@ export default {
       type: Array,
       default: function () {
         return [];
+      },
+    },
+
+    /**
+     * Workspace
+     */
+    workspace: {
+      type: Object,
+      default: function () {
+        return {};
       },
     },
   },
@@ -62,10 +73,26 @@ export default {
   },
 
   methods: {
-    revokeHandler(user) {
-      const state = confirm(`Are you sure want to revoke access for "${user.name}" ?`);
+    async revokeHandler(user) {
+      const state = confirm(`Are you sure want to revoke access for "${user.name}"?`);
 
-      console.log(state);
+      if (state) {
+        try {
+          await this.$API.admin.revokeAccess({
+            workspaceId: this.workspace.id,
+            userId: user.id,
+          });
+
+          this.$emit('update');
+        } catch (e) {
+          console.log('ERROR');
+          console.log(e);
+        }
+      }
+    },
+
+    dateFormat(date) {
+      return dateFormat(new Date(date), 'dd.mm.yy HH:MM:ss');
     },
   },
 };

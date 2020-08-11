@@ -1,6 +1,7 @@
 // import axios from 'axios';
 import authApi from './auth';
 import workspaceApi from './workspace';
+import adminApi from './admin';
 import { errorMessages } from './errors/types';
 import { handleError } from './errors';
 import { updateTokens, checkAndRefreshTokens } from './tokens';
@@ -64,4 +65,5 @@ function middleware(func, functionName) {
 export default {
   auth: injectMiddleware(authApi),
   workspace: injectMiddleware(workspaceApi),
+  admin: injectMiddleware(adminApi),
 };

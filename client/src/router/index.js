@@ -54,7 +54,6 @@ const routes = [
    */
   {
     path: '/manage',
-    name: 'manage',
     component: ManageLayout,
     children: [
       {
@@ -64,7 +63,6 @@ const routes = [
       },
       {
         path: ':code',
-        name: 'manage',
         component: Manage,
       },
     ],

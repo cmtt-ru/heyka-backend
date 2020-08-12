@@ -7,6 +7,7 @@ metadata:
     app: {{ .Chart.Name }}
   annotations:
     checksum/config: {{ include (print $.Template.BasePath "/backend-config.yaml") . | sha256sum }}
+    checksum/nginx-config: {{ include (print $.Template.BasePath "/05-nginx-configmap.yaml") . | sha256sum }}
 spec:
   replicas: {{ pluck .Values.global.env .Values.app.replicas | first | default .Values.app.replicas._default }}
   selector:

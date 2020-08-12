@@ -69,7 +69,8 @@ export default {
      */
     async authorize() {
       if (this.authCode) {
-        return this.$API.auth.signinByLink(this.authCode);
+        await this.$API.auth.signinByLink(this.authCode);
+        await this.$router.replace({ name: 'manage' });
       }
     },
 

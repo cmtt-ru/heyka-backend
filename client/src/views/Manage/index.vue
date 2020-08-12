@@ -1,17 +1,6 @@
 <template>
   <div class="layout">
-    <header>
-      <img
-        class="logo l-ml-12"
-        width="36"
-        height="36"
-        alt="Vue logo"
-        src="@assets/logo-2.png"
-      >
-      <span class="title l-ml-12">
-        Heyka
-      </span>
-    </header>
+    <ui-header />
 
     <div class="layout__wrapper">
       <div class="layout__col layout__col--workspaces">
@@ -40,12 +29,14 @@
 <script>
 import Workspaces from '@components/Manage/Workspaces';
 import Users from '@components/Manage/Users';
+import UiHeader from '@components/UiHeader';
 
 export default {
 
   components: {
     Workspaces,
     Users,
+    UiHeader,
   },
 
   data() {
@@ -122,22 +113,6 @@ export default {
         border-left 1px solid rgba(0,0,0,0.1)
         padding-left 18px
         padding-top 24px
-
-  header
-    position sticky
-    display flex
-    align-items center
-    top 0
-    left 0
-    width 100%
-    height 60px
-    background #fff
-    box-shadow 0 4px 8px 0 rgba(0,0,0,0.08);
-    z-index 10
-
-    .title
-      font-size 24px
-      font-weight 500
 
   .workspace-name
     font-size 32px

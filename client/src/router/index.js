@@ -49,11 +49,12 @@ const routes = [
   },
 
   /**
-   * Manage pages
+   * Manage workspaces
    */
   {
     path: '/manage',
     component: Manage,
+    name: 'manage',
     children: [
       {
         path: ':code',

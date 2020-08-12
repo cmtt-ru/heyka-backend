@@ -114,7 +114,7 @@ export default {
     &__col
       &--workspaces
         flex 0 0 60px
-        background #36A31D
+        background #59a748
         padding-top 24px
 
       &--content

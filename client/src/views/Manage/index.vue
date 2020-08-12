@@ -32,7 +32,6 @@ import Users from '@components/Manage/Users';
 import UiHeader from '@components/UiHeader';
 
 export default {
-
   components: {
     Workspaces,
     Users,
@@ -48,6 +47,10 @@ export default {
   },
 
   computed: {
+    /**
+     * Auth code from route
+     * @returns {string}
+     */
     authCode() {
       return this.$route.params.code;
     },
@@ -60,17 +63,29 @@ export default {
   },
 
   methods: {
+    /**
+     * Authorization
+     * @returns {Promise<date>}
+     */
     async authorize() {
       if (this.authCode) {
         return this.$API.auth.signinByLink(this.authCode);
       }
     },
 
+    /**
+     * Load workspace list to which you have access
+     * @returns {Promise<void>}
+     */
     async loadWorkspaces() {
       this.workspaces = await this.$API.admin.getWorkspaces();
       this.selectedWorkspace = this.workspaces[0];
     },
 
+    /**
+     * Load users for selected workspace
+     * @returns {Promise<void>}
+     */
     async loadUsers() {
       const workspaceData = await this.$API.admin.getUsers(this.selectedWorkspace.id);
 
@@ -79,6 +94,11 @@ export default {
       }
     },
 
+    /**
+     * Workspace select handler
+     * @param {object} workspace – specific workspace object
+     * @returns {Promise<void>}
+     */
     async workspaceSelectHandler(workspace) {
       this.selectedWorkspace = workspace;
 

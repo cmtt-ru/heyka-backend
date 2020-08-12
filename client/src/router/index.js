@@ -8,8 +8,7 @@ const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Aut
 
 const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest.vue');
 
-const ManageLayout = () => import(/* webpackChunkName: "main" */ '../views/Manage');
-const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage/Manage');
+const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
 
 Vue.use(VueRouter);
 
@@ -54,13 +53,8 @@ const routes = [
    */
   {
     path: '/manage',
-    component: ManageLayout,
+    component: Manage,
     children: [
-      {
-        path: '',
-        name: 'manage',
-        component: Manage,
-      },
       {
         path: ':code',
         component: Manage,

@@ -51,5 +51,15 @@ module.exports = {
     defaultPublicJanusUrl: process.env.DEFAULT_PUBLIC_JANUS_URL || 'http://localhost',
     k8sClusterHost: process.env.K8S_CLUSTER_HOST || null,
     k8sJanusLabelSelector: process.env.K8S_JANUS_LABEL_SELECTOR || null
+  },
+  files: {
+    awsEndpoint: process.env.AWS_ENDPOINT,
+    awsBucket: process.env.AWS_BUCKET,
+    awsKey: process.env.AWS_KEY,
+    awsSecret: process.env.AWS_SECRET,
+    imgproxyUrl: process.env.IMGPROXY_URL,
+    imgproxyKey: process.env.IMGPROXY_KEY,
+    imgproxySalt: process.env.IMGPROXY_SALT,
+    limitPerUser: parseInt(process.env.LIMIT_PER_USER) || 10
   }
 };

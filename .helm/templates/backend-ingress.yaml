@@ -5,6 +5,7 @@ metadata:
   name: {{ .Chart.Name }}
   annotations:
     kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/use-regex: "true"
 spec:
   rules:
   - host: {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
@@ -14,7 +15,45 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: web
+      - path: /swaggerui/.+\.(js|css|ico|woff2|png|jpeg|jpg|gif|svg)$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: web
+        
   tls:
   - hosts:
       - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
     secretName: {{ printf "tls-%s" .Chart.Name | quote }}
+---
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Chart.Name }}-static
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/auth-realm: Authentication Required
+    nginx.ingress.kubernetes.io/auth-secret: basic-auth-static
+    nginx.ingress.kubernetes.io/auth-type: basic
+spec:
+  rules:
+  - host: {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+    http:
+      paths:
+      - path: /$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
+      - path: /(auth|guest|manage)
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
+      - path: /.+\.(js|css|ico|woff2|png|jpeg|jpg|gif|svg|js\.map)$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
+  tls:
+  - hosts:
+      - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+    secretName: {{ printf "tls-%s" .Chart.Name | quote }}
+

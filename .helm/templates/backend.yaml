@@ -7,6 +7,7 @@ metadata:
     app: {{ .Chart.Name }}
   annotations:
     checksum/config: {{ include (print $.Template.BasePath "/backend-config.yaml") . | sha256sum }}
+    checksum/nginx-config: {{ include (print $.Template.BasePath "/05-nginx-configmap.yaml") . | sha256sum }}
 spec:
   replicas: {{ pluck .Values.global.env .Values.app.replicas | first | default .Values.app.replicas._default }}
   selector:
@@ -73,11 +74,48 @@ spec:
             - name: app-config
               mountPath: /app/.env
               subPath: dotenv
+        - name: nginx
+{{ tuple "static" . | include "werf_container_image" | indent 10 }}
+          lifecycle:
+            preStop:
+              exec:
+                command: [ "/bin/bash", "-c", "sleep 5; kill -QUIT 1" ]
+          command: ["/usr/sbin/nginx", "-g", "daemon off;"]
+          ports:
+          - containerPort: 81
+            name: static
+            protocol: TCP
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /_tech/ngx-status
+              port: 81
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /_tech/ngx-status
+              port: 81
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          volumeMounts:
+          - name: nginx
+            mountPath: /etc/nginx/nginx.conf
+            subPath: nginx.conf
       volumes:
         - name: app-config
           configMap:
             name: {{ .Chart.Name }}-config
-
+        - name: nginx
+          configMap:
+            name: static-configmap
 
 ---
 apiVersion: v1
@@ -88,8 +126,11 @@ metadata:
   name: {{ .Chart.Name }}
 spec:
   ports:
-    - targetPort: web
-      port: 80
-      name: web
+  - targetPort: web
+    port: 80
+    name: web
+  - targetPort: static
+    port: 81
+    name: static
   selector:
     app: {{ .Chart.Name }}

@@ -10,6 +10,8 @@ const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest.vue');
 
 const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
 
+const Reset = () => import(/* webpackChunkName: "main" */ '../views/Reset.vue');
+
 Vue.use(VueRouter);
 
 const routes = [
@@ -45,6 +47,11 @@ const routes = [
         name: 'auth-social-link',
         component: SocialLogin,
       },
+      {
+        path: 'password/reset/:JWT',
+        name: 'reset',
+        component: Reset,
+      },
     ],
   },
 
@@ -71,6 +78,7 @@ const routes = [
     name: 'guest',
     component: Guest,
   },
+
 ];
 
 const router = new VueRouter({

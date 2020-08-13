@@ -186,7 +186,8 @@ export default {
   },
 
   watch: {
-    backendError() {
+    backendError(val) {
+      console.log(val);
       this.checkErrors();
     },
   },
@@ -242,7 +243,7 @@ export default {
         errors.push(this.texts[this.regexError] || this.texts['default']);
       }
       if (this.backendError) {
-        errors.push(this.texts[this.backendError] || this.texts['defaultBackend']);
+        errors.push(this.backendError || this.texts['defaultBackend']); //! text for backendError
       }
 
       if (errors.length > 0) {

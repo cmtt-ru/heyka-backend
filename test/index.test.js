@@ -361,6 +361,39 @@ describe('Test routes', () => {
         expect(payload.email).equals(userInfo.email);
       });
     });
+    describe('Get user without email', () => {
+      describe('should work fine, 200 status', async () => {
+        it('should return current authenticated user', async () => {
+          const {
+            userService,
+            userDatabaseService: udb,
+          } = server.services();
+          const userInfo = {
+            name: 'test',
+            email: 'testEmail@mail.ru'
+          };
+          const user = await userService.signup(userInfo);
+          await udb.updateUser(user.id, {
+            email: null,
+            auth: {
+              facebook: {
+                id: 'facebook-id'
+              }
+            }
+          });
+          const tokens = await userService.createTokens(user);
+          const response = await server.inject({
+            method: 'GET',
+            url: '/me',
+            ...helpers.withAuthorization(tokens)
+          });
+          expect(response.statusCode).equals(200);
+          const payload = JSON.parse(response.payload);
+          expect(payload.id).equals(user.id);
+          expect(payload.socialAuth.facebook).exists();
+        });
+      });
+    });
   });
 
   describe('POST /image', () => {
@@ -596,6 +629,73 @@ describe('Test routes', () => {
           const payload = JSON.parse(response.payload);
           expect(payload[permission]).false();
         });
+      });
+    });
+  });
+
+  describe('GET /detach-account/{service}', () => {
+    describe('Detach external service that was attached', () => {
+      it ('Should return OK', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru'
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, {
+          auth: {
+            facebook: {
+              id: 'facebook-id'
+            },
+            slack: {
+              id: 'slack-id'
+            }
+          }
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/detach-account/facebook`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('OK');
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.auth.facebook).not.exists();
+        expect(userAfterUpdate.auth.slack).exists();
+      });
+    });
+    describe('Detach account that was not attached', () => {
+      it ('Should return 400', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru'
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, {
+          auth: {
+            facebook: {
+              id: 'facebook-id'
+            },
+            slack: {
+              id: 'slack-id'
+            }
+          }
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/detach-account/google`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(400);
       });
     });
   });
@@ -2126,7 +2226,7 @@ describe('Test routes', () => {
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
           method: 'POST',
-          url: '/auth-link',
+          url: '/create-auth-link',
           headers: { Authorization: `Bearer ${tokens.accessToken}` }
         });
         expect(response.statusCode).equals(200);

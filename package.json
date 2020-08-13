@@ -29,7 +29,7 @@
     "@hapi/glue": "^6.2.0",
     "@hapi/hapi": "^18.4.0",
     "@hapi/inert": "^5.2.2",
-    "@hapi/joi": "^16.1.8",
+    "joi": "^17.2.0",
     "@hapi/vision": "^5.5.4",
     "@slack/web-api": "^5.7.0",
     "axios": "^0.19.2",

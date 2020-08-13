@@ -128,6 +128,14 @@ socket.on('user-updated', data => {
 })
 ```
 
+### me-updated (обновился профиль пользователя, который сейчас залогинен, внутри конфиденциальные данные)
+
+```
+socket.on('me-updated', data => {
+  // data.user: {UserConfidentialDataScheme} обновление состоения пользователя с конфиденциальными данными
+})
+```
+
 ### user-selected-channel (юзер вошёл в канал)
 
 ```

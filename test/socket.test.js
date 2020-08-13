@@ -2158,6 +2158,148 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('Testing when confidential data is changed', () => {
+    describe('Testing when user detach social network from his account', () => {
+      it('should receive an event about updated user', async () => {
+        const {
+          userService,
+          workspaceService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        await udb.updateUser(user1.id, {
+          auth: {
+            facebook: {
+              id: 'facebook-id'
+            },
+            slack: {
+              id: 'slack-id'
+            }
+          }
+        });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+  
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+  
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+  
+        // wait event that me updated
+        evtName = eventNames.socket.meUpdated;
+        const waitForMeUpdated = awaitSocketForEvent(true, socket1, evtName, data => {
+          expect(data.user.socialAuth.facebook).exists();
+          expect(data.user.socialAuth.slack).not.exists();
+        });
+        const waitForMeNotUpdated = awaitSocketForEvent(false, socket2, evtName);
+  
+        const response = await server.inject({
+          method: 'GET',
+          url: '/detach-account/slack',
+          ...helpers.withAuthorization(tokens1)
+        });
+        expect(response.statusCode).equals(200);
+        await Promise.race([waitForMeUpdated, waitForMeNotUpdated]);
+  
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
+  });
+
+  describe('Testing kicking user from workspace', () => {
+    describe('User in channel, admin kick him, check that everything is ok', () => {
+      it('should delete user from channel, from workspace', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb,
+          channelService
+        } = server.services();
+  
+        // register user and creator
+        const creator = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const user = await userService.signup({ email: 'user@admin.ru' });
+        const { workspace } = await workspaceService.createWorkspace(creator, 'w1');
+        await workspaceService.addUserToWorkspace(workspace.id, user.id, 'user');
+        const tokensUser = await userService.createTokens(user);
+        const tokensCreator = await userService.createTokens(creator);
+        const channels = await wdb.getWorkspaceChannels(workspace.id);
+  
+        // connect users to workspace
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokensUser.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokensCreator.accessToken,
+          workspaceId: workspace.id
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+  
+        // select channel
+        await channelService.selectChannel(channels[0].id, user.id, socket1.id, helpers.defaultUserState());
+  
+        // wait that user will be disconnected
+        const awaitDisconnected = awaitSocketForEvent(true, socket1, 'disconnect');
+        evtName = eventNames.socket.kickedFromWorkspace;
+        const awaitEventAboutKicking = awaitSocketForEvent(true, socket1, evtName, data => {
+          expect(data.workspaceId).equals(workspace.id);
+        });
+        evtName = eventNames.socket.userLeavedWorkspace;        
+        const awaitCreatorNotifiedAboutUserLeaved = awaitSocketForEvent(true, socket2, evtName, data => {
+          expect(data.workspaceId).equals(workspace.id);
+          expect(data.userId).equals(user.id);
+        });
+  
+        // kick user
+        const response = await server.inject({
+          method: 'POST',
+          url: '/admin/workspaces/revoke-access',
+          payload: {
+            workspaceId: workspace.id,
+            userId: user.id
+          },
+          ...helpers.withAuthorization(tokensCreator),
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+  
+        await Promise.all([
+          awaitDisconnected,
+          awaitEventAboutKicking,
+          awaitCreatorNotifiedAboutUserLeaved
+        ]);
+  
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
+  });
 });
 
 /**
@@ -2196,14 +2338,18 @@ function awaitSocketForEvent(
         try {
           if (dataCheckFunction) dataCheckFunction(data);
           setTimeout(() => {
-            clearInterval(timeoutInterval);
-            timeoutInterval = null;
+            try {
+              clearInterval(timeoutInterval);
+              timeoutInterval = null;
+            } catch(e) {
+              console.error(e);
+            }
             resolve();
           }, pause);
         } catch(e) {
           clearInterval(timeoutInterval);
           timeoutInterval = null;
-          reject(e + '\n' + stack.toString());
+          reject(new Error(e + '\n' + stack.toString()));
         }
       });
     } else {
@@ -2218,7 +2364,7 @@ function awaitSocketForEvent(
       });
     }
 
-    setInterval(() => {
+    setTimeout(() => {
       reject(new Error(`Timeout for waiting ${event} event` + '\n' + stack.toString()));
     }, 1800);
   });

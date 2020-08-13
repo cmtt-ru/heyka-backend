@@ -6,6 +6,7 @@ const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
 const crypto = require('crypto-promise');
+const MockDate = require('mockdate');
 const serviceHelpers = require('../lib/services/helpers');
 const { methods: stubbedMethods } = require('./stub_external');
 const helpers = require('./helpers');
@@ -13,6 +14,8 @@ const IMAGE_EXAMPLE = Buffer.from('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgA
   + 'AGKAAABigEzlzBYAAAAB3RJTUUH5AQXDwEOjLBhqQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAALElEQVQI'
   + '1yXHsRHAQAzDMEbn/Sf0KBbvi6DDt7tt1STT9u5UIID6f4AkMwM8YOUadrVD1GUAAAAASUVORK5CYII=', 'base64');
 const errorMessages = require('../lib/error_messages');
+const config = require('../config');
+const jwt = require('jsonwebtoken');
 const generateFakeConnection = (userId, workspaceId) => ({
   connectionId: uuid4(),
   userId,
@@ -361,39 +364,6 @@ describe('Test routes', () => {
         expect(payload.email).equals(userInfo.email);
       });
     });
-    describe('Get user without email', () => {
-      describe('should work fine, 200 status', async () => {
-        it('should return current authenticated user', async () => {
-          const {
-            userService,
-            userDatabaseService: udb,
-          } = server.services();
-          const userInfo = {
-            name: 'test',
-            email: 'testEmail@mail.ru'
-          };
-          const user = await userService.signup(userInfo);
-          await udb.updateUser(user.id, {
-            email: null,
-            auth: {
-              facebook: {
-                id: 'facebook-id'
-              }
-            }
-          });
-          const tokens = await userService.createTokens(user);
-          const response = await server.inject({
-            method: 'GET',
-            url: '/me',
-            ...helpers.withAuthorization(tokens)
-          });
-          expect(response.statusCode).equals(200);
-          const payload = JSON.parse(response.payload);
-          expect(payload.id).equals(user.id);
-          expect(payload.socialAuth.facebook).exists();
-        });
-      });
-    });
   });
 
   describe('POST /image', () => {
@@ -451,7 +421,7 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).equals(200);
         const result = JSON.parse(response.payload);
-        expect(result.image).exists();
+        expect(result.image32x32).exists();
       });
     });
   });
@@ -582,70 +552,198 @@ describe('Test routes', () => {
     });
   });
 
-  describe('GET /detach-account/{service}', () => {
-    describe('Detach external service that was attached', () => {
-      it ('Should return OK', async () => {
+  describe('POST /reset-password/init', () => {
+    describe('Reset password, init process', () => {
+      it('Valid email: should return 200 OK, email should be sent', async () => {
         const {
           userService,
-          userDatabaseService: udb,
+          userDatabaseService: udb
         } = server.services();
         const userInfo = {
           name: 'test',
-          email: 'testEmail@mail.ru'
+          email: 'testEmail@mail.ru',
         };
         const user = await userService.signup(userInfo);
-        await udb.updateUser(user.id, {
-          auth: {
-            facebook: {
-              id: 'facebook-id'
-            },
-            slack: {
-              id: 'slack-id'
-            }
-          }
-        });
-        const tokens = await userService.createTokens(user);
+        await udb.updateUser(user.id, { is_email_verified: true });
         const response = await server.inject({
-          method: 'GET',
-          url: `/detach-account/facebook`,
-          ...helpers.withAuthorization(tokens)
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'testEmail@mail.ru'
+          }
         });
         expect(response.statusCode).equals(200);
-        expect(response.payload).equals('OK');
-        const userAfterUpdate = await udb.findById(user.id);
-        expect(userAfterUpdate.auth.facebook).not.exists();
-        expect(userAfterUpdate.auth.slack).exists();
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
       });
-    });
-    describe('Detach account that was not attached', () => {
-      it ('Should return 400', async () => {
+      it('Email not found: should return 200 OK, email should not be sent', async () => {
         const {
           userService,
-          userDatabaseService: udb,
+          userDatabaseService: udb
         } = server.services();
         const userInfo = {
           name: 'test',
-          email: 'testEmail@mail.ru'
+          email: 'testEmail@mail.ru',
         };
         const user = await userService.signup(userInfo);
-        await udb.updateUser(user.id, {
-          auth: {
-            facebook: {
-              id: 'facebook-id'
-            },
-            slack: {
-              id: 'slack-id'
-            }
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'another.email@mail.ru'
           }
         });
-        const tokens = await userService.createTokens(user);
-        const response = await server.inject({
-          method: 'GET',
-          url: `/detach-account/google`,
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(response.statusCode).equals(400);
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).false();
       });
+      it('Email not verified: should return 200 OK, email should not be sent', async () => {
+        const {
+          userService,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+        };
+        await userService.signup(userInfo);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'another.email@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).false();
+      });
+    });
+  });
+
+  describe('POST /reset-password', () => {
+    describe('Init process, reset password', () => {
+      it('should return "ok" and change password', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'admin@mail.ru',
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'admin@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
+        
+        const token = args[1];
+
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/reset-password',
+          payload: {
+            token,
+            password: 'new-password'
+          }
+        });
+        expect(response2.statusCode).equals(200);
+
+        // try signin with new password
+        await userService.signin({
+          email: 'admin@mail.ru',
+          password: 'new-password'
+        });
+      });
+    });
+    describe('Init process, reset password', () => {
+      it('Simulate a day spent, should return invalid token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'admin@mail.ru',
+          password: 'old-password',
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'admin@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
+        
+        const token = args[1];
+
+        MockDate.set(Date.now() + 24 * 60 * 60 * 1000 + 1);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/reset-password',
+          payload: {
+            token,
+            password: 'new-password'
+          }
+        });
+        MockDate.reset();
+        expect(response2.statusCode).equals(400);
+      
+
+        // try signin with old password
+        await userService.signin({
+          email: 'admin@mail.ru',
+          password: 'old-password',
+        });
+      });
+    });
+  });
+
+  describe('GET /check-token', () => {
+    it('Check valid token: result=true', async () => {
+      const token = jwt.sign({ data: 'somedata' }, config.jwtSecret, {
+        expiresIn: 60 // seconds
+      });
+      const response = await server.inject({
+        method: 'GET',
+        url: `/check-token?token=${token}`
+      });
+      expect(response.statusCode).equals(200);
+      const payload = JSON.parse(response.payload);
+      expect(payload.result).true();
+    });
+    it('Check invalid token: result=false', async () => {
+      const token = jwt.sign({ data: 'somedata' }, config.jwtSecret, {
+        expiresIn: 60 // seconds
+      });
+      MockDate.set(Date.now() + 60 * 1000 + 1);
+      const response = await server.inject({
+        method: 'GET',
+        url: `/check-token?token=${token}`
+      });
+      MockDate.reset();
+      expect(response.statusCode).equals(200);
+      const payload = JSON.parse(response.payload);
+      expect(payload.result).false();
     });
   });
 
@@ -892,44 +990,6 @@ describe('Test routes', () => {
         const user = await userService.signup({ email: 'user@heyka.ru'});
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         const tokens = await userService.createTokens(user);
-        const response = await server.inject({
-          method: 'POST',
-          url: `/workspaces/${workspace.id}/leave`,
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(response.statusCode).equals(403);
-      });
-    });
-    describe('User is on active conversation, he tries to leave the workspace', () => {
-      it('should response with error (cant leave the workspace when is on active conv.', async () => {
-        const {
-          userService,
-          workspaceService,
-          connectionService
-        } = server.services();
-        const admin = await userService.signup({ email: 'admin@heyka.ru'});
-        const user = await userService.signup({ email: 'user@heyka.ru' });
-        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
-        await workspaceService.addUserToWorkspace(workspace.id, user.id);
-        const channel = await workspaceService.createChannel(workspace.id, admin.id, {
-          name: 'test',
-          isPrivate: false
-        });
-        const tokens = await userService.createTokens(user);
-
-        // add connection for user
-        const conn = generateFakeConnection(user.id, workspace.id);
-        await connectionService.setConnectionObject(conn);
-
-        // user select the channel
-        const selectResponse = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
-          payload: helpers.defaultUserState(),
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(selectResponse.statusCode).equals(200);
-        // try to leave the workspace
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/leave`,
@@ -1492,37 +1552,6 @@ describe('Test routes', () => {
   });
 
   describe('POST /channels/{channelId}/leave', () => {
-    describe('User tries to leave channel what he is on active conversation in that channel', () => {
-      it('should response with error', async () => {
-        const {
-          userService,
-          workspaceService,
-          connectionService
-        } = server.services();
-        const user = await userService.signup({ email: 'user@admin.ru' });
-        const tokens = await userService.createTokens(user);
-        const { workspace } = await workspaceService.createWorkspace(user, 'test');
-        const channel = await workspaceService.createChannel(workspace.id, user.id, {
-          name: 'test',
-          isPrivate: false
-        });
-        const conn = generateFakeConnection(user.id, workspace.id);
-        await connectionService.setConnectionObject(conn);
-        const selectResponse = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
-          payload: helpers.defaultUserState(),
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(selectResponse.statusCode).equals(200);
-        const response = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/leave`,
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(response.statusCode).equals(403);
-      });
-    });
     describe('The last user leave the channel', () => {
       it('should delete channel', async () => {
         const {

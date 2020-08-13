@@ -39,7 +39,6 @@ export default {
     return {
       version: '0.1.1',
       pingInterval: null,
-      pingTime: 2000,
     };
   },
 

@@ -19,6 +19,7 @@ module.exports = {
   },
   register: {
     plugins: [
+      '@hapi/inert',
       // main plugin (API)
       './lib',
       // plugin for Redis
@@ -54,7 +55,6 @@ module.exports = {
       // add swagger if development mode (swagger requires inert and vision for static files)
       ...(
         process.env.NODE_ENV === 'development' ? [
-          '@hapi/inert',
           '@hapi/vision',
           {
             plugin: 'hapi-swagger',

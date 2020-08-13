@@ -60,7 +60,6 @@ export default {
       try {
         const res = await fetch(`http://127.0.0.1:${port}/${authLink}`, { mode: 'no-cors' });
 
-        console.log(res);
         clearInterval(this.pingInterval);
       } catch (err) {
       }

@@ -115,7 +115,8 @@ socket.on('user-joined', data => {
 
 ```
 socket.on('user-leaved-workspace', data => {
-  // data.userId: {String} id покинувшего воркспейс пользователя
+  // data.userId: {uuid} id покинувшего воркспейс пользователя
+  // data.workspaceId: {uuid} id workspace
 })
 ```
 
@@ -214,6 +215,15 @@ socket.on('invite-response', data => {
 ```
 socket.on('invite-cancelled', data => {
   // data.inviteId: {uuid} Уникальный идентификатор сообщения, которое было отменено
+})
+```
+
+## Персональные события
+
+### kicked-from-workspace (доступ к workspace приостановлен)
+```
+socket.on('kicked-from-workspace', data => {
+  // data.workspaceId: {uuid} из какого воркспейса вас выгнали
 })
 ```
 

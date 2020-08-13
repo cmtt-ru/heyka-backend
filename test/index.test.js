@@ -613,6 +613,57 @@ describe('Test routes', () => {
         expect(payload.data['workspace.makeEverybodyHappier']).equals('Unknow action');
       });
     });
+
+    describe('Check specific permission', () => {
+      describe('canManageWorkspaces', () => {
+        it('If user has at least one workspace as admin, should return true', async () => {
+          const {
+            userService,
+            workspaceService
+          } = server.services();
+          const userInfo = {
+            name: 'test',
+            email: 'testEmail@mail.ru'
+          };
+          const permission = 'workspaces.manage';
+          const user = await userService.signup(userInfo);
+          await workspaceService.createWorkspace(user, 'test');
+          const tokens = await userService.createTokens(user);
+          const response = await server.inject({
+            method: 'GET',
+            url: `/check-permissions?actions=${permission}`,
+            ...helpers.withAuthorization(tokens)
+          });
+          expect(response.statusCode).equals(200);
+          const payload = JSON.parse(response.payload);
+          expect(payload[permission]).true();
+        });
+        it('If user hasnot any workspaces as admin, should return false', async () => {
+          const {
+            userService,
+            workspaceService
+          } = server.services();
+          const userInfo = {
+            name: 'test',
+            email: 'testEmail@mail.ru'
+          };
+          const permission = 'workspaces.manage';
+          const user = await userService.signup(userInfo);
+          const user2 = await userService.signup({ name: 'two', email: 'two@two.email' });
+          const { workspace } = await workspaceService.createWorkspace(user, 'test');
+          await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
+          const tokens = await userService.createTokens(user2);
+          const response = await server.inject({
+            method: 'GET',
+            url: `/check-permissions?actions=${permission}`,
+            ...helpers.withAuthorization(tokens)
+          });
+          expect(response.statusCode).equals(200);
+          const payload = JSON.parse(response.payload);
+          expect(payload[permission]).false();
+        });
+      });
+    });
   });
 
   describe('GET /detach-account/{service}', () => {
@@ -925,44 +976,6 @@ describe('Test routes', () => {
         const user = await userService.signup({ email: 'user@heyka.ru'});
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         const tokens = await userService.createTokens(user);
-        const response = await server.inject({
-          method: 'POST',
-          url: `/workspaces/${workspace.id}/leave`,
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(response.statusCode).equals(403);
-      });
-    });
-    describe('User is on active conversation, he tries to leave the workspace', () => {
-      it('should response with error (cant leave the workspace when is on active conv.', async () => {
-        const {
-          userService,
-          workspaceService,
-          connectionService
-        } = server.services();
-        const admin = await userService.signup({ email: 'admin@heyka.ru'});
-        const user = await userService.signup({ email: 'user@heyka.ru' });
-        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
-        await workspaceService.addUserToWorkspace(workspace.id, user.id);
-        const channel = await workspaceService.createChannel(workspace.id, admin.id, {
-          name: 'test',
-          isPrivate: false
-        });
-        const tokens = await userService.createTokens(user);
-
-        // add connection for user
-        const conn = generateFakeConnection(user.id, workspace.id);
-        await connectionService.setConnectionObject(conn);
-
-        // user select the channel
-        const selectResponse = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
-          payload: helpers.defaultUserState(),
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(selectResponse.statusCode).equals(200);
-        // try to leave the workspace
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/leave`,
@@ -1525,37 +1538,6 @@ describe('Test routes', () => {
   });
 
   describe('POST /channels/{channelId}/leave', () => {
-    describe('User tries to leave channel what he is on active conversation in that channel', () => {
-      it('should response with error', async () => {
-        const {
-          userService,
-          workspaceService,
-          connectionService
-        } = server.services();
-        const user = await userService.signup({ email: 'user@admin.ru' });
-        const tokens = await userService.createTokens(user);
-        const { workspace } = await workspaceService.createWorkspace(user, 'test');
-        const channel = await workspaceService.createChannel(workspace.id, user.id, {
-          name: 'test',
-          isPrivate: false
-        });
-        const conn = generateFakeConnection(user.id, workspace.id);
-        await connectionService.setConnectionObject(conn);
-        const selectResponse = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/select?socketId=${conn.connectionId}`,
-          payload: helpers.defaultUserState(),
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(selectResponse.statusCode).equals(200);
-        const response = await server.inject({
-          method: 'POST',
-          url: `/channels/${channel.id}/leave`,
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(response.statusCode).equals(403);
-      });
-    });
     describe('The last user leave the channel', () => {
       it('should delete channel', async () => {
         const {
@@ -2320,6 +2302,130 @@ describe('Test routes', () => {
         expect(payload.accessToken).exists();
         expect(payload.refreshToken).exists();
       });
+    });
+  });
+
+  /**
+   * Admin routes (Routes for manage workspaces)
+   */
+
+  describe('GET /admin/managed-workspaces', () => {
+    describe('Check that returns only workspaces that user can manage', () => {
+      it('Attach user to different workspaces, check that he will get only 1 workspace', async () => {
+        const { userService, workspaceService } = server.services();
+        const user = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const tokens = await userService.createTokens({ id: user.id });
+        const anotherUser = await userService.signup({ email: 'another@user.ru' });
+        const { workspace: w1 } = await workspaceService.createWorkspace(user, 'workspace1');
+        const { workspace: w2 } = await workspaceService.createWorkspace(anotherUser, 'workspace2');
+        await workspaceService.addUserToWorkspace(w2.id, user.id, 'user');
+        const response = await server.inject({
+          method: 'GET',
+          url: '/admin/managed-workspaces',
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload).array().length(1);
+        expect(payload.find(i => i.id === w1.id)).exist();
+      });
+    });
+  });
+
+  describe('POST /admin/workspaces/revoke-access', () => {
+    describe('Cant revoke access for creator', () => {
+      it('Should return 403 forbidden error', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const creator = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const anotherAdmin = await userService.signup({ email: 'admin@admin.ru' });
+        const { workspace } = await workspaceService.createWorkspace(creator, 'w1');
+        await workspaceService.addUserToWorkspace(workspace.id, anotherAdmin.id, 'admin');
+
+        const tokens = await userService.createTokens(anotherAdmin);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/admin/workspaces/revoke-access',
+          payload: {
+            workspaceId: workspace.id,
+            userId: creator.id
+          },
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('Kick user from workspace', () => {
+      it('should return 200', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb,
+        } = server.services();
+        const creator = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const user = await userService.signup({ email: 'user@admin.ru' });
+        const { workspace } = await workspaceService.createWorkspace(creator, 'w1');
+        await workspaceService.addUserToWorkspace(workspace.id, user.id, 'user');
+
+        const tokens = await userService.createTokens(creator);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/admin/workspaces/revoke-access',
+          payload: {
+            workspaceId: workspace.id,
+            userId: user.id
+          },
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+
+        const relations = await wdb.getWorkspacesByUserId(user.id);
+        expect(relations).array().empty();
+      });
+    });
+  });
+
+  describe('GET /admin/workspaces/{workspaceId}/users', () => {
+    it('should return all users with latest activity', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+
+      const creator = await userService.signup({ name: 'n1', email: 'a@admin.ru' });
+      const user1 = await userService.signup({ name: 'n2', email: 'n2@admin.ru' });
+      const user2 = await userService.signup({ name: 'n3', email: 'n3@admin.ru' });
+
+      const creatorTokens = await userService.createTokens(creator);
+      await userService.createTokens(user1);
+      await helpers.skipSomeTime(10);
+      const dateBeforeSecondToken = new Date();
+      await helpers.skipSomeTime(1);
+      await userService.createTokens(user1);
+
+      const { workspace: w } = await workspaceService.createWorkspace(creator, 'test');
+      await workspaceService.addUserToWorkspace(w.id, user1.id, 'user');
+      await workspaceService.addUserToWorkspace(w.id, user2.id, 'user');
+
+      const response = await server.inject({
+        method: 'GET',
+        url: `/admin/workspaces/${w.id}/users`,
+        ...helpers.withAuthorization(creatorTokens)
+      });
+      expect(response.statusCode).equals(200);
+      const payload = JSON.parse(response.payload);
+
+      expect(payload.users).array().length(3);
+      expect(payload.users.find(u => u.id === user1.id).latestActivityAt).exists();
+      expect(payload.users.find(u => u.id === user2.id).latestActivityAt).null();
+
+      const lastActivityDate = new Date(payload.users.find(u => u.id === user1.id).latestActivityAt);
+      expect(lastActivityDate).greaterThan(dateBeforeSecondToken);
     });
   });
 });

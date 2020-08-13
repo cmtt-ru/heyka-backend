@@ -3,7 +3,22 @@
     <ui-header />
 
     <div class="layout__wrapper" />
-    derp
+    <div class="user__input-wrapper">
+      <ui-input
+        v-model="pass"
+        class="user__input"
+        placeholder="********"
+        :minlength="8"
+        :maxlength="120"
+      />
+      <ui-input
+        v-model="passVerify"
+        placeholder="********"
+        class="user__input"
+        :minlength="8"
+        :maxlength="120"
+      />
+    </div>
   </div>
 </template>
 
@@ -17,7 +32,8 @@ export default {
 
   data() {
     return {
-
+      pass: '',
+      passVerify: '',
     };
   },
 

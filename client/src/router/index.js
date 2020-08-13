@@ -3,6 +3,8 @@ import VueRouter from 'vue-router';
 const Landing = () => import(/* webpackChunkName: "main" */ '../views/Landing.vue');
 
 const Auth = () => import(/* webpackChunkName: "main" */ '../views/Auth.vue');
+const SignIn = () => import(/* webpackChunkName: "main" */ '../views/SignIn.vue');
+
 const SocialLogin = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialLogin.vue');
 const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialCallback.vue');
 
@@ -30,6 +32,11 @@ const routes = [
     name: 'auth',
     component: Auth,
     children: [
+      {
+        path: '',
+        name: 'signIn',
+        component: SignIn,
+      },
       {
         path: 'social/callback',
         name: 'auth-social-callback',

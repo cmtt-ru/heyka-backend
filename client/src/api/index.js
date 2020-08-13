@@ -1,4 +1,4 @@
-// import axios from 'axios';
+import axios from 'axios';
 import authApi from './auth';
 import workspaceApi from './workspace';
 import adminApi from './admin';

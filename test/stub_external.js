@@ -9,6 +9,7 @@ const Schmervice = require('schmervice');
 const stubbedMethods = {
   sendEmail: sinon.stub(),
   sendEmailWithInvite: sinon.stub(),
+  sendResetPasswordToken: sinon.stub(),
 
   addAuthTokenForWorkspace: sinon.stub(),
   deleteAuthTokenForWorkspace: sinon.stub(),
@@ -24,7 +25,7 @@ const stubbedMethods = {
 };
 
 // mock services that make requests to external APIs
-const pathToEmailService = path.resolve(__dirname, '../lib/services/email.js');
+const pathToEmailService = path.resolve(__dirname, '../lib/services/email/email.js');
 const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
 const pathToSlackService = path.resolve(__dirname, '../lib/services/slack.js');
 const pathToFileService = path.resolve(__dirname, '../lib/services/file.js');
@@ -83,6 +84,9 @@ mockery.registerMock(
     sendInviteToWorkspace() {
       stubbedMethods.sendEmailWithInvite(arguments);
     }
+    sendResetPasswordToken() {
+      stubbedMethods.sendResetPasswordToken(arguments);
+    }
   }
 );
 mockery.registerMock(
@@ -103,8 +107,14 @@ mockery.registerMock(
 mockery.registerMock(
   pathToFileService,
   class FileService extends Schmervice.Service {
-    upload() {
+    uploadLeonardo() {
       return 'https://leonardo.osnova.io/794af87c-195d-c9ee-40d6-14131c4c43a6/';
+    }
+    uploadS3() {
+      return '794af87c-195d-c9ee-40d6-14131c4c43a6.png';
+    }
+    getImgproxyImageSet() {
+      return { image32x32: 'https://l.osn.io/794af87c', image64x64: 'https://l.osn.io/794af87c' };
     }
     uploadImageFromUrl() {
       stubbedMethods.uploadImageFromUrl(...arguments);

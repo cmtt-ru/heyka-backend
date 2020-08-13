@@ -2158,6 +2158,73 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('Testing when confidential data is changed', () => {
+    describe('Testing when user detach social network from his account', () => {
+      it('should receive an event about updated user', async () => {
+        const {
+          userService,
+          workspaceService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+
+        await udb.updateUser(user1.id, {
+          auth: {
+            facebook: {
+              id: 'facebook-id'
+            },
+            slack: {
+              id: 'slack-id'
+            }
+          }
+        });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // wait event that me updated
+        evtName = eventNames.socket.meUpdated;
+        const waitForMeUpdated = awaitSocketForEvent(true, socket1, evtName, data => {
+          expect(data.user.socialAuth.facebook).exists();
+          expect(data.user.socialAuth.slack).not.exists();
+        });
+        const waitForMeNotUpdated = awaitSocketForEvent(false, socket2, evtName);
+
+        const response = await server.inject({
+          method: 'GET',
+          url: '/detach-account/slack',
+          ...helpers.withAuthorization(tokens1)
+        });
+        expect(response.statusCode).equals(200);
+        await Promise.race([waitForMeUpdated, waitForMeNotUpdated]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
+  });
 });
 
 /**
@@ -2196,8 +2263,12 @@ function awaitSocketForEvent(
         try {
           if (dataCheckFunction) dataCheckFunction(data);
           setTimeout(() => {
-            clearInterval(timeoutInterval);
-            timeoutInterval = null;
+            try {
+              clearInterval(timeoutInterval);
+              timeoutInterval = null;
+            } catch(e) {
+              console.error(e);
+            }
             resolve();
           }, pause);
         } catch(e) {
@@ -2218,7 +2289,7 @@ function awaitSocketForEvent(
       });
     }
 
-    setInterval(() => {
+    setTimeout(() => {
       reject(new Error(`Timeout for waiting ${event} event` + '\n' + stack.toString()));
     }, 1800);
   });

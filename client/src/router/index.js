@@ -8,6 +8,8 @@ const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Aut
 
 const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest.vue');
 
+const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
+
 Vue.use(VueRouter);
 
 const routes = [
@@ -42,6 +44,21 @@ const routes = [
         path: 'social/:socialName/:action/:code',
         name: 'auth-social-link',
         component: SocialLogin,
+      },
+    ],
+  },
+
+  /**
+   * Manage workspaces
+   */
+  {
+    path: '/manage',
+    component: Manage,
+    name: 'manage',
+    children: [
+      {
+        path: ':code',
+        component: Manage,
       },
     ],
   },

@@ -62,7 +62,6 @@ export default {
         console.log(res);
         clearInterval(this.pingInterval);
       } catch (err) {
-        console.log('ERRRRR', err);
       }
     },
   },

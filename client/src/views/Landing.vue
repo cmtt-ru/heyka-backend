@@ -53,7 +53,7 @@ export default {
           for (const port of PORTS) {
             this.pingLocalWebServer(res.code, port);
           }
-        }, this.pingTime);
+        }, pingTime);
       }
     },
     async pingLocalWebServer(authLink, port) {

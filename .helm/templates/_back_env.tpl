@@ -31,4 +31,8 @@
   value: {{ pluck .Values.global.env .Values.kubernetes.host | first | default .Values.kubernetes.host._default }}
 - name: K8S_JANUS_LABEL_SELECTOR
   value: {{ pluck .Values.global.env .Values.kubernetes.janus_node_label | first | default .Values.kubernetes.janus_node_label._default }}
+- name: PUBLIC_HOSTNAME
+  value: {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+- name: DEPLOYMENT_ENV
+  value: {{ .Values.global.env }}
 {{ end }}

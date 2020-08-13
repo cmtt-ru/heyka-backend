@@ -28,6 +28,7 @@ import { authFileStore } from '@/store/localStore';
 
 // eslint-disable-next-line no-magic-numbers
 const PORTS = [9615, 48757, 48852, 49057, 49086];
+const pingTime = 2000;
 
 export default {
   name: 'Home',

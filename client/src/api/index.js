@@ -1,14 +1,15 @@
-// import axios from 'axios';
+import axios from 'axios';
 import authApi from './auth';
 import workspaceApi from './workspace';
 import adminApi from './admin';
 import { errorMessages } from './errors/types';
 import { handleError } from './errors';
 import { updateTokens, checkAndRefreshTokens } from './tokens';
-import axios from 'axios';
 
 if (IS_DEV) {
   axios.defaults.baseURL = process.env.VUE_APP_DEV_URL;
+} else {
+  axios.defaults.baseURL = process.env.VUE_APP_PROD_URL;
 }
 
 /**

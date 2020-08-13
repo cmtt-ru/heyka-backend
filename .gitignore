@@ -1,7 +1,8 @@
 node_modules
-.env
+/.env
 scripts/data
 .DS_Store
 .idea
+yarn-error.log
 
 .werf_secret_key

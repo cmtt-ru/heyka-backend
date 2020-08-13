@@ -1,0 +1,41 @@
+<template>
+  <div />
+</template>
+
+<script>
+import Cookies from 'js-cookie';
+
+export default {
+  computed: {
+    socialName() {
+      return this.$route.params.socialName;
+    },
+    authCode() {
+      return this.$route.params.code;
+    },
+    action() {
+      return this.$route.params.action;
+    },
+  },
+  async mounted() {
+    /** Set action cookie */
+    Cookies.set('heyka-auth-action', this.action);
+
+    /** User goes to link social network to his account */
+    if (this.action === 'link') {
+      const res = await this.$API.auth.signinByLink(this.authCode);
+
+      if (res.data && res.data.accessToken) {
+        Cookies.set('heyka-access-token', res.data.accessToken);
+      }
+    }
+
+    /** Redirect to social login page */
+    document.location.href = `/signin/${this.socialName}`;
+  },
+};
+</script>
+
+<style lang="stylus" scoped>
+
+</style>

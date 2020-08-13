@@ -60,6 +60,6 @@ module.exports = {
     imgproxyUrl: process.env.IMGPROXY_URL,
     imgproxyKey: process.env.IMGPROXY_KEY,
     imgproxySalt: process.env.IMGPROXY_SALT,
-    limitPerUser: parseInt(process.env.LIMIT_PER_USER) || 10
+    limitPerUser: 100,
   }
 };

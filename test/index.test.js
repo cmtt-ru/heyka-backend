@@ -2372,6 +2372,7 @@ describe('Test routes', () => {
       await userService.createTokens(user1);
       await helpers.skipSomeTime(10);
       const dateBeforeSecondToken = new Date();
+      await helpers.skipSomeTime(1);
       await userService.createTokens(user1);
 
       const { workspace: w } = await workspaceService.createWorkspace(creator, 'test');

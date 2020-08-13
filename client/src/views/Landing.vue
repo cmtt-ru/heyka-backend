@@ -57,7 +57,7 @@ export default {
     },
     async pingLocalWebServer(authLink, port) {
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/${authLink}`, { mode: 'no-cors' });
+        await fetch(`http://127.0.0.1:${port}/${authLink}`, { mode: 'no-cors' });
 
         clearInterval(this.pingInterval);
       } catch (err) {

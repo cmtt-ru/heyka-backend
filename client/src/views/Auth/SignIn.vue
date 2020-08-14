@@ -48,7 +48,7 @@
           </div>
         </div>
         <ui-form
-          v-if="!passReset"
+          v-show="!passReset"
           class="reset-form"
           @submit="loginHandler()"
         >
@@ -89,7 +89,7 @@
           </div>
         </ui-form>
         <ui-form
-          v-if="passReset"
+          v-show="passReset"
           class="reset-form"
           @submit="resetHandler"
         >
@@ -119,7 +119,7 @@
           </ui-button>
         </ui-form>
 
-        <div class="info">
+        <div class="info currently-not-needed">
           <div class="info__text">
             Not a member?
           </div>
@@ -172,7 +172,6 @@ export default {
   methods: {
 
     toggleReset() {
-      console.log(this.passReset);
       this.passReset = !this.passReset;
     },
 
@@ -199,32 +198,36 @@ export default {
             },
           };
 
-          await this.$store.dispatch('app/addNotification', notification);
+          console.log(notification);
+          await this.$store.dispatch('addNotification', notification);
         }
       }
     },
 
     async resetHandler() {
       try {
-        // await this.$API.auth.resetPass(this.login.email);
-        this.toggleReset();
-        const notification = {
-          data: {
-            text: 'Check your email inbox!',
-          },
-        };
-
-        await this.$store.dispatch('app/addNotification', notification);
+        await this.$API.auth.discardPass({ email: this.login.email });
       } catch (err) {
         console.log('ERROR:', err);
       }
+
+      this.toggleReset();
+      const notification = {
+        data: {
+          text: 'Check your email inbox!',
+        },
+      };
+
+      await this.$store.dispatch('addNotification', notification);
     },
   },
 };
 </script>
 
 <style lang="stylus" scoped>
-
+.currently-not-needed
+  opacity 0.5
+  pointer-events none
 .sidebar-image
     width 100%
     height 100vh
@@ -234,6 +237,8 @@ export default {
 
 .page-wrapper
     height 100%
+    max-width 1200px
+    margin 0 auto
     box-sizing border-box
     display flex
     flex-direction row

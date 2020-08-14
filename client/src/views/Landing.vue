@@ -12,12 +12,18 @@
       </p>
 
       <div class="download">
-        <a class="link">macOS</a>
+        <a
+          class="link"
+          @click="startPinging"
+        >macOS</a>
         <a
           class="link"
           @click="startPinging"
         >Windows</a>
-        <a class="link">Linux</a>
+        <a
+          class="link"
+          @click="startPinging"
+        >Linux</a>
       </div>
     </div>
   </div>
@@ -36,7 +42,7 @@ export default {
   },
   data() {
     return {
-      version: '0.1.1',
+      version: '1.1.2',
       pingInterval: null,
       pingTime: 2000,
     };
@@ -100,4 +106,5 @@ html
     text-decoration none
     border-bottom 1px solid #ccc
     cursor pointer
+    display inline
 </style>

@@ -1,3 +1,30 @@
 {
-  "test": "Test"
+  "test": "Test",
+  "login": {
+    "welcome": "Welcome to Heyka",
+    "or": "or",
+    "login": "LOGIN",
+    "forgot": "Forgot your password?",
+    "reset": "Reset",
+    "cancel": "Cancel",
+    "newMember": "Not a member?",
+    "signup": "Sign up now"
+  },
+  "notifications": {
+    "notImplemented": "This feature is not implemented yet",
+    "login": {
+      "wrongPass": "Wrong email/password!",
+      "passReset": "Check your email inbox!"
+    }
+  },
+  "inputErrors": {
+    "default": "not a valid input",
+    "defaultBackend": "server didn't accept this text",
+    "required": "this field is required",
+    "email": "not a valid email",
+    "numbers": "only numbers allowed",
+    "minlength": "min length is:",
+    "maxlength": "max length is:",
+    "passNotMatch": "passwords do not match"
+  }
 }

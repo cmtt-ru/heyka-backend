@@ -53,6 +53,12 @@
           Open Heyka
         </ui-button>
       </a>
+      <router-link
+        :to="{ name: 'landing'}"
+        class="reset__landing"
+      >
+        You can download Heyka here
+      </router-link>
     </div>
   </div>
 </template>
@@ -89,10 +95,8 @@ export default {
     this.JWT = this.$route.query.token;
     const res = await this.$API.auth.checkWebToken(this.JWT);
 
-    console.log(this.$route);
-
     if (res.result === false) {
-      // this.$router.push({ name: 'signIn' }); //! uncomment on prod
+      this.$router.push({ name: 'signIn' });
     }
   },
 
@@ -105,7 +109,7 @@ export default {
         });
 
         this.authlink = res.code;
-        console.log(res);
+        await this.$API.auth.signinByLink(res.code);
       } catch (e) {
         console.log('ERROR on pass reset:', e);
       }
@@ -157,4 +161,8 @@ export default {
 
   &__submit
     flex-shrink 1
+
+  &__landing
+    margin-top 20px
+    color var(--text-tech-2)
 </style>

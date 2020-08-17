@@ -89,16 +89,13 @@ export default {
   },
 };
 </script>
-<style lang="stylus">
-html
-  background #F1FAFF
-</style>
 
 <style lang="stylus" scoped>
 .wrapper
   display flex
   height 100vh
   justify-content center
+  background #F1FAFF
 
 .content
   max-width 700px

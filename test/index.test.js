@@ -624,7 +624,7 @@ describe('Test routes', () => {
   });
 
   describe('POST /reset-password', () => {
-    describe('Init process, reset password', () => {
+    describe('Init process, reset password with valid token', () => {
       it('should return "ok" and change password', async () => {
         const {
           userService,
@@ -668,7 +668,7 @@ describe('Test routes', () => {
         });
       });
     });
-    describe('Init process, reset password', () => {
+    describe('Init process, reset password with expired token', () => {
       it('Simulate a day spent, should return invalid token', async () => {
         const {
           userService,
@@ -716,29 +716,113 @@ describe('Test routes', () => {
         });
       });
     });
+    describe('Init process, reset password and ensure, that token can be used single time', () => {
+      it('For second time an error should be returned', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'admin@mail.ru',
+          password: 'old-password',
+        };
+        const user = await userService.signup(userInfo);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'admin@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
+        
+        const token = args[1];
+
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/reset-password',
+          payload: {
+            token,
+            password: 'new-password'
+          }
+        });
+        expect(response2.statusCode).equals(200);
+      
+
+        // try signin with new password
+        await userService.signin({
+          email: 'admin@mail.ru',
+          password: 'new-password',
+        });
+
+        // try to reset one more time
+        const response3 = await server.inject({
+          method: 'POST',
+          url: '/reset-password',
+          payload: {
+            token,
+            password: 'new-password-second-time'
+          }
+        });
+        expect(response3.statusCode).equals(400);
+
+
+        // try signin with new-old password
+        await userService.signin({
+          email: 'admin@mail.ru',
+          password: 'new-password',
+        });
+      });
+    });
   });
 
   describe('GET /check-token', () => {
     it('Check valid token: result=true', async () => {
-      const token = jwt.sign({ data: 'somedata' }, config.jwtSecret, {
+      const {
+        userService
+      } = server.services();
+      const user = await userService.signup({
+        name: 'name',
+        email: 'email@email.ru',
+        password: 'password',
+      });
+      const tokens = await userService.createTokens(user);
+      const token = jwt.sign({ data: 'somedata' }, user.password_hash, {
         expiresIn: 60 // seconds
       });
       const response = await server.inject({
         method: 'GET',
-        url: `/check-token?token=${token}`
+        url: `/check-token?token=${token}`,
+        ...helpers.withAuthorization(tokens),
       });
       expect(response.statusCode).equals(200);
       const payload = JSON.parse(response.payload);
       expect(payload.result).true();
     });
     it('Check invalid token: result=false', async () => {
-      const token = jwt.sign({ data: 'somedata' }, config.jwtSecret, {
+      const {
+        userService
+      } = server.services();
+      const user = await userService.signup({
+        name: 'name',
+        email: 'email@email.ru',
+        password: 'password',
+      });
+      const tokens = await userService.createTokens(user);
+      const token = jwt.sign({ data: 'somedata' }, user.password_hash, {
         expiresIn: 60 // seconds
       });
       MockDate.set(Date.now() + 60 * 1000 + 1);
       const response = await server.inject({
         method: 'GET',
-        url: `/check-token?token=${token}`
+        url: `/check-token?token=${token}`,
+        ...helpers.withAuthorization(tokens),
       });
       MockDate.reset();
       expect(response.statusCode).equals(200);

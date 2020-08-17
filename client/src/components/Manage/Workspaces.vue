@@ -12,13 +12,15 @@
         width="36"
         height="36"
         alt="Vue logo"
-        :src="workspace.avatar"
+        :src="avatarUrl(workspace, 36)"
       >
     </div>
   </div>
 </template>
 
 <script>
+import { getUserAvatarUrl } from '@libs/image';
+
 export default {
   props: {
     /**
@@ -43,10 +45,19 @@ export default {
   },
 
   methods: {
+    /**
+     * Workspace selected event handler
+     * @param {object} workspace – workspace
+     * @returns {void}
+     */
     selectWorkspaceHandler(workspace) {
       this.$emit('select', workspace);
     },
 
+    /**
+     * Avatar url
+     */
+    avatarUrl: getUserAvatarUrl,
   },
 };
 </script>

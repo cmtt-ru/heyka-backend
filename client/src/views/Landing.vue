@@ -12,12 +12,24 @@
       </p>
 
       <div class="download">
-        <a class="link">macOS</a>
         <a
           class="link"
+          target="_blank"
+          :href="macLink"
+          @click="startPinging"
+        >macOS</a>
+        <a
+          class="link"
+          target="_blank"
+          :href="winLink"
           @click="startPinging"
         >Windows</a>
-        <a class="link">Linux</a>
+        <a
+          class="link"
+          target="_blank"
+          :href="linuxLink"
+          @click="startPinging"
+        >Linux</a>
       </div>
     </div>
   </div>
@@ -37,9 +49,20 @@ export default {
   },
   data() {
     return {
-      version: '0.1.1',
+      version: '1.1.2',
       pingInterval: null,
     };
+  },
+  computed: {
+    macLink() {
+      return `https://storage.yandexcloud.net/heyka-beta-bin/download/Heyka-${this.version}.dmg`;
+    },
+    winLink() {
+      return `https://storage.yandexcloud.net/heyka-beta-bin/download/Heyka%20Setup%20${this.version}.exe`;
+    },
+    linuxLink() {
+      return `https://storage.yandexcloud.net/heyka-beta-bin/download/Heyka-${this.version}.deb`;
+    },
   },
 
   methods: {
@@ -98,4 +121,5 @@ html
     text-decoration none
     border-bottom 1px solid #ccc
     cursor pointer
+    display inline
 </style>

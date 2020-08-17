@@ -8,7 +8,7 @@
       <img
         class="user__avatar"
         loading="lazy"
-        :src="user.avatar|formImageUrl(32)"
+        :src="avatarUrl(user, 32)"
         width="32"
         height="32"
       >
@@ -33,6 +33,7 @@
 <script>
 import cloneDeep from 'clone-deep';
 import dateFormat from 'dateformat';
+import { getUserAvatarUrl } from '@libs/image';
 
 export default {
   props: {
@@ -58,6 +59,10 @@ export default {
   },
 
   computed: {
+    /**
+     * Sort users alphabetically
+     * @returns {array}
+     */
     sortedUsers() {
       return cloneDeep(this.users).sort(function (a, b) {
         if (a.name < b.name) {
@@ -73,6 +78,11 @@ export default {
   },
 
   methods: {
+    /**
+     * Revoke user's session
+     * @param {object} user – user
+     * @returns {Promise<void>}
+     */
     async revokeHandler(user) {
       const state = confirm(`Are you sure want to revoke access for "${user.name}"?`);
 
@@ -91,9 +101,19 @@ export default {
       }
     },
 
+    /**
+     * Format date
+     * @param {string} date – date
+     * @returns {string}
+     */
     dateFormat(date) {
       return dateFormat(new Date(date), 'dd.mm.yy HH:MM:ss');
     },
+
+    /**
+     * Avatar url
+     */
+    avatarUrl: getUserAvatarUrl,
   },
 };
 </script>

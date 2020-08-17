@@ -56,6 +56,7 @@
       <router-link
         :to="{ name: 'landing'}"
         class="reset__landing"
+        target="_blank"
       >
         You can download Heyka here
       </router-link>

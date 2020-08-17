@@ -14,14 +14,20 @@
       <div class="download">
         <a
           class="link"
+          target="_blank"
+          :href="macLink"
           @click="startPinging"
         >macOS</a>
         <a
           class="link"
+          target="_blank"
+          :href="winLink"
           @click="startPinging"
         >Windows</a>
         <a
           class="link"
+          target="_blank"
+          :href="linuxLink"
           @click="startPinging"
         >Linux</a>
       </div>
@@ -46,6 +52,17 @@ export default {
       pingInterval: null,
       pingTime: 2000,
     };
+  },
+  computed: {
+    macLink() {
+      return `https://storage.yandexcloud.net/heyka-beta-bin/download/Heyka-${this.version}.dmg`;
+    },
+    winLink() {
+      return `https://storage.yandexcloud.net/heyka-beta-bin/download/Heyka%20Setup%20${this.version}.exe`;
+    },
+    linuxLink() {
+      return `https://storage.yandexcloud.net/heyka-beta-bin/download/Heyka-${this.version}.deb`;
+    },
   },
 
   methods: {

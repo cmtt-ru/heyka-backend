@@ -365,6 +365,84 @@ describe('Test routes', () => {
     });
   });
 
+  describe('DELETE /me', () => {
+    describe('Cant delete if password is invalid', () => {
+      it('should return 403 forbidden', async () => {
+        const {
+          userService
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+          password: 'very-strong-password'
+        };
+        const user = await userService.signup(userInfo);
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'DELETE',
+          url: '/me',
+          payload: {
+            password: 'invalid-password'
+          },
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('Cant delete if there are workspaces where user is admin', () => {
+      it('should return 400 bad request', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+        };
+        const user = await userService.signup(userInfo);
+        await workspaceService.createWorkspace(user, 'test');
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'DELETE',
+          url: '/me',
+          payload: {
+          },
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(400);
+      });
+    });
+    describe('Delete account', () => {
+      it('Check that user leaved workspace when delete account', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+        };
+        const user = await userService.signup(userInfo);
+        const admin = await userService.signup({ name: 'admin', email: 'admin@admin.ru' });
+        const { workspace: w } = await workspaceService.createWorkspace(admin, 'test');
+        await workspaceService.addUserToWorkspace(w.id, user.id, 'user');
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'DELETE',
+          url: '/me',
+          payload: {
+          },
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        const allWorkspaceMembers = await wdb.getWorkspaceMembers(w.id);
+        expect(allWorkspaceMembers).length(1);
+        expect(allWorkspaceMembers[0].id).equals(admin.id); 
+      });
+    });
+  });
+
   describe('POST /image', () => {
     describe('User tries to upload image without files', () => {
       it('should return an error', async () => {

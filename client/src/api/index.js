@@ -8,8 +8,6 @@ import { updateTokens, checkAndRefreshTokens } from './tokens';
 
 if (IS_DEV) {
   axios.defaults.baseURL = process.env.VUE_APP_DEV_URL;
-} else {
-  axios.defaults.baseURL = process.env.VUE_APP_PROD_URL;
 }
 
 /**

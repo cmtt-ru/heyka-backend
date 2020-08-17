@@ -7,12 +7,26 @@ import Cookies from 'js-cookie';
 
 export default {
   computed: {
+    /**
+     * Social network name
+     * @returns {string}
+     */
     socialName() {
       return this.$route.params.socialName;
     },
+
+    /**
+     * Authentication code
+     * @returns {string | (string | null)[]}
+     */
     authCode() {
       return this.$route.params.code;
     },
+
+    /**
+     * Action like a login or social-link
+     * @returns {string}
+     */
     action() {
       return this.$route.params.action;
     },

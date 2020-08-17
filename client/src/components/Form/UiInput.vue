@@ -186,7 +186,7 @@ export default {
   },
 
   watch: {
-    backendError(val) {
+    backendError() {
       this.checkErrors();
     },
   },

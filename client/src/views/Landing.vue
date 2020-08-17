@@ -40,6 +40,7 @@ import { authFileStore } from '@/store/localStore';
 
 // eslint-disable-next-line no-magic-numbers
 const PORTS = [9615, 48757, 48852, 49057, 49086];
+const pingTime = 2000;
 
 export default {
   name: 'Home',
@@ -50,7 +51,6 @@ export default {
     return {
       version: '1.1.2',
       pingInterval: null,
-      pingTime: 2000,
     };
   },
   computed: {
@@ -75,17 +75,15 @@ export default {
           for (const port of PORTS) {
             this.pingLocalWebServer(res.code, port);
           }
-        }, this.pingTime);
+        }, pingTime);
       }
     },
     async pingLocalWebServer(authLink, port) {
       try {
-        const res = await fetch(`http://127.0.0.1:${port}/${authLink}`, { mode: 'no-cors' });
+        await fetch(`http://127.0.0.1:${port}/${authLink}`, { mode: 'no-cors' });
 
-        console.log(res);
         clearInterval(this.pingInterval);
       } catch (err) {
-        console.log('ERRRRR', err);
       }
     },
   },

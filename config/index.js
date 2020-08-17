@@ -5,6 +5,8 @@ require('dotenv').config();
 module.exports = {
   port: process.env.PORT || 5000,
   host: process.env.HOST || 'localhost',
+  jwtSecret: process.env.JWT_SECRET || 'default_jwt_token',
+  publicHostname: process.env.PUBLIC_HOSTNAME || 'localhost:5000',
   leonardo: {
     uploadUrl: process.env.LEONARDO_UPLOAD_URL || 'https://leonardo-direct.osnova.io/upload/files/',
     staticServerUrl: process.env.LEONARDO_STATIC_SERVER_URL || 'https://leonardo.osnova.io/',
@@ -49,5 +51,15 @@ module.exports = {
     defaultPublicJanusUrl: process.env.DEFAULT_PUBLIC_JANUS_URL || 'http://localhost',
     k8sClusterHost: process.env.K8S_CLUSTER_HOST || null,
     k8sJanusLabelSelector: process.env.K8S_JANUS_LABEL_SELECTOR || null
+  },
+  files: {
+    awsEndpoint: process.env.AWS_ENDPOINT,
+    awsBucket: process.env.AWS_BUCKET,
+    awsKey: process.env.AWS_KEY,
+    awsSecret: process.env.AWS_SECRET,
+    imgproxyUrl: process.env.IMGPROXY_URL,
+    imgproxyKey: process.env.IMGPROXY_KEY,
+    imgproxySalt: process.env.IMGPROXY_SALT,
+    limitPerUser: 100,
   }
 };

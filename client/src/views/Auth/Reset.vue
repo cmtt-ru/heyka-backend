@@ -109,7 +109,7 @@ export default {
         });
 
         this.authlink = res.code;
-        await this.$API.auth.signinByLink(res.code);
+        // await this.$API.auth.signinByLink(res.code);
       } catch (e) {
         console.log('ERROR on pass reset:', e);
       }

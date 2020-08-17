@@ -30,7 +30,7 @@
           class="reset__submit"
           submit
         >
-          RESET
+          Reset
         </ui-button>
       </ui-form>
     </div>

@@ -14,7 +14,6 @@ const IMAGE_EXAMPLE = Buffer.from('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgA
   + 'AGKAAABigEzlzBYAAAAB3RJTUUH5AQXDwEOjLBhqQAAAB1pVFh0Q29tbWVudAAAAAAAQ3JlYXRlZCB3aXRoIEdJTVBkLmUHAAAALElEQVQI'
   + '1yXHsRHAQAzDMEbn/Sf0KBbvi6DDt7tt1STT9u5UIID6f4AkMwM8YOUadrVD1GUAAAAASUVORK5CYII=', 'base64');
 const errorMessages = require('../lib/error_messages');
-const config = require('../config');
 const jwt = require('jsonwebtoken');
 const generateFakeConnection = (userId, workspaceId) => ({
   connectionId: uuid4(),

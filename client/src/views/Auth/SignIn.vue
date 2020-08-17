@@ -151,8 +151,8 @@ export default {
       coverSrc: null,
       passReset: false,
       login: {
-        email: 'ivanb@cmtt.ru',
-        password: 'VT3O2O',
+        email: '',
+        password: '',
       },
     };
   },

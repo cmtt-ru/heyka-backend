@@ -150,7 +150,7 @@ export default {
         },
       };
 
-      await this.$store.dispatch('app/addNotification', notification);
+      await this.$store.dispatch('addNotification', notification);
     },
   },
 

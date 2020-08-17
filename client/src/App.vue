@@ -1,12 +1,19 @@
 <template>
-  <router-view />
+  <div>
+    <notifications />
+    <router-view />
+  </div>
 </template>
 
 <script>
+import Notifications from '@components/Notifications';
 import { prepareTokens } from '@api/tokens';
 require.context('@/assets/icons', true, /[A-Za-z0-9-_,\s]+\.svg$/i);
 
 export default {
+  components: {
+    Notifications,
+  },
   created() {
     this.loadSvgSprite();
     prepareTokens();

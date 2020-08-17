@@ -793,7 +793,10 @@ describe('Test routes', () => {
         password: 'password',
       });
       const tokens = await userService.createTokens(user);
-      const token = jwt.sign({ data: 'somedata' }, user.password_hash, {
+      const token = jwt.sign({
+        data: 'somedata',
+        userId: user.id,
+      }, user.password_hash, {
         expiresIn: 60 // seconds
       });
       const response = await server.inject({
@@ -815,7 +818,10 @@ describe('Test routes', () => {
         password: 'password',
       });
       const tokens = await userService.createTokens(user);
-      const token = jwt.sign({ data: 'somedata' }, user.password_hash, {
+      const token = jwt.sign({
+        data: 'somedata',
+        userId: user.id,
+      }, user.password_hash, {
         expiresIn: 60 // seconds
       });
       MockDate.set(Date.now() + 60 * 1000 + 1);

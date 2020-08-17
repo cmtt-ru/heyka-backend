@@ -1,9 +1,11 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
+Vue.use(VueRouter);
 const Landing = () => import(/* webpackChunkName: "main" */ '../views/Landing.vue');
 
-const Auth = () => import(/* webpackChunkName: "main" */ '../views/Auth.vue');
-const SignIn = () => import(/* webpackChunkName: "main" */ '../views/SignIn.vue');
+const Auth = () => import(/* webpackChunkName: "main" */ '../views/Auth/Auth.vue');
+const SignIn = () => import(/* webpackChunkName: "main" */ '../views/Auth/SignIn.vue');
+const Reset = () => import(/* webpackChunkName: "main" */ '../views/Auth/Reset.vue');
 
 const SocialLogin = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialLogin.vue');
 const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialCallback.vue');
@@ -11,8 +13,6 @@ const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Aut
 const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest.vue');
 
 const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
-
-Vue.use(VueRouter);
 
 const routes = [
   /**
@@ -52,6 +52,11 @@ const routes = [
         name: 'auth-social-link',
         component: SocialLogin,
       },
+      {
+        path: 'password/reset',
+        name: 'reset',
+        component: Reset,
+      },
     ],
   },
 
@@ -78,6 +83,7 @@ const routes = [
     name: 'guest',
     component: Guest,
   },
+
 ];
 
 const router = new VueRouter({

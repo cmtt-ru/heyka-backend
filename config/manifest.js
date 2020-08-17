@@ -14,7 +14,7 @@ module.exports = {
       request: ['error'],
     } : process.env.NODE_ENV === 'test' ? {
       log: ['debug-error'],
-      request: ['debug-error']
+      request: ['debug-error'],
     } : undefined
   },
   register: {

@@ -4,8 +4,6 @@ import VueI18n from 'vue-i18n';
 
 Vue.use(VueI18n);
 
-const SYSTEM_LOCALE = 'en';
-
 const supportedLocales = [];
 
 const messages = loadLocaleMessages();
@@ -34,6 +32,20 @@ function loadLocaleMessages() {
 }
 
 /**
+ * Select locale. Get locale from electron store, if none we use system language, if none/not_supported we use 'en'
+ * @returns {string} locale's short string (eg. 'en')
+ */
+function determineLocale() {
+  for (const locale of navigator.languages) {
+    if (supportedLocales.includes(locale)) {
+      return locale;
+    }
+  }
+
+  return 'en';
+}
+
+/**
  * Slavic Pluralisation rules
  * @param {number} choice - choice
  * @param {number} choicesLength - choicesLength
@@ -58,8 +70,10 @@ function slavicPluralization(choice, choicesLength) {
   return (choicesLength < 4) ? 2 : 3;
 }
 
+console.log(determineLocale());
+
 export default new VueI18n({
-  locale: SYSTEM_LOCALE,
+  locale: determineLocale(),
   fallbackLocale: 'en',
   messages,
   pluralizationRules: {

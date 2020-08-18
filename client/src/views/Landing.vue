@@ -61,7 +61,7 @@ export default {
       return `https://storage.yandexcloud.net/heyka-beta-bin/download/Heyka%20Setup%20${this.version}.exe`;
     },
     linuxLink() {
-      return `https://storage.yandexcloud.net/heyka-beta-bin/download/Heyka-${this.version}.deb`;
+      return `https://storage.yandexcloud.net/heyka-beta-bin/download/heyka_${this.version}_amd64.deb`;
     },
   },
 

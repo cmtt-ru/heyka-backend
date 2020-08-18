@@ -1,7 +1,7 @@
 {
   "test": "Test",
   "login": {
-    "welcome": "Welcome to Heyka",
+    "welcome": "Welcome to Heyka!",
     "or": "or",
     "login": "LOGIN",
     "forgot": "Forgot your password?",

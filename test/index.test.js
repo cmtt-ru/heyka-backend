@@ -1020,6 +1020,67 @@ describe('Test routes', () => {
     });
   });
 
+  describe('GET /detach-account/{socialNetworkService}', () => {
+    describe('Check that can\'t detach last login method', () => {
+      it('return Bad Request', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({
+          name: 'name',
+          email: 'email@email.email',
+        });
+        await udb.updateUser(user.id, {
+          auth: {
+            facebook: {
+              id: 'some-facebook-id'
+            }
+          }
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: '/detach-account/facebook',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response.statusCode).equals(400);
+        const payload = JSON.parse(response.payload);
+        expect(payload.message).equals(errorMessages.lastLoginMethod);
+      });
+    });
+    describe('Check that extenral account detached', () => {
+      it('there is no info for that external account', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({
+          name: 'name',
+          email: 'email@email.email',
+          password: 'password',
+        });
+        await udb.updateUser(user.id, {
+          auth: {
+            facebook: {
+              id: 'some-facebook-id',
+            }
+          }
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: '/detach-account/facebook',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response.statusCode).equals(200);
+
+        const updatedUser = await udb.findById(user.id);
+        expect(updatedUser.auth.facebook).not.exists();
+      });
+    });
+  });
+
   /**
    * Workspaces
    */

@@ -204,6 +204,43 @@ describe('Test routes', () => {
     });
   });
 
+  describe('POST /signout', () => {
+    describe('Signout out from one session', () => {
+      it('Cant use this session anymore', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({
+          name: 'name',
+          email: 'email@email.email',
+          password: 'password',
+        });
+        const tokens1 = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: '/signout',
+          ...helpers.withAuthorization(tokens1),
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(response.payload).equals('ok');
+
+        const response2 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens1),
+        });
+        expect(response2.statusCode).equals(401);
+
+        const response3 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens2),
+        });
+        expect(response3.statusCode).equals(200);
+      });
+    });
+  });
+
   describe('POST /refresh-token', () => {
     describe('Incorrect request without tokens', () => {
       it('Should return 400 Bad Request', async () => {

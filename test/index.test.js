@@ -894,6 +894,75 @@ describe('Test routes', () => {
         });
       });
     });
+    describe('Init process, reset password and ensure, that all user sessions are discarded', () => {
+      it('For second time an error should be returned', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'admin@mail.ru',
+          password: 'old-password',
+        };
+        const user = await userService.signup(userInfo);
+        const tokens1 = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'admin@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
+        
+        const token = args[1];
+
+        // try to use tokens created before password resetting
+        const response2 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens1),
+        });
+        const response3 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens2),
+        });
+        expect(response2.statusCode).equals(200);
+        expect(response3.statusCode).equals(200);
+
+        const response4 = await server.inject({
+          method: 'POST',
+          url: '/reset-password',
+          payload: {
+            token,
+            password: 'new-password'
+          }
+        });
+        expect(response4.statusCode).equals(200);
+
+        // try to use tokens created after password resetting
+        const response5 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens1),
+        });
+        const response6 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens2),
+        });
+        expect(response5.statusCode).equals(401);
+        expect(response6.statusCode).equals(401);
+      });
+    });
   });
 
   describe('GET /check-token', () => {

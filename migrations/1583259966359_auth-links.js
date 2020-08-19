@@ -11,7 +11,8 @@ exports.up = (pgm) => {
     },
     user_id: {
       type: 'uuid',
-      references: 'users(id)'
+      references: 'users(id)',
+      onDelete: 'cascade',
     },
     code: 'varchar(50)',
     created_at: 'timestamp',

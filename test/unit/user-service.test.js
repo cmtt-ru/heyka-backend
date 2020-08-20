@@ -81,13 +81,18 @@ describe('Unit tests: userService', () => {
       const emailServiceStub = {
         sendEmailVerificationCode: sinon.stub().resolves(true)
       };
+      const fileServiceStub = {
+        getImgproxyImageSet: sinon.stub().resolves({ image32x32: 'url' }),
+        uploadS3FromUrl: sinon.stub(),
+      };
       const user = { email: 'anemail' };
       const thisObject = {
         server: {
           services () {
             return {
               userDatabaseService: serviceStub,
-              emailService: emailServiceStub
+              emailService: emailServiceStub,
+              fileService: fileServiceStub,
             };
           }
         },
@@ -109,12 +114,17 @@ describe('Unit tests: userService', () => {
       const emailServiceStub = {
         sendEmailVerificationCode: sinon.stub().resolves(true)
       };
+      const fileServiceStub = {
+        getImgproxyImageSet: sinon.stub().resolves({ image32x32: 'url' }),
+        uploadS3FromUrl: sinon.stub(),
+      };
       const thisObject = {
         server: {
           services () {
             return {
               userDatabaseService: serviceStub,
-              emailService: emailServiceStub
+              emailService: emailServiceStub,
+              fileService: fileServiceStub,
             };
           }
         },

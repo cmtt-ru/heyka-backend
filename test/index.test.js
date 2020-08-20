@@ -1,11 +1,11 @@
 'use strict';
 
+const config = require('../config');
 const Lab = require('@hapi/lab');
 const { describe, it, before, beforeEach } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
-const crypto = require('crypto-promise');
 const MockDate = require('mockdate');
 const serviceHelpers = require('../lib/services/helpers');
 const { methods: stubbedMethods } = require('./stub_external');
@@ -199,7 +199,7 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(200);
         // check that email is sent
         expect(stubbedMethods.sendEmail.calledOnce).true();
-        expect(stubbedMethods.sendEmail.args[0][0][0]).equals(email);
+        expect(stubbedMethods.sendEmail.args[0][0][0].email).equals(email);
       });
     });
   });
@@ -2525,11 +2525,15 @@ describe('Test routes', () => {
    * Email verification functionality
    */
   describe('POST /vefiry/{code}', () => {
-    describe('Try to verify not existed verification code', () => {
+    describe('Try to verify not valid verification code', () => {
       it('should return fail status, reason should be "invalid code"', async () => {
+        const token = jwt.sign({
+          userId: uuid4(),
+          email: 'random@email.ru',
+        }, config.jwtSecret);
         const response = await server.inject({
           method: 'GET',
-          url: `/verify/${(await crypto.randomBytes(41)).toString('hex')}`
+          url: `/verify/${token}`
         });
         expect(response.statusCode).equals(400);
         const payload = JSON.parse(response.payload);
@@ -2539,59 +2543,32 @@ describe('Test routes', () => {
     describe('Try to verify an expired verification code', () => {
       it('should return fail status, reason should be "invalid code"', async () => {
         const { userService } = server.services();
-        const db = server.plugins['hapi-pg-promise'].db;
-        const user = await userService.signup({ email: 'admin@admin.ru' });
-        const expiredDate = new Date(Date.now() - 1);
-        const query = `
-          UPDATE verification_codes
-          SET expired_at=$1
-          WHERE user_id=$2
-          RETURNING *
-        `;
-        const record = await db.one(query, [expiredDate, user.id]);
-        const fullCode = serviceHelpers.codeConvertToUrl(record.id, record.code);
+        await userService.signup({ email: 'admin@admin.ru' });
+        const token = stubbedMethods.sendEmail.firstCall.args[0][1];
+        MockDate.set(Date.now() + 36000000000);
         const response = await server.inject({
           method: 'GET',
-          url: `/verify/${fullCode}`
+          url: `/verify/${token}`
         });
-        expect(response.statusCode).equals(400);
-        const payload = JSON.parse(response.payload);
-        expect(payload.message).equals('Verification code is not valid');
-      });
-    });
-    describe('Try to verify verification code, but email are not matched', () => {
-      it('should return fail status, reason should be "invalid code"', async () => {
-        const { userService } = server.services();
-        const db = server.plugins['hapi-pg-promise'].db;
-        const user = await userService.signup({ email: 'admin@admin.ru' });
-        await db.none('UPDATE users SET email=$1 WHERE id=$2', ['notadmin@admin.ru', user.id]);
-        const fullCode = stubbedMethods.sendEmail.firstCall.args[0][1];
-        const response = await server.inject({
-          method: 'GET',
-          url: `/verify/${fullCode}`
-        });
+        MockDate.reset();
         expect(response.statusCode).equals(400);
         const payload = JSON.parse(response.payload);
         expect(payload.message).equals('Verification code is not valid');
       });
     });
     describe('Try to verify valid verification code', () => {
-      it('should set "email_verified" true, should delete verification code', async () => {
+      it('should set "email_verified" true', async () => {
         const { userService } = server.services();
-        const db = server.plugins['hapi-pg-promise'].db;
         const user = await userService.signup({ email: 'admin@admin.ru' });
-        const fullCode = stubbedMethods.sendEmail.firstCall.args[0][1];
+        const token = stubbedMethods.sendEmail.firstCall.args[0][1];
         const response = await server.inject({
           method: 'GET',
-          url: `/verify/${fullCode}`
+          url: `/verify/${token}`
         });
         expect(response.statusCode).equals(200);
         // check is email verified
         const userUpdated = await userService.findById(user.id);
         expect(userUpdated.is_email_verified).true();
-        // check verification code is not exist
-        const verificationCode = await db.oneOrNone('SELECT * FROM verification_codes WHERE user_id=$1', [user.id]);
-        expect(verificationCode).null();
       });
     });
   });

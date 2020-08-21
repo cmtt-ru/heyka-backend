@@ -70,8 +70,6 @@ function slavicPluralization(choice, choicesLength) {
   return (choicesLength < 4) ? 2 : 3;
 }
 
-console.log(determineLocale());
-
 export default new VueI18n({
   locale: determineLocale(),
   fallbackLocale: 'en',

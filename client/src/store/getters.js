@@ -1,5 +1,3 @@
-import { sortAny } from '@libs/arrays';
-
 /**
  * Last speaking user
  * @type {null}

@@ -1,11 +1,7 @@
 import API from '@api';
 import { mapKeys } from '@libs/arrays';
 import * as sockets from '@api/socket';
-import callWindow from '@classes/callWindow';
-import { ipcRenderer } from 'electron';
 import router from '@/router';
-import sounds from '@classes/sounds';
-import connectionCheck from '@classes/connectionCheck';
 
 export default {
 
@@ -15,9 +11,6 @@ export default {
    * @returns {void}
    */
   async initial({ commit, dispatch, getters }) {
-    /** Wait until internet goes online */
-    await connectionCheck.waitUntilOnline();
-
     /** Get authenticated user */
     const authenticatedUser = await API.user.getAuthenticatedUser();
 
@@ -112,8 +105,6 @@ export default {
         commit('app/ANIMATION_CHANNEL_ID', null);
       }
     }
-
-    sounds.play('me-joined');
   },
 
   /**
@@ -154,12 +145,6 @@ export default {
     });
 
     commit('me/SET_CHANNEL_ID', id);
-
-    callWindow.showOverlay();
-
-    if (state.me.mediaState.microphone === true) {
-      ipcRenderer.send('tray-animation', true);
-    }
   },
 
   /**
@@ -196,10 +181,6 @@ export default {
     commit('me/SET_CHANNEL_ID', null);
 
     dispatch('me/setDefaultMediaState');
-
-    callWindow.hideAll();
-
-    ipcRenderer.send('tray-animation', false);
   },
 
   /**

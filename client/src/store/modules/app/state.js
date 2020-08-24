@@ -1,4 +1,3 @@
-import { ipcRenderer } from 'electron';
 import { heykaStore } from '@/store/localStore';
 
 /**

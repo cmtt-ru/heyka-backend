@@ -1,5 +1,3 @@
-import { meStore } from '@/store/localStore';
-
 /**
  * @typedef {object} MeState
  * @property {string} id – my id
@@ -30,7 +28,7 @@ const state = () => {
    */
   return {
     id: null,
-    selectedWorkspaceId: meStore.get('selectedWorkspaceId'),
+    selectedWorkspaceId: null,
     selectedChannelId: null,
     mediaState: initialMediaState,
     previousMediaState: initialMediaState,

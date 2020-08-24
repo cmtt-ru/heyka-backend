@@ -13,6 +13,7 @@ module.exports = {
         '@views': path.resolve(__dirname, 'src/views'),
         '@static': path.resolve(__dirname, 'public'),
         '@libs': path.resolve(__dirname, 'src/libs'),
+        '@classes': path.resolve(__dirname, 'src/classes'),
       },
     },
     plugins: webpackPlugins,

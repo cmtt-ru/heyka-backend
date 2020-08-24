@@ -11,49 +11,21 @@
         {{ texts.welcome }}
       </p>
       <div class="page__content">
-        <div class="currently-not-needed">
-          <ui-button
-            :type="3"
-            wide
-            class="sns-button"
-            @click="socialHandler('slack')"
-          >
-            Slack
-            <svg-icon
-              slot="right"
-              color="var(--icon-1)"
-              name="close"
-              size="medium"
-            />
-          </ui-button>
-          <ui-button
-            :type="3"
-            wide
-            class="sns-button"
-            @click="socialHandler('facebook')"
-          >
-            Facebook
-          </ui-button>
-          <ui-button
-            :type="3"
-            wide
-            class="sns-button"
-            @click="socialHandler('google')"
-          >
-            Google
-          </ui-button>
-
-          <div class="or-delimiter">
-            <span>{{ texts.or }}</span>
-          </div>
-        </div>
         <ui-form
           v-show="!passReset"
           class="reset-form"
-          @submit="loginHandler()"
+          @submit="registerHandler()"
         >
           <ui-input
-            v-model="login.email"
+            v-model="newUser.name"
+            icon="user"
+            class="login__input"
+            :placeholder="texts.name"
+            :minlength="3"
+            required
+          />
+          <ui-input
+            v-model="newUser.email"
             icon="mail"
             class="login__input"
             placeholder="example@mail.com"
@@ -61,7 +33,7 @@
             required
           />
           <ui-input
-            v-model="login.password"
+            v-model="newUser.password"
             icon="lock"
             required
             type="password"
@@ -74,60 +46,19 @@
             class="login__button"
             submit
           >
-            {{ texts.login }}
-          </ui-button>
-          <div class="info">
-            <div class="info__text">
-              {{ texts.forgot }}
-            </div>
-            <div
-              class="info__link"
-              @click="toggleReset"
-            >
-              {{ texts.reset }}
-            </div>
-          </div>
-        </ui-form>
-        <ui-form
-          v-show="passReset"
-          class="reset-form"
-          @submit="resetHandler"
-        >
-          <ui-input
-            v-model="login.email"
-            icon="mail"
-            class="login__input"
-            placeholder="example@mail.com"
-            email
-            required
-          />
-          <ui-button
-            :type="12"
-            wide
-            class="login__button"
-            submit
-          >
-            {{ texts.reset }}
-          </ui-button>
-          <ui-button
-            :type="10"
-            wide
-            class="login__button"
-            @click="toggleReset"
-          >
-            {{ texts.cancel }}
+            {{ texts.register }}
           </ui-button>
         </ui-form>
 
         <div class="info">
           <div class="info__text">
-            {{ texts.newMember }}
+            {{ texts.oldMember }}
           </div>
           <router-link
+            :to="{ name: 'signIn'}"
             class="info__link"
-            :to="{ name: 'register'}"
           >
-            {{ texts.signup }}
+            {{ texts.login }}
           </router-link>
         </div>
         <br>
@@ -150,8 +81,8 @@ export default {
   data() {
     return {
       coverSrc: null,
-      passReset: false,
-      login: {
+      newUser: {
+        name: '',
         email: '',
         password: '',
       },
@@ -164,7 +95,7 @@ export default {
      * @returns {object}
      */
     texts() {
-      return this.$t('login');
+      return this.$t('register');
     },
   },
 
@@ -182,10 +113,6 @@ export default {
 
   methods: {
 
-    toggleReset() {
-      this.passReset = !this.passReset;
-    },
-
     async socialHandler(socialName) {
       const baseUrl = IS_DEV ? process.env.VUE_APP_DEV_URL : process.env.VUE_APP_PROD_URL;
       const link = `${baseUrl}/auth/social/${socialName}/login`;
@@ -193,43 +120,16 @@ export default {
       window.open(link); // TODO: can replace with window.open (see main index.js)
     },
 
-    async loginHandler() {
+    async registerHandler() {
       try {
-        await this.$API.auth.signin({ credentials: this.login });
+        // await this.$API.auth.signin({ credentials: this.login });
 
-        await this.$router.push({
-          name: 'landing',
-        });
-      } catch (err) {
-        console.log('ERROR:', err);
-        if (err.response.data.message === 'Email or password are invalid') {
-          const notification = {
-            data: {
-              text: 'Wrong email/password!',
-            },
-          };
-
-          console.log(notification);
-          await this.$store.dispatch('addNotification', notification);
-        }
-      }
-    },
-
-    async resetHandler() {
-      try {
-        await this.$API.auth.discardPass({ email: this.login.email });
+        // await this.$router.push({
+        //   name: 'landing',
+        // });
       } catch (err) {
         console.log('ERROR:', err);
       }
-
-      this.toggleReset();
-      const notification = {
-        data: {
-          text: 'Check your email inbox!',
-        },
-      };
-
-      await this.$store.dispatch('addNotification', notification);
     },
   },
 };
@@ -282,10 +182,7 @@ export default {
     margin-bottom 12px
 
 .login__input
-    margin 6px 0
-
-    &:first-of-type
-        margin-bottom 12px
+    margin 6px 0 12px
 
 .login__button
     margin-top 12px

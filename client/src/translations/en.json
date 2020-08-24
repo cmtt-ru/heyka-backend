@@ -10,6 +10,13 @@
     "newMember": "Not a member?",
     "signup": "Sign up now"
   },
+  "register": {
+    "welcome": "Please register",
+    "name": "Username",
+    "register": "Register",
+    "oldMember": "Have an account?",
+    "login": "Log in"
+  },
   "reset": {
     "header": "PASSWORD RESET",
     "disclaimer": "Please enter your new password below to access your account",

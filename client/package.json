@@ -23,7 +23,8 @@
     "vue-router": "^3.4.3",
     "vue2-hammer": "^2.1.2",
     "vuex": "^3.4.0",
-    "socket.io-client": "latest"
+    "socket.io-client": "latest",
+    "uuid": "latest"
   },
   "devDependencies": {
     "@kazupon/vue-i18n-loader": "^0.3.0",

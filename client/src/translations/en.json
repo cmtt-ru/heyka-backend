@@ -34,5 +34,13 @@
     "minlength": "min length is:",
     "maxlength": "max length is:",
     "passNotMatch": "passwords do not match"
+  },
+  "settings": {
+    "devices": {
+      "speakersLabel": "Speakers",
+      "micLabel": "Microphone",
+      "cameraLabel": "Camera",
+      "defaultDevice": "Default"
+    }
   }
 }

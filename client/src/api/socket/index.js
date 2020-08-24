@@ -117,12 +117,6 @@ async function authorize(prevSocketId) {
     };
 
     client.emit(eventNames.auth, authData);
-
-    store.dispatch('app/addPrivacyLog', {
-      category: 'socket',
-      method: eventNames.auth,
-      data: [ store.getters['me/getSelectedWorkspaceId'] ],
-    });
   });
 }
 

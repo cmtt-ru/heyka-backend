@@ -1,6 +1,6 @@
 import Vue from 'vue';
 import VueRouter from 'vue-router';
-Vue.use(VueRouter);
+
 const Landing = () => import(/* webpackChunkName: "main" */ '../views/Landing.vue');
 
 const Auth = () => import(/* webpackChunkName: "main" */ '../views/Auth/Auth.vue');
@@ -13,6 +13,8 @@ const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Aut
 const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest.vue');
 
 const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
+
+Vue.use(VueRouter);
 
 const routes = [
   /**
@@ -65,8 +67,8 @@ const routes = [
    */
   {
     path: '/manage',
-    component: Manage,
     name: 'manage',
+    component: Manage,
     children: [
       {
         path: ':code',
@@ -82,6 +84,12 @@ const routes = [
     path: '/guest',
     name: 'guest',
     component: Guest,
+    children: [
+      {
+        path: ':code',
+        component: Guest,
+      },
+    ],
   },
 
 ];

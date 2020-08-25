@@ -1,7 +1,16 @@
 const path = require('path');
 const webpackPlugins = [];
+const fs = require('fs');
 
 module.exports = {
+  devServer: {
+    https: {
+      key: fs.readFileSync('./certs/localhost.key'),
+      cert: fs.readFileSync('./certs/localhost.crt'),
+    },
+    public: 'https://localhost:8080/',
+  },
+
   configureWebpack: {
     resolve: {
       alias: {

@@ -18,13 +18,6 @@ export default {
     const userId = authenticatedUser.id;
 
     if (userId) {
-      dispatch('me/update', authenticatedUser);
-
-      /** Get workspaces list */
-      /**
-       * todo: Предусмотреть, что воркспейсов может не быть.
-       *       Перекинуть юзера на веб страницу где можно создать воркспейс
-       */
       const workspaces = await API.workspace.getWorkspaces();
       const workspacesIdList = workspaces.map(w => w.id);
 
@@ -43,8 +36,6 @@ export default {
       await dispatch('updateCurrentWorkspaceState');
 
       await sockets.init();
-
-      dispatch('me/setOnlineStatus', 'online');
     } else {
       console.error('AUTH REQUIRED');
     }
@@ -82,7 +73,6 @@ export default {
     if (id === getters['me/getSelectedChannelId']) {
       return;
     }
-    commit('app/ANIMATION_CHANNEL_ID', id);
 
     let response;
 
@@ -101,9 +91,7 @@ export default {
         connectionOptions: response.connectionOptions,
       });
     } catch (err) {
-      if (err.message !== 'select throttled') {
-        commit('app/ANIMATION_CHANNEL_ID', null);
-      }
+      console.error(err);
     }
   },
 
@@ -154,12 +142,11 @@ export default {
    * @returns {object} unselected channel
    */
   async unselectChannel({ commit, dispatch }, id) {
-    commit('app/ANIMATION_CHANNEL_ID', null);
     try {
       await API.channel.unselect(id);
     } catch (err) {
       if (err.message !== 'unselect throttled') {
-        commit('app/ANIMATION_CHANNEL_ID', id);
+        console.error(err);
       }
     }
 

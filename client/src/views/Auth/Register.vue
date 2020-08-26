@@ -12,7 +12,6 @@
       </p>
       <div class="page__content">
         <ui-form
-          v-show="!passReset"
           class="reset-form"
           @submit="registerHandler()"
         >
@@ -36,6 +35,8 @@
             v-model="newUser.password"
             icon="lock"
             required
+            :minlength="8"
+            :maxlength="120"
             type="password"
             class="login__input"
             placeholder="******"
@@ -61,7 +62,14 @@
             {{ texts.login }}
           </router-link>
         </div>
-        <br>
+        <ui-button
+          :type="12"
+          wide
+          class="login__button"
+          @click="deleteHandler()"
+        >
+          Удалить пользователя
+        </ui-button>
       </div>
     </div>
   </div>
@@ -70,6 +78,7 @@
 <script>
 import UiButton from '@components/UiButton';
 import { UiForm, UiInput } from '@components/Form';
+import { determineLocale } from '@/i18n';
 
 export default {
   components: {
@@ -85,6 +94,7 @@ export default {
         name: '',
         email: '',
         password: '',
+        lang: determineLocale(),
       },
     };
   },
@@ -122,8 +132,23 @@ export default {
 
     async registerHandler() {
       try {
-        // await this.$API.auth.signin({ credentials: this.login });
+        console.log(this.newUser);
+        const res = await this.$API.auth.signup({ user: this.newUser });
 
+        console.log(res);
+        // await this.$router.push({
+        //   name: 'landing',
+        // });
+      } catch (err) {
+        console.log('ERROR:', err);
+      }
+    },
+
+    async deleteHandler() {
+      try {
+        const res = await this.$API.auth.deleteAccount({ password: this.newUser.password });
+
+        console.log(res);
         // await this.$router.push({
         //   name: 'landing',
         // });

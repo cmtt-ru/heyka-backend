@@ -6,6 +6,7 @@ import store from './store';
 import i18n from '@/i18n';
 import SvgIcon from '@components/SvgIcon.vue';
 import API from '@api';
+import '@/directives';
 
 Vue.prototype.$API = API;
 Vue.component('SvgIcon', SvgIcon);

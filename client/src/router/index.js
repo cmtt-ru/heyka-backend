@@ -10,7 +10,7 @@ const Reset = () => import(/* webpackChunkName: "main" */ '../views/Auth/Reset.v
 const SocialLogin = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialLogin.vue');
 const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialCallback.vue');
 
-const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest.vue');
+const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest');
 
 const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
 

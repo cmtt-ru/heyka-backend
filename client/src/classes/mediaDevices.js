@@ -4,7 +4,7 @@ import { EventEmitter } from 'events';
  * Change event debounce timeout
  * @type {number}
  */
-const DEBOUNCE_TIMEOUT = 500;
+// const DEBOUNCE_TIMEOUT = 500;
 
 /**
  * Interval for linux device change event fallback
@@ -52,17 +52,13 @@ class MediaDevices extends EventEmitter {
   async updateDevices() {
     this.devices = await this.getDevices();
 
-    clearInterval(this.debounceTimer);
+    const defaultMicrophone = this.devices.microphones.find((a) => a.id === 'default');
 
-    this.debounceTimer = setTimeout(() => {
-      const defaultMicrophone = this.devices.microphones.find((a) => a.id === 'default');
+    this.emit('change', this.devices);
 
-      this.emit('change', this.devices);
-
-      if (defaultMicrophone && defaultMicrophone.bluetooth) {
-        this.emit('bluetooth-microphone', defaultMicrophone);
-      }
-    }, DEBOUNCE_TIMEOUT);
+    if (defaultMicrophone && defaultMicrophone.bluetooth) {
+      this.emit('bluetooth-microphone', defaultMicrophone);
+    }
   }
 
   /**

@@ -9,11 +9,14 @@
     "lint-fix": "eslint src/ --ext .js,.vue --fix"
   },
   "dependencies": {
+    "@popperjs/core": "^2.4.4",
     "axios": "^0.19.2",
     "clone-deep": "^4.0.1",
     "core-js": "^3.6.5",
     "dateformat": "^3.0.3",
+    "draggable-vue-directive": "^2.1.0",
     "es7-sleep": "^1.0.0",
+    "getusermedia": "^2.0.1",
     "js-cookie": "^2.2.1",
     "local-storage": "^2.0.0",
     "socket.io-client": "latest",

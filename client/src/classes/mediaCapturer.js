@@ -46,6 +46,25 @@ class MediaCapturer extends EventEmitter {
   }
 
   /**
+   * Get screen stream from browser
+   * @returns {Promise<null>}
+   */
+  async getScreenStream() {
+    let captureStream = null;
+
+    try {
+      captureStream = await navigator.mediaDevices.getDisplayMedia({
+        audio: false,
+        video: true,
+      });
+    } catch (err) {
+      console.error('Error: ' + err);
+    }
+
+    return captureStream;
+  }
+
+  /**
    * Get camera stream
    *
    * @param {?string} deviceId Specific device

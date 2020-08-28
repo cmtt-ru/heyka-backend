@@ -12,6 +12,7 @@
 import JanusWrapper from '@classes/JanusWrapper.js';
 import { mapState } from 'vuex';
 import Logger from '@classes/logger';
+import mediaCapturer from '../classes/mediaCapturer';
 const cnsl = new Logger('Janus.vue', '#AF7AC5 ');
 
 /**
@@ -283,14 +284,21 @@ export default {
      * Start sharing video from the screen
      * @returns {void}
      */
-    startSharingScreen() {
+    async startSharingScreen() {
       if (!janusWrapper) {
         cnsl.error('Janus wrapper does not exist');
 
         return;
       }
       this.setOperationStart('publish');
-      janusWrapper.publishVideoStream('screen', this.janusOptions.sharingSource.id);
+
+      if (window.process) {
+        /** Electron environment */
+        janusWrapper.publishVideoStream('screen', this.janusOptions.sharingSource.id);
+      } else {
+        /** Browser environment */
+        janusWrapper.publishVideoStream('stream', await mediaCapturer.getScreenStream());
+      }
     },
     /**
      * Stop sharing any video

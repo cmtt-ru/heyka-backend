@@ -136,9 +136,6 @@ export default {
         const res = await this.$API.auth.signup({ user: this.newUser });
 
         console.log(res);
-        // await this.$router.push({
-        //   name: 'landing',
-        // });
       } catch (err) {
         console.log('ERROR:', err);
       }

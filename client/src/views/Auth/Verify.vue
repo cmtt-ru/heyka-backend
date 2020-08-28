@@ -85,29 +85,21 @@ export default {
 
   async mounted() {
     this.JWT = this.$route.query.token;
-    const res = await this.$API.auth.checkWebToken(this.JWT);
 
-    console.log(res);
-    // if (res.result === false) {
-    //   this.$router.push({ name: 'signIn' });
-    // }
-  },
+    try {
+      const res = await this.$API.auth.checkWebToken(this.JWT);
 
-  methods: {
-    async submitHandler() {
-      try {
-        const res = await this.$API.auth.resetPass({
-          token: this.JWT,
-          password: this.pass,
-        });
+      console.log(res);
+      if (res.result === false) {
+        this.$router.push({ name: 'signIn' });
+      } else {
+        const linkData = await this.$API.auth.link();
 
-        this.authlink = res.code;
-        // await this.$API.auth.signinByLink(res.code);
-      } catch (e) {
-        console.log('ERROR on pass reset:', e);
+        this.authlink = linkData.code;
       }
-      this.success = true;
-    },
+    } catch (err) {
+      console.log('ERROR:', err);
+    }
   },
 };
 </script>

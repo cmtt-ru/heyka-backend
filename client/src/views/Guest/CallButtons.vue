@@ -23,7 +23,7 @@
       :size="size"
       :icon="buttonIcons.camera.icon"
       :stroke="buttonIcons.camera.stroke"
-      @click="cameraHandler();switchProp('camera')"
+      @click="switchProp('camera')"
     />
 
     <ui-button
@@ -34,7 +34,7 @@
       :size="size"
       :icon="buttonIcons.screen.icon"
       :stroke="buttonIcons.screen.stroke"
-      @click="sharingHandler"
+      @click="switchProp('screen')"
     />
 
     <ui-button

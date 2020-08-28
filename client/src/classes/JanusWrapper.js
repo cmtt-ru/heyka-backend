@@ -232,10 +232,18 @@ class JanusWrapper extends EventEmitter {
 
     cnsl.debug('Start sharing video', type, source);
 
-    if (type === 'camera') {
-      stream = await mediaCapturer.getCameraStream(source);
-    } else {
-      stream = await mediaCapturer.getStream(source);
+    switch (type) {
+      case 'camera':
+        stream = await mediaCapturer.getCameraStream(source);
+        break;
+
+      case 'screen':
+        stream = await mediaCapturer.getStream(source);
+        break;
+
+      case 'stream':
+        stream = source;
+        break;
     }
 
     this.__videoroomPlugin.publishVideo(stream, type === 'camera' ? DEFAULT_BITRATE_CAMERA_ : DEFAULT_BITRATE_SCREEN);

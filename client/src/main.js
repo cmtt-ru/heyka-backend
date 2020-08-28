@@ -20,3 +20,9 @@ new Vue({
   mounted: () => document.dispatchEvent(new Event('x-app-rendered')),
   render: h => h(App),
 }).$mount('#app');
+
+/**
+ * Dummy polyfill for `setSinkId` method for unsupported browsers e.g. Safari
+ * @returns {void}
+ */
+Audio.prototype.setSinkId = () => {};

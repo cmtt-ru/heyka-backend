@@ -459,6 +459,7 @@ describe('Test routes', () => {
         const userInfo = {
           name: 'test',
           email: 'testEmail@mail.ru',
+          password: 'qwerty',
         };
         const user = await userService.signup(userInfo);
         const admin = await userService.signup({ name: 'admin', email: 'admin@admin.ru' });
@@ -469,6 +470,7 @@ describe('Test routes', () => {
           method: 'POST',
           url: '/me/delete',
           payload: {
+            password: 'qwerty',
           },
           ...helpers.withAuthorization(tokens)
         });

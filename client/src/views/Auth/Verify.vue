@@ -87,10 +87,10 @@ export default {
     this.JWT = this.$route.query.token;
 
     try {
-      const res = await this.$API.auth.checkWebToken(this.JWT);
+      const res = await this.$API.auth.verify(this.JWT);
 
       console.log(res);
-      if (res.result === false) {
+      if (res !== 'ok') {
         this.$router.push({ name: 'signIn' });
       } else {
         const linkData = await this.$API.auth.link();

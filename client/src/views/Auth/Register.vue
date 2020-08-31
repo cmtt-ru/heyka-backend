@@ -65,7 +65,7 @@
         <ui-button
           :type="12"
           wide
-          class="login__button"
+          class="login__button--delete"
           @click="deleteHandler()"
         >
           Удалить пользователя
@@ -127,7 +127,7 @@ export default {
       const baseUrl = IS_DEV ? process.env.VUE_APP_DEV_URL : process.env.VUE_APP_PROD_URL;
       const link = `${baseUrl}/auth/social/${socialName}/login`;
 
-      window.open(link); // TODO: can replace with window.open (see main index.js)
+      window.open(link);
     },
 
     async registerHandler() {
@@ -208,6 +208,9 @@ export default {
 
 .login__button
     margin-top 12px
+
+    &--delete
+      display none
 
 .info
     display flex

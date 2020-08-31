@@ -589,15 +589,23 @@ class JanusVideoroomWrapper extends EventEmitter {
       // url is like "http://janus-host.domen.zone:8088/janus";
       let wsurl = '';
 
-      if (janusServerUrl.indexOf('http') + 1) {
-        wsurl = janusServerUrl.replace('http', 'ws')
-          .replace('8088', '8188')
-          .replace('/janus', '');
-      } else {
-        wsurl = janusServerUrl.replace('https', 'wss')
-          .replace('8089', '8189')
-          .replace('/janus', '');
-      }
+      janusServerUrl = janusServerUrl
+        .replace('http', 'https')
+        .replace('8088', '8089');
+
+      wsurl = janusServerUrl.replace('https', 'wss')
+        .replace('8089', '8989')
+        .replace('/janus', '');
+
+      // if (janusServerUrl.indexOf('http') + 1) {
+      //   wsurl = janusServerUrl.replace('http', 'ws')
+      //     .replace('8088', '8188')
+      //     .replace('/janus', '');
+      // } else {
+      //   wsurl = janusServerUrl.replace('https', 'wss')
+      //     .replace('8089', '8189')
+      //     .replace('/janus', '');
+      // }
       console.log(`Connect to janus. rest-api: ${janusServerUrl}, ws-api: ${wsurl}`);
 
       this.__janus = new Janus({

@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper">
     <janus />
-    <grid />
+    <router-view @media-permissions="mediaPermissionsHandler" />
   </div>
 </template>
 
@@ -11,17 +11,14 @@ import mediaDevices from '@classes/mediaDevices';
 import mediaCapturer from '@classes/mediaCapturer';
 import { mapState, mapGetters } from 'vuex';
 import getUserMedia from 'getusermedia';
-import Grid from '@views/Guest/Grid';
 import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
 
 const AUTH_CODE = 'be0022025d014923a114ffcaee138b772162c39cfb959d061cf8d2c3eb395ae1e49ea3c2a12576d57b';
 const CHANNEL_ID = '3e6e738c-0317-4037-baf6-0eb8207a5939';
 
 export default {
-  name: 'Home',
   components: {
     Janus,
-    Grid,
   },
 
   computed: {
@@ -41,16 +38,19 @@ export default {
   },
 
   async created() {
-    try {
-      await this.requestMediaPermissions();
-    } catch (e) {
-      console.error('requestMediaPermissions', e);
-    }
+    console.log('asdasdasd');
+    // try {
+    //   await this.requestMediaPermissions();
+    // } catch (e) {
+    //   console.error('requestMediaPermissions', e);
+    // }
 
-    this.listenDevices();
+    // this.listenDevices();
     await this.authorize();
-    await this.joinToChannel();
-    await this.initJanusVideoRoom();
+
+    this.$router.replace({ name: 'guest-start' }).catch(() => {});
+    // await this.joinToChannel();
+    // await this.initJanusVideoRoom();
   },
 
   beforeDestroy() {
@@ -159,6 +159,10 @@ export default {
       }
     },
 
+    mediaPermissionsHandler({ state, error }) {
+      console.log('asdasdasdasdasdsd', state, error);
+    },
+
   },
 };
 </script>
@@ -176,7 +180,7 @@ export default {
     --item-bg-hover #333333
     background var(--app-bg)
     width 100vw
-    height 100vh
+    min-height 100vh
     color var(--text-0)
 
   .bottom

@@ -69,16 +69,14 @@
 </template>
 
 <script>
-import CallControls from '../CallOverlayWindow/CallControls';
+import CallControls from './CallControls';
 import UiButton from '@components/UiButton';
 import Avatar from '@components/Avatar';
-import WindowManager from '@shared/WindowManager/WindowManagerRenderer';
-import broadcastEvents from '@classes/broadcastEvents';
 import { mapGetters, mapState } from 'vuex';
 import Tablet from '@components/Drawing/Tablet';
 import mediaCapturer from '@classes/mediaCapturer';
-import janusVideoroomWrapper from '../../classes/janusVideoroomWrapper';
-import { ipcRenderer } from 'electron';
+import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
+import { getUserAvatarUrl } from '@libs/image';
 
 /* variable for watching page size */
 let __resizeObserver = {};
@@ -155,27 +153,13 @@ export default {
    * @returns {void}
    */
   mounted() {
+    debugger;
     const page = this.$refs.expanded;
 
     __resizeObserver = new ResizeObserver(this.watchPageDimensions);
     __resizeObserver.observe(page);
 
-    const w = WindowManager.getCurrentWindow();
-
-    w.on('blur', () => {
-      this.showControls = false;
-    });
-    w.on('focus', () => {
-      this.showControls = true;
-    });
-
-    broadcastEvents.on('grid', () => {
-      this.$router.replace('/call-window');
-    });
-
-    broadcastEvents.dispatch('grid-expanded-ready');
-
-    broadcastEvents.on('grid-expanded-set-video-frame', this.setVideoFrame.bind(this));
+    // broadcastEvents.on('grid-expanded-set-video-frame', this.setVideoFrame.bind(this));
 
     this.handleVideoStream();
 
@@ -203,13 +187,7 @@ export default {
   },
 
   destroyed() {
-    broadcastEvents.removeAllListeners('grid');
-    broadcastEvents.removeAllListeners('grid-expanded-set-video-frame');
 
-    const w = WindowManager.getCurrentWindow();
-
-    w.removeAllListeners('blur');
-    w.removeAllListeners('focus');
   },
 
   methods: {
@@ -237,11 +215,7 @@ export default {
      * @returns {void}
      */
     showGridHandler() {
-      if (WindowManager.getCurrentWindow().isFullscreen()) {
-        ipcRenderer.send('exit-fullscreen');
-      }
-
-      this.$router.push('/call-window');
+      this.$router.push('/guest');
     },
 
     handleVideoStream() {
@@ -326,6 +300,8 @@ export default {
         }
       }
     },
+
+    userAvatar: getUserAvatarUrl,
   },
 };
 </script>

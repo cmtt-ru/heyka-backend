@@ -375,7 +375,7 @@ export default {
       if (!this.isStreaming(id) || id === this.myId) {
         return;
       }
-      this.$router.push({ path: `/call-window/expanded/${id}` });
+      this.$router.push({ path: `/guest/expanded/${id}` });
     },
 
     userAvatar: getUserAvatarUrl,

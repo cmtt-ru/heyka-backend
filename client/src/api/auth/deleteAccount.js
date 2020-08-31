@@ -10,7 +10,7 @@ import { clearTokens } from '../tokens';
  * @returns {string} result data
  */
 export default async function (params) {
-  const res = await axios.delete(`/me`, { data: params });
+  const res = await axios.post(`/me/delete`, params);
 
   clearTokens();
 

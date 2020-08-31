@@ -38,6 +38,7 @@
 </template>
 
 <script>
+import { formLeonardoUrl } from '@libs/image';
 
 /**
  * status-to-color map (small circle in bottom right corner)
@@ -123,7 +124,7 @@ export default {
      */
     avatarImage() {
       if (this.image) {
-        return this.$options.filters.formImageUrl(this.image, this.size);
+        return formLeonardoUrl(this.image, this.size);
         // TODO: поставить таймаут и перескачивание, если '429 Too many requests'
       }
 

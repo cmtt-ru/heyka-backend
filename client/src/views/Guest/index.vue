@@ -1,22 +1,18 @@
 <template>
   <div class="wrapper">
     <janus />
-
-    <call-buttons
-      class="bottom"
-      :buttons="['camera', 'screen', 'speakers', 'microphone', 'leave']"
-      size="large"
-    />
+    <grid />
   </div>
 </template>
 
 <script>
 import Janus from '@components/Janus';
-import CallButtons from './CallButtons';
 import mediaDevices from '@classes/mediaDevices';
 import mediaCapturer from '@classes/mediaCapturer';
-import { mapState } from 'vuex';
+import { mapState, mapGetters } from 'vuex';
 import getUserMedia from 'getusermedia';
+import Grid from '@views/Guest/Grid';
+import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
 
 const AUTH_CODE = 'be0022025d014923a114ffcaee138b772162c39cfb959d061cf8d2c3eb395ae1e49ea3c2a12576d57b';
 const CHANNEL_ID = '3e6e738c-0317-4037-baf6-0eb8207a5939';
@@ -25,13 +21,22 @@ export default {
   name: 'Home',
   components: {
     Janus,
-    CallButtons,
+    Grid,
   },
 
   computed: {
     ...mapState('app', {
       devices: 'devices',
       selectedDevices: 'selectedDevices',
+    }),
+
+    ...mapGetters({
+      selectedChannelId: 'me/getSelectedChannelId',
+      myId: 'me/getMyId',
+    }),
+
+    ...mapState({
+      janusOptions: 'janus',
     }),
   },
 
@@ -45,6 +50,7 @@ export default {
     this.listenDevices();
     await this.authorize();
     await this.joinToChannel();
+    await this.initJanusVideoRoom();
   },
 
   beforeDestroy() {
@@ -140,6 +146,19 @@ export default {
 
       return captureStream;
     },
+
+    /**
+     * Initialize Janus Video Room Plugin
+     * @returns {Promise<void>}
+     */
+    async initJanusVideoRoom() {
+      await janusVideoroomWrapper.init();
+
+      if (this.selectedChannelId) {
+        janusVideoroomWrapper.join(this.myId, this.janusOptions);
+      }
+    },
+
   },
 };
 </script>

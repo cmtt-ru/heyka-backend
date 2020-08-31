@@ -416,8 +416,8 @@ describe('Test routes', () => {
         const user = await userService.signup(userInfo);
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
-          method: 'DELETE',
-          url: '/me',
+          method: 'POST',
+          url: '/me/delete',
           payload: {
             password: 'invalid-password'
           },
@@ -440,8 +440,8 @@ describe('Test routes', () => {
         await workspaceService.createWorkspace(user, 'test');
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
-          method: 'DELETE',
-          url: '/me',
+          method: 'POST',
+          url: '/me/delete',
           payload: {
           },
           ...helpers.withAuthorization(tokens)
@@ -466,8 +466,8 @@ describe('Test routes', () => {
         await workspaceService.addUserToWorkspace(w.id, user.id, 'user');
         const tokens = await userService.createTokens(user);
         const response = await server.inject({
-          method: 'DELETE',
-          url: '/me',
+          method: 'POST',
+          url: '/me/delete',
           payload: {
           },
           ...helpers.withAuthorization(tokens)

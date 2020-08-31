@@ -1,4 +1,4 @@
-/* eslint-disable no-magic-numbers */
+/* eslint-disable */
 export const GRIDS = {
   1: [ {
     ratio: 0.7380952380952381,

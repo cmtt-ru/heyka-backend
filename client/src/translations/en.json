@@ -42,5 +42,11 @@
       "cameraLabel": "Camera",
       "defaultDevice": "Default"
     }
+  },
+  "call": {
+    "grid": {
+      "users": "1 user | {n} users",
+      "you": "(you)"
+    }
   }
 }

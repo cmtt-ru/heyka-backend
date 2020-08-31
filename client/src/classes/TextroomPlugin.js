@@ -238,6 +238,6 @@ class TextroomPlugin extends EventEmitter {
 
     cnsl.info(`Join to textroom!`, joinMsg);
   }
-};
+}
 
 export default TextroomPlugin;

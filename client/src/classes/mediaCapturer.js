@@ -89,19 +89,21 @@ class MediaCapturer extends EventEmitter {
    * @returns {void}
    */
   destroyStream(stream) {
-    stream.getVideoTracks().forEach(track => {
-      track.stop();
+    if (stream) {
+      stream.getVideoTracks().forEach(track => {
+        track.stop();
 
-      track = null;
-    });
+        track = null;
+      });
 
-    stream.getAudioTracks().forEach(track => {
-      track.stop();
+      stream.getAudioTracks().forEach(track => {
+        track.stop();
 
-      track = null;
-    });
+        track = null;
+      });
 
-    stream = null;
+      stream = null;
+    }
   }
 
   /**
@@ -118,13 +120,20 @@ class MediaCapturer extends EventEmitter {
    * @returns {void}
    */
   async requestMediaPermissions() {
+    const MAX_WAIT_TIMEOUT = 500;
+
     return new Promise((resolve, reject) => {
+      const startTime = Date.now();
+      let immediate = false;
+
       getUserMedia((err, stream) => {
+        immediate = Date.now() - startTime < MAX_WAIT_TIMEOUT;
+
         if (err) {
           reject(err);
         } else {
           this.destroyStream(stream);
-          resolve(stream);
+          resolve(immediate);
         }
       });
     });

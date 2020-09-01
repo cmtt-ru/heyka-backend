@@ -169,12 +169,20 @@ function bindErrorEvents() {
 function bindChannelEvents() {
   /** Unselect channel */
   client.on(eventNames.userUnselectedChannel, data => {
-    cnsl.log('userUnselectedChannel');
+    if (data.socketId === client.id) {
+      return;
+    }
+
+    store.commit('channels/REMOVE_USER', data);
   });
 
   /** Select channel */
   client.on(eventNames.userSelectedChannel, data => {
-    cnsl.log('userSelectedChannel');
+    if (data.socketId === client.id) {
+      return;
+    }
+
+    store.commit('channels/ADD_USER', data);
   });
 }
 

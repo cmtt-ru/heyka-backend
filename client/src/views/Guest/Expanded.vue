@@ -2,7 +2,6 @@
   <div
     ref="expanded"
     class="expanded-window"
-    :style="$themes.getColors('popover')"
     @dblclick="showGridHandler"
   >
     <div class="sharing-wrapper wrapper">
@@ -76,7 +75,6 @@ import { mapGetters, mapState } from 'vuex';
 import Tablet from '@components/Drawing/Tablet';
 import mediaCapturer from '@classes/mediaCapturer';
 import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
-import { getUserAvatarUrl } from '@libs/image';
 
 /* variable for watching page size */
 let __resizeObserver = {};
@@ -153,7 +151,6 @@ export default {
    * @returns {void}
    */
   mounted() {
-    debugger;
     const page = this.$refs.expanded;
 
     __resizeObserver = new ResizeObserver(this.watchPageDimensions);
@@ -197,9 +194,8 @@ export default {
      * @returns {void}
      */
     watchPageDimensions() {
-      const page = this.$refs.expanded;
-      const width = page.offsetWidth;
-      const height = page.offsetHeight;
+      const width = document.body.offsetWidth;
+      const height = document.body.offsetHeight;
 
       const controlsMarginBottom = 126;
       const controlsMarginLeft = 92;
@@ -215,7 +211,7 @@ export default {
      * @returns {void}
      */
     showGridHandler() {
-      this.$router.push('/guest');
+      this.$router.replace({ name: 'guest-grid' });
     },
 
     handleVideoStream() {
@@ -300,8 +296,6 @@ export default {
         }
       }
     },
-
-    userAvatar: getUserAvatarUrl,
   },
 };
 </script>

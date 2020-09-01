@@ -1,5 +1,5 @@
 <template>
-  <div class="wrapper">
+  <div class="layout__wrapper">
     <janus />
     <router-view @join="joinHandler" />
   </div>
@@ -160,7 +160,7 @@ export default {
 </script>
 
 <style lang="stylus">
-  .wrapper
+  .layout__wrapper
     --app-bg #000000
     --text-0 #E5E5E5
     --text-1 #7D7F81

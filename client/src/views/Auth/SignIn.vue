@@ -8,7 +8,7 @@
     </div>
     <div class="page l-p-18">
       <p class="l-fs-18">
-        Welcome to Heyka
+        {{ texts.welcome }}
       </p>
       <div class="page__content">
         <div class="currently-not-needed">
@@ -44,7 +44,7 @@
           </ui-button>
 
           <div class="or-delimiter">
-            <span>or</span>
+            <span>{{ texts.or }}</span>
           </div>
         </div>
         <ui-form
@@ -74,17 +74,17 @@
             class="login__button"
             submit
           >
-            LOGIN
+            {{ texts.login }}
           </ui-button>
           <div class="info">
             <div class="info__text">
-              Forgot your password?
+              {{ texts.forgot }}
             </div>
             <div
               class="info__link"
               @click="toggleReset"
             >
-              Reset
+              {{ texts.reset }}
             </div>
           </div>
         </ui-form>
@@ -107,7 +107,7 @@
             class="login__button"
             submit
           >
-            RESET
+            {{ texts.reset }}
           </ui-button>
           <ui-button
             :type="10"
@@ -115,18 +115,18 @@
             class="login__button"
             @click="toggleReset"
           >
-            cancel
+            {{ texts.cancel }}
           </ui-button>
         </ui-form>
 
         <div class="info currently-not-needed">
           <div class="info__text">
-            Not a member?
+            {{ texts.newMember }}
           </div>
           <div
             class="info__link"
           >
-            Sign up now
+            {{ texts.signup }}
           </div>
         </div>
         <br>
@@ -155,6 +155,16 @@ export default {
         password: '',
       },
     };
+  },
+
+  computed: {
+    /**
+     * Get needed texts from I18n-locale file
+     * @returns {object}
+     */
+    texts() {
+      return this.$t('login');
+    },
   },
 
   mounted() {

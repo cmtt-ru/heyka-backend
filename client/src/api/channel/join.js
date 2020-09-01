@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { setTokens } from '../tokens';
 
 /**
  * Join channel with invite token
@@ -9,6 +10,8 @@ import axios from 'axios';
  */
 export default async function (token, params) {
   const res = await axios.post(`/channels/join/${token}`, params);
+
+  setTokens(res.data.credentials, false);
 
   return res.data;
 }

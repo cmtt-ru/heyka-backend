@@ -1,31 +1,36 @@
 <template>
-  <div class="guest-start">
-    <h1>You’re about to join a video meeting</h1>
-    <p class="l-mt-24">
-      For others to see and hear you, your browser will request access to your cam and mic.
-      You can still turn them back off at any time.
-    </p>
+  <transition name="fade">
+    <div
+      v-show="visible"
+      class="guest-start"
+    >
+      <h1>You’re about to join a video meeting</h1>
+      <p class="l-mt-24">
+        For others to see and hear you, your browser will request access to your cam and mic.
+        You can still turn them back off at any time.
+      </p>
 
-    <video
-      ref="video"
-      class="l-mt-24"
-    />
+      <video
+        ref="video"
+        class="l-mt-24"
+      />
 
-    <p class="l-mt-24 l-mb-8">
-      Enter your name
-    </p>
-    <ui-input v-model="userName" />
+      <p class="l-mt-24 l-mb-8">
+        Enter your name
+      </p>
+      <ui-input v-model="userName" />
 
-    <router-link :to="{name:'guest-grid'}">
-      <ui-button
-        :type="1"
-        class="l-mt-12"
-        submit
-      >
-        Join channel
-      </ui-button>
-    </router-link>
-  </div>
+      <router-link :to="{name:'guest-grid'}">
+        <ui-button
+          :type="1"
+          class="l-mt-24"
+          @click="$emit('join')"
+        >
+          Join channel
+        </ui-button>
+      </router-link>
+    </div>
+  </transition>
 </template>
 
 <script>
@@ -45,6 +50,7 @@ export default {
   data() {
     return {
       userName: 'Guest',
+      visible: false,
     };
   },
 
@@ -65,19 +71,21 @@ export default {
   },
 
   async mounted() {
+    const SHOW_TIMEOUT = 500;
+
+    setTimeout(() => {
+      this.visible = true;
+    }, SHOW_TIMEOUT);
+
     try {
-      await mediaCapturer.requestMediaPermissions();
+      const immediate = await mediaCapturer.requestMediaPermissions();
 
-      await this.startCameraPreview();
-
-      this.$emit('media-permissions', {
-        state: true,
-      });
+      if (immediate && this.userName) {
+        this.$emit('join');
+      } else {
+        await this.startCameraPreview();
+      }
     } catch (e) {
-      this.$emit('media-permissions', {
-        state: true,
-        error: e,
-      });
       console.error('requestMediaPermissions', e);
     }
   },
@@ -103,10 +111,20 @@ export default {
 <style lang="stylus">
   .guest-start
     max-width 500px
-    margin 0 auto
-    padding 50px 16px
+    margin 48px auto
+    padding 36px 24px
     text-align center
+    background var(--button-bg-5)
+    border-radius 12px
+    box-sizing border-box
 
     video
       width 100%
+
+  .fade-enter-active, .fade-leave-active {
+    transition: opacity .25s;
+  }
+  .fade-enter, .fade-leave-to {
+    opacity: 0;
+  }
 </style>

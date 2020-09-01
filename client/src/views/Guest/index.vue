@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper">
     <janus />
-    <router-view @media-permissions="mediaPermissionsHandler" />
+    <router-view @join="joinHandler" />
   </div>
 </template>
 
@@ -38,19 +38,8 @@ export default {
   },
 
   async created() {
-    console.log('asdasdasd');
-    // try {
-    //   await this.requestMediaPermissions();
-    // } catch (e) {
-    //   console.error('requestMediaPermissions', e);
-    // }
-
-    // this.listenDevices();
     await this.authorize();
-
     this.$router.replace({ name: 'guest-start' }).catch(() => {});
-    // await this.joinToChannel();
-    // await this.initJanusVideoRoom();
   },
 
   beforeDestroy() {
@@ -159,8 +148,11 @@ export default {
       }
     },
 
-    mediaPermissionsHandler({ state, error }) {
-      console.log('asdasdasdasdasdsd', state, error);
+    async joinHandler() {
+      this.listenDevices();
+      await this.joinToChannel();
+      await this.initJanusVideoRoom();
+      this.$router.replace({ name: 'guest-grid' });
     },
 
   },
@@ -178,6 +170,7 @@ export default {
     --button-bg-6 #262626
     --button-bg-7 #333333
     --item-bg-hover #333333
+    overflow auto
     background var(--app-bg)
     width 100vw
     min-height 100vh

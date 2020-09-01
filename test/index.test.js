@@ -2151,6 +2151,122 @@ describe('Test routes', () => {
     });
   });
 
+  describe('POST /channels/{channelId}/invite', () => {
+    describe('Check that guest cant invite to channel', () => {
+      it('should return 403 error', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+
+        const user = await userService.signup({
+          name: 'admin',
+        });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const guest = await userService.signup({
+          name: 'guest',
+        });
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'channel',
+        });
+        await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'guest', [ channel.id ]);
+        const guestTokens = await userService.createTokens(guest);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/invite`,
+          ...helpers.withAuthorization(guestTokens)
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('Check that an invite code was successfully created', () => {
+      it('should return 200 and invite code', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+
+        const user = await userService.signup({
+          name: 'admin',
+        });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'channel',
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/invite`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.token).exists().length(82);
+      });
+    });
+  });
+
+  describe('POST /channels/join/{code}', () => {
+    describe('Check that code is expired', () => {
+      it('should return 400 bad request', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelService,
+        } = server.services();
+
+        const user = await userService.signup({
+          name: 'admin',
+        });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'channel',
+        });
+        const inviteToken = await channelService.getInviteChannelToken(channel.id, user.id);
+        MockDate.set(Date.now() + 60 * 24 * 3500 * 1000);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/join/${inviteToken}`,
+          payload: {
+            name: 'TEST_USER',
+          }
+        });
+        MockDate.reset();
+        expect(response.statusCode).equals(400);
+      });
+    });
+    describe('User successfully joined the channel', () => {
+      it('should return 200 and user data and access token', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelService,
+        } = server.services();
+
+        const user = await userService.signup({
+          name: 'admin',
+        });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'channel',
+        });
+        const inviteToken = await channelService.getInviteChannelToken(channel.id, user.id);
+        
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/join/${inviteToken}`,
+          payload: {
+            name: 'TEST_USER',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        const payload = JSON.parse(response.payload);
+        expect(payload.credentials.accessToken).exists();
+        expect(payload.user.name).equals('TEST_USER');
+      });
+    });
+  });
+
   /**
    * Invites
    */

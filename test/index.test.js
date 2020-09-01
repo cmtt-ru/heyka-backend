@@ -1960,6 +1960,34 @@ describe('Test routes', () => {
   });
 
   describe('POST /channels/join/{code}', () => {
+    describe('Check that code is expired', () => {
+      it('should return 400 bad request', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelService,
+        } = server.services();
+
+        const user = await userService.signup({
+          name: 'admin',
+        });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'channel',
+        });
+        const inviteToken = await channelService.getInviteChannelToken(channel.id, user.id);
+        MockDate.set(Date.now() + 60 * 24 * 3500 * 1000);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/join/${inviteToken}`,
+          payload: {
+            name: 'TEST_USER',
+          }
+        });
+        MockDate.reset();
+        expect(response.statusCode).equals(400);
+      });
+    });
     describe('User successfully joined the channel', () => {
       it('should return 200 and user data and access token', async () => {
         const {

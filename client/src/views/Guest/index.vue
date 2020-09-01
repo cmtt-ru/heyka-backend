@@ -8,12 +8,10 @@
 <script>
 import Janus from '@components/Janus';
 import mediaDevices from '@classes/mediaDevices';
-import mediaCapturer from '@classes/mediaCapturer';
 import { mapState, mapGetters } from 'vuex';
-import getUserMedia from 'getusermedia';
 import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
 
-const AUTH_CODE = 'be0022025d014923a114ffcaee138b772162c39cfb959d061cf8d2c3eb395ae1e49ea3c2a12576d57b';
+// const AUTH_CODE = 'be0022025d014923a114ffcaee138b772162c39cfb959d061cf8d2c3eb395ae1e49ea3c2a12576d57b';
 const CHANNEL_ID = '3e6e738c-0317-4037-baf6-0eb8207a5939';
 
 export default {
@@ -35,6 +33,10 @@ export default {
     ...mapState({
       janusOptions: 'janus',
     }),
+
+    inviteToken() {
+      return this.$route.params.code;
+    },
   },
 
   async created() {
@@ -53,7 +55,9 @@ export default {
      */
     async authorize() {
       try {
-        await this.$API.auth.signinByLink(AUTH_CODE);
+        await this.$API.channel.join(this.inviteToken, {
+          name: 'Guest',
+        });
         await this.$store.dispatch('initial');
         console.log('auth success');
       } catch (e) {
@@ -101,23 +105,6 @@ export default {
     },
 
     /**
-     * Request camera & microphone permissions
-     * @returns {void}
-     */
-    async requestMediaPermissions() {
-      return new Promise((resolve, reject) => {
-        getUserMedia(function (err, stream) {
-          if (err) {
-            reject(err);
-          } else {
-            mediaCapturer.destroyStream(stream);
-            resolve(stream);
-          }
-        });
-      });
-    },
-
-    /**
      * Get screen sharing stream
      * @returns {stream}
      */
@@ -148,6 +135,10 @@ export default {
       }
     },
 
+    /**
+     * Join to channel
+     * @returns {Promise<void>}
+     */
     async joinHandler() {
       this.listenDevices();
       await this.joinToChannel();

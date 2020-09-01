@@ -19,6 +19,7 @@
     "getusermedia": "^2.0.1",
     "js-cookie": "^2.2.1",
     "local-storage": "^2.0.0",
+    "requestanimationframe-timer": "^3.0.3",
     "socket.io-client": "latest",
     "svg-sprite-loader": "^4.3.0",
     "throttle-debounce": "^2.3.0",

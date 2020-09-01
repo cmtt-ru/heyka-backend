@@ -375,7 +375,10 @@ export default {
       if (!this.isStreaming(id) || id === this.myId) {
         return;
       }
-      this.$router.push({ path: `/guest/expanded/${id}` });
+      this.$router.push({
+        name: 'guest-expanded',
+        params: { id },
+      });
     },
 
     userAvatar: getUserAvatarUrl,

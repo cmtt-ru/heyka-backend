@@ -1,0 +1,178 @@
+<template>
+  <div class="layout__wrapper">
+    <janus />
+    <router-view @join="joinHandler" />
+  </div>
+</template>
+
+<script>
+import Janus from '@components/Janus';
+import mediaDevices from '@classes/mediaDevices';
+import { mapState, mapGetters } from 'vuex';
+import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
+
+// const AUTH_CODE = 'be0022025d014923a114ffcaee138b772162c39cfb959d061cf8d2c3eb395ae1e49ea3c2a12576d57b';
+// const CHANNEL_ID = '3e6e738c-0317-4037-baf6-0eb8207a5939';
+
+export default {
+  components: {
+    Janus,
+  },
+
+  computed: {
+    ...mapState('app', {
+      devices: 'devices',
+      selectedDevices: 'selectedDevices',
+    }),
+
+    ...mapGetters({
+      selectedChannelId: 'me/getSelectedChannelId',
+      myId: 'me/getMyId',
+      firstChannel: 'channels/getFirstChannel',
+    }),
+
+    ...mapState({
+      janusOptions: 'janus',
+    }),
+
+    inviteToken() {
+      return this.$route.params.code;
+    },
+  },
+
+  async created() {
+    await this.authorize();
+    this.$router.replace({ name: 'guest-start' }).catch(() => {});
+  },
+
+  beforeDestroy() {
+    mediaDevices.removeAllListeners('change');
+  },
+
+  methods: {
+    /**
+     * Authorize guest
+     * @returns {void}
+     */
+    async authorize() {
+      try {
+        await this.$API.channel.join(this.inviteToken, {
+          name: 'Guest',
+        });
+        await this.$store.dispatch('initial');
+        console.log('auth success');
+      } catch (e) {
+        console.error(e);
+      }
+    },
+
+    /**
+     * Join to channel
+     * @returns {void}
+     */
+    async joinToChannel() {
+      if (this.firstChannel) {
+        await this.$store.dispatch('selectChannel', this.firstChannel.id);
+      }
+    },
+
+    /**
+     * Listen for device change event
+     * @returns {void}
+     */
+    listenDevices() {
+      mediaDevices.on('change', (devices) => {
+        console.log('change', devices);
+        this.$store.commit('app/SET_DEVICES', devices);
+
+        /* re-set default devices if previous id's are not found */
+        const data = { ...this.selectedDevices };
+
+        if (!this.devices.speakers.map(el => el.id).includes(this.selectedDevices.speaker)) {
+          data.speaker = 'default';
+        }
+        if (!this.devices.microphones.map(el => el.id).includes(this.selectedDevices.microphone)) {
+          data.microphone = 'default';
+        }
+        if (!this.devices.cameras.map(el => el.id).includes(this.selectedDevices.camera)) {
+          if (this.devices.cameras[0]) {
+            data.camera = this.devices.cameras[0].id;
+          } else {
+            data.camera = '';
+          }
+        }
+        this.$store.dispatch('app/setSelectedDevices', data);
+      });
+
+      mediaDevices.updateDevices();
+    },
+
+    /**
+     * Get screen sharing stream
+     * @returns {stream}
+     */
+    async getScreenStream() {
+      let captureStream = null;
+
+      try {
+        captureStream = await navigator.mediaDevices.getDisplayMedia({
+          audio: false,
+          video: true,
+        });
+      } catch (err) {
+        console.error('Error: ' + err);
+      }
+
+      return captureStream;
+    },
+
+    /**
+     * Initialize Janus Video Room Plugin
+     * @returns {Promise<void>}
+     */
+    async initJanusVideoRoom() {
+      await janusVideoroomWrapper.init();
+
+      if (this.selectedChannelId) {
+        janusVideoroomWrapper.join(this.myId, this.janusOptions);
+      }
+    },
+
+    /**
+     * Join to channel
+     * @returns {Promise<void>}
+     */
+    async joinHandler() {
+      this.listenDevices();
+      await this.joinToChannel();
+      await this.initJanusVideoRoom();
+      this.$router.replace({ name: 'guest-grid' });
+    },
+
+  },
+};
+</script>
+
+<style lang="stylus">
+  .layout__wrapper
+    --app-bg #000000
+    --text-0 #E5E5E5
+    --text-1 #7D7F81
+    --icon-0 #FFFFFF
+    --icon-2 #B1B3B5
+    --button-bg-5 #191919
+    --button-bg-6 #262626
+    --button-bg-7 #333333
+    --item-bg-hover #333333
+    overflow auto
+    background var(--app-bg)
+    width 100vw
+    min-height 100vh
+    color var(--text-0)
+
+  .bottom
+    position fixed
+    bottom 20px
+    left 50%
+    margin-left -192px
+</style>

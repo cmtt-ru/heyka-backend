@@ -1,5 +1,7 @@
 import axios from 'axios';
 import authApi from './auth';
+import userApi from './user';
+import channelApi from './channel';
 import workspaceApi from './workspace';
 import adminApi from './admin';
 import { errorMessages } from './errors/types';
@@ -60,7 +62,9 @@ function middleware(func, functionName) {
 }
 
 export default {
+  user: injectMiddleware(userApi),
   auth: injectMiddleware(authApi),
   workspace: injectMiddleware(workspaceApi),
+  channel: injectMiddleware(channelApi),
   admin: injectMiddleware(adminApi),
 };

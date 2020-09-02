@@ -14,6 +14,7 @@ const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest');
 const GuestStart = () => import(/* webpackChunkName: "main" */ '../views/Guest/Start');
 const GuestGrid = () => import(/* webpackChunkName: "main" */ '../views/Guest/Grid');
 const GuestExpanded = () => import(/* webpackChunkName: "main" */ '../views/Guest/Expanded');
+const GuestFinish = () => import(/* webpackChunkName: "main" */ '../views/Guest/Finish');
 
 const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
 
@@ -102,6 +103,11 @@ const routes = [
         path: 'expanded/:id',
         name: 'guest-expanded',
         component: GuestExpanded,
+      },
+      {
+        path: 'finish',
+        name: 'guest-finish',
+        component: GuestFinish,
       },
     ],
   },

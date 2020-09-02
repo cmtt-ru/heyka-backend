@@ -26,6 +26,7 @@
       <ui-input
         v-model="userName"
         class="user-name"
+        @keypress.enter.native="joinHandler"
       />
 
       <ui-button

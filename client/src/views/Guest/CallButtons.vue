@@ -193,8 +193,9 @@ export default {
      * Disconnect button handler
      * @returns {void}
      */
-    disconnectHandler() {
-      this.$store.dispatch('unselectChannel', this.$store.getters['me/getSelectedChannelId']);
+    async disconnectHandler() {
+      await this.$store.dispatch('unselectChannel', this.$store.getters['me/getSelectedChannelId']);
+      this.$router.replace({ name: 'guest-finish' });
     },
 
     /**

@@ -10,25 +10,31 @@
         You can still turn them back off at any time.
       </p>
 
-      <video
-        ref="video"
-        class="l-mt-24"
-      />
+      <div class="webcam l-mt-24">
+        <video ref="video" />
+        <div class="webcam__loader">
+          <svg-icon
+            name="video"
+            size="small"
+          />
+        </div>
+      </div>
 
       <p class="l-mt-24 l-mb-8">
         Enter your name
       </p>
-      <ui-input v-model="userName" />
+      <ui-input
+        v-model="userName"
+        class="user-name"
+      />
 
-      <router-link :to="{name:'guest-grid'}">
-        <ui-button
-          :type="1"
-          class="l-mt-24"
-          @click="$emit('join')"
-        >
-          Join channel
-        </ui-button>
-      </router-link>
+      <ui-button
+        :type="1"
+        class="l-mt-24"
+        @click="joinHandler"
+      >
+        Join channel
+      </ui-button>
     </div>
   </transition>
 </template>
@@ -48,8 +54,22 @@ export default {
   },
 
   data() {
+    let userName;
+
+    try {
+      userName = localStorage.getItem('heyka-guest-name');
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (!userName) {
+      userName = 'Guest';
+    }
+
+    console.log('NAME', userName);
+
     return {
-      userName: 'Guest',
+      userName,
       visible: false,
     };
   },
@@ -80,8 +100,8 @@ export default {
     try {
       const immediate = await mediaCapturer.requestMediaPermissions();
 
-      if (immediate && this.userName) {
-        this.$emit('join');
+      if (immediate && this.userName !== 'Guest') {
+        await this.joinHandler();
       } else {
         await this.startCameraPreview();
       }
@@ -104,11 +124,25 @@ export default {
         this.$refs.video.play();
       };
     },
+
+    async joinHandler() {
+      try {
+        localStorage.setItem('heyka-guest-name', this.userName);
+      } catch (e) {
+        console.error(e);
+      }
+
+      await this.$API.user.editProfile({
+        name: this.userName,
+      });
+
+      this.$emit('join');
+    },
   },
 };
 </script>
 
-<style lang="stylus">
+<style lang="stylus" scoped>
   .guest-start
     max-width 500px
     margin 48px auto
@@ -118,13 +152,61 @@ export default {
     border-radius 12px
     box-sizing border-box
 
-    video
-      width 100%
+    .webcam
+      position relative
+      height 0
+      padding-bottom 62.5%
+      border-radius 8px
+      overflow hidden
+      transform translate3d(0, 0, 0);
+
+      &__loader
+        position absolute
+        display flex
+        width 100%
+        height 100%
+        z-index 1
+        background var(--app-bg)
+        align-items center
+        justify-content center
+        animation svgClear 500ms ease-in-out
+
+        svg
+          width 96px
+          height 96px
+
+      video
+        position absolute
+        display block
+        width 100%
+        height 100%
+        z-index 2
+        object-fit cover
+
+    .user-name
+      width 50%
+      margin 0 auto
+
+      /deep/ input
+        color var(--color-5) !important
+        text-align center
 
   .fade-enter-active, .fade-leave-active {
     transition: opacity .25s;
   }
   .fade-enter, .fade-leave-to {
     opacity: 0;
+  }
+
+  @keyframes svgClear {
+    0% {
+      opacity: 1;
+    }
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
   }
 </style>

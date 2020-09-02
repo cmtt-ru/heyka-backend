@@ -202,6 +202,16 @@ function bindUserEvents() {
     store.commit('users/UPDATE_USER', data.user);
   });
 
+  /** User joined workspace */
+  client.on(eventNames.userJoined, async data => {
+    store.dispatch('updateCurrentWorkspaceState');
+  });
+
+  /** User leaved workspace */
+  client.on(eventNames.userLeavedWorkspace, async data => {
+    store.dispatch('updateCurrentWorkspaceState');
+  });
+
   /** Muted for all */
   client.on(eventNames.mutedForAll, async data => {
     if (data.socketId === client.id) {

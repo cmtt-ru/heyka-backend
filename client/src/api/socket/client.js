@@ -1,7 +1,7 @@
 import io from 'socket.io-client';
 import eventNames from './eventNames';
 
-let socketUrl = process.env.VUE_APP_PROD_URL;
+let socketUrl = location.origin;
 
 if (IS_DEV) {
   socketUrl = process.env.VUE_APP_DEV_URL;

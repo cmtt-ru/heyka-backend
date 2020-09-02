@@ -48,5 +48,11 @@
       "users": "1 user | {n} users",
       "you": "(you)"
     }
+  },
+  "popover": {
+    "griduser": {
+      "fullscreen": "Fullscreen",
+      "mute": "Mute for all"
+    }
   }
 }

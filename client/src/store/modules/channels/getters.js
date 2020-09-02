@@ -8,4 +8,16 @@ export default {
   getChannelById: state => id => {
     return state.collection[id];
   },
+
+  /**
+   * Get first channel
+   *
+   * @param {ChannelState} state – channels module state
+   * @returns {object}
+   */
+  getFirstChannel(state) {
+    const channelId = Object.keys(state.collection)[0];
+
+    return state.collection[channelId];
+  },
 };

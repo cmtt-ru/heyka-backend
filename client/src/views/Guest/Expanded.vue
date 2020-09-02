@@ -33,6 +33,7 @@
       <avatar
         class="user__avatar"
         :image="userAvatar(sharingUser.id, 20)"
+        :user-id="sharingUser.id"
         :size="20"
         square
       />

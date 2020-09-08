@@ -12,6 +12,12 @@
       "text": "Welcome aboard to Heyka, verify your account and stay connected to your team always:",
       "button": "Verify",
       "ps": "If you have received this letter by mistake, please ignore it."
+    },
+    "inviteToWorkspace": {
+      "welcome": "Welcome to {{workspaceName}}.",
+      "body": "You have received this, because {{userName}} has invited you to Heyka. This link valid for the next 24 hours.",
+      "button": "Join {{workspaceName}}",
+      "postscriptum": "If you did not request any invitation, please ignore this email."
     }
   }
 }

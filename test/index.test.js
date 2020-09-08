@@ -1448,6 +1448,53 @@ describe('Test routes', () => {
     });
   });
 
+  describe('GET /workspaces/{workspaceId}/invites', () => {
+    describe('List all workspace invites by user', () => {
+      it('should return 403', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'test' });
+        const admin = await userService.signup({ name: 'admin' });
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        const userTokens = await userService.createTokens(user);
+        await workspaceService.addUserToWorkspace(workspace.id, user.id);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/workspaces/${workspace.id}/invites?list=all`,
+          ...helpers.withAuthorization(userTokens)
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('List all workspace invites by admin', () => {
+      it('should return list of invites', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const admin = await userService.signup({ name: 'admin' });
+        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+        const adminTokens = await userService.createTokens(admin);
+        const codes = await Promise.all([
+          workspaceService.inviteToWorkspace(workspace.id, admin.id),
+          workspaceService.inviteToWorkspace(workspace.id, admin.id),
+          workspaceService.inviteToWorkspace(workspace.id, admin.id),
+        ]);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/workspaces/${workspace.id}/invites?list=all`,
+          ...helpers.withAuthorization(adminTokens)
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.find(i => i.code === codes[0].code.code)).exists();
+        expect(response.result.find(i => i.code === codes[1].code.code)).exists();
+        expect(response.result.find(i => i.code === codes[2].code.code)).exists();
+      });
+    });
+  });
+
   /**
    * Channels
    */

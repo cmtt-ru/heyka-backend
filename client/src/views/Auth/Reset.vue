@@ -7,10 +7,10 @@
       class="reset"
     >
       <div class="reset__header">
-        PASSWORD RESET
+        {{ texts.header }}
       </div>
       <div class="reset__info">
-        Please enter your new password below<br>to access your account
+        {{ texts.disclaimer }}
       </div>
       <ui-form
         class="reset__form"
@@ -30,7 +30,7 @@
           class="reset__submit"
           submit
         >
-          Reset
+          {{ texts.button }}
         </ui-button>
       </ui-form>
     </div>
@@ -39,7 +39,7 @@
       class="reset"
     >
       <div class="reset__header">
-        New password saved!
+        {{ texts.saved }}
       </div>
       <a
         :href="deepLink"
@@ -50,7 +50,7 @@
           class=""
           submit
         >
-          Open Heyka
+          {{ texts.openApp }}
         </ui-button>
       </a>
       <router-link
@@ -58,7 +58,7 @@
         class="reset__landing"
         target="_blank"
       >
-        You can download Heyka here
+        {{ texts.download }}
       </router-link>
     </div>
   </div>
@@ -87,8 +87,17 @@ export default {
   },
 
   computed: {
+
     deepLink() {
       return `heyka://login/${this.authlink}`;
+    },
+
+    /**
+     * Get needed texts from I18n-locale file
+     * @returns {object}
+     */
+    texts() {
+      return this.$t('reset');
     },
   },
 

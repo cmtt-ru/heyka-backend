@@ -2455,7 +2455,7 @@ describe('Test routes', () => {
             Authorization: `Bearer ${tokens.accessToken}`
           },
           payload: {
-            email
+            emailList: [email],
           }
         });
         expect(response.statusCode).equals(200);

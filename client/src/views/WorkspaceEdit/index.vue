@@ -3,21 +3,51 @@
     <ui-header />
 
     <div class="layout__wrapper">
-      a
+      <h1>Name your workspace</h1>
+
+      <div class="form l-mt-24">
+        <ui-image
+          :image="avatar"
+          :size="76"
+          @input="setNewAvatar"
+        />
+
+        <ui-input
+          v-model="name"
+          class="l-ml-24"
+          placeholder="Workspace"
+        />
+      </div>
+
+      <ui-button
+        :type="6"
+        wide
+        class="l-mt-24"
+        @click="createHandler"
+      >
+        Create
+      </ui-button>
     </div>
   </div>
 </template>
 
 <script>
 import UiHeader from '@components/UiHeader';
+import UiButton from '@components/UiButton';
+import { UiInput, UiImage } from '@components/Form';
 
 export default {
   components: {
     UiHeader,
+    UiButton,
+    UiInput,
+    UiImage,
   },
 
   data() {
     return {
+      name: '',
+      avatar: '',
     };
   },
 
@@ -46,6 +76,23 @@ export default {
         await this.$router.replace('/workspace/create');
       }
     },
+
+    /**
+     * Update avatar with mew image file id
+     * @param {string} fileId - new image file id from uploader
+     * @returns {void}
+     */
+    setNewAvatar(fileId) {
+      console.log(fileId);
+    },
+
+    /**
+     * Create workspace handler
+     * @returns {Promise<void>}
+     */
+    async createHandler() {
+
+    },
   },
 };
 </script>
@@ -58,27 +105,10 @@ export default {
     min-height 100vh
 
     &__wrapper
-      max-width 700px
-      box-sizing border-box
-      display flex
-      padding-right 12px
-      flex 1 1 auto
+      max-width 600px
+      margin 40px auto
 
-    &__col
-      &--workspaces
-        flex 0 0 60px
-        background #59a748
-        padding-top 24px
-
-      &--content
-        flex 1 1 auto
-        border-left 1px solid rgba(0,0,0,0.1)
-        padding-left 18px
-        padding-top 24px
-
-  .workspace-name
-    font-size 32px
-    font-weight 500
-    line-height 44px
-    margin-bottom 24px
+      .form
+        display flex
+        align-items center
 </style>

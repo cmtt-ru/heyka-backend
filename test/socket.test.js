@@ -1039,6 +1039,54 @@ describe('Test socket', () => {
         socket2.disconnect();
       });
     });
+    describe('User update his own app-settings', () => {
+      it('User should be notified about his own update with type of updation', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const { workspace: w } = await workspaceService.createWorkspace(user, 'workspace');
+        
+        // authenticate user1 and user2 to sockets
+        const tokens = await userService.createTokens(user);
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens.accessToken,
+          workspaceId: w.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens.accessToken,
+          workspaceId: w.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // await for user update profile event
+        const newAppSettings = { theme: 'dark' };
+        evtName = eventNames.socket.meUpdated;
+        const checkDataFunc = data => {
+          expect(data.user.appSettings).equals(newAppSettings);
+          expect(data.whatWasUpdated).equals('app-settings');
+        };
+        const awaitForNotify1 = awaitSocketForEvent(true, socket1, evtName, checkDataFunc);
+        const awaitForNotify2 = awaitSocketForEvent(true, socket2, evtName, checkDataFunc);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/me/app-settings',
+          ...helpers.withAuthorization(tokens),
+          payload: newAppSettings
+        });
+        expect(response.statusCode).equals(200);
+        await Promise.all([awaitForNotify1, awaitForNotify2]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
   });
 
   describe('Testing delete channel', () => {

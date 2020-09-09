@@ -133,6 +133,7 @@ socket.on('user-updated', data => {
 ```
 socket.on('me-updated', data => {
   // data.user: {UserConfidentialDataScheme} обновление состоения пользователя с конфиденциальными данными
+  // data.whatWasUpdated: {String} что было обновлено (подсказка). Варианты: 'social-auth', 'app-settings'
 })
 ```
 

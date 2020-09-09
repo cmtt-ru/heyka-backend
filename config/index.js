@@ -13,8 +13,12 @@ module.exports = {
     uploadUrl: process.env.LEONARDO_UPLOAD_URL || 'https://leonardo-direct.osnova.io/upload/files/',
     staticServerUrl: process.env.LEONARDO_STATIC_SERVER_URL || 'https://leonardo.osnova.io/',
   },
+  cloudflare: {
+    dnsZoneId: process.env.CLOUDFLARE_DNS_ZONE_ID || '6d1bd449e01e1f096e86188632ab55d1',
+    dnsAPIKey: process.env.CLOUDFLARE_DNS_APIKEY || 'cloudflare-api-key',
+  },
   credentials: {
-    cookiePassword: process.env.COOKIE_PASSWORD,
+    cookiePassword: process.env.COOKIE_PASSWORD || 'cookie-password',
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID || 'google-client-id',
       clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'google-client-secret'
@@ -29,8 +33,8 @@ module.exports = {
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET || 'facebook-client-secret'
     },
     mailgun: {
-      domain: process.env.MAILGUN_DOMAIN,
-      apikey: process.env.MAILGUN_APIKEY
+      domain: process.env.MAILGUN_DOMAIN || 'mailgun-domain',
+      apikey: process.env.MAILGUN_APIKEY || 'mailgun-apikey',
     }
   },
   redis: process.env.SENTINELS ? {
@@ -55,13 +59,13 @@ module.exports = {
     k8sJanusLabelSelector: process.env.K8S_JANUS_LABEL_SELECTOR || null
   },
   files: {
-    awsEndpoint: process.env.AWS_ENDPOINT,
-    awsBucket: process.env.AWS_BUCKET,
-    awsKey: process.env.AWS_KEY,
-    awsSecret: process.env.AWS_SECRET,
-    imgproxyUrl: process.env.IMGPROXY_URL,
-    imgproxyKey: process.env.IMGPROXY_KEY,
-    imgproxySalt: process.env.IMGPROXY_SALT,
+    awsEndpoint: process.env.AWS_ENDPOINT || 'aws_endpoint',
+    awsBucket: process.env.AWS_BUCKET || 'aws_bucket',
+    awsKey: process.env.AWS_KEY || 'aws_key',
+    awsSecret: process.env.AWS_SECRET || 'aws_secret',
+    imgproxyUrl: process.env.IMGPROXY_URL || 'imgproxy_url',
+    imgproxyKey: process.env.IMGPROXY_KEY || 'imgporxy_key',
+    imgproxySalt: process.env.IMGPROXY_SALT || 'imgproxy_salt',
     limitPerUser: 100,
   }
 };

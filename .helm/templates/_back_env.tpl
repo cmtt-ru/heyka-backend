@@ -36,3 +36,14 @@
 - name: DEPLOYMENT_ENV
   value: {{ .Values.global.env }}
 {{ end }}
+
+{{ define "backend_env_watcher" }}
+- name: K8S_CLUSTER_HOST
+  value: {{ pluck .Values.global.env .Values.kubernetes.host | first | default .Values.kubernetes.host._default }}
+- name: K8S_JANUS_LABEL_SELECTOR
+  value: {{ pluck .Values.global.env .Values.kubernetes.janus_node_label | first | default .Values.kubernetes.janus_node_label._default }}
+- name: CLOUDFLARE_DNS_ZONE_ID
+  value: {{ pluck .Values.global.env .Values.app.cloudflare.zone_id | first | default .Values.app.cloudflare.zone_id._default }}
+- name: CLOUDFLARE_DNS_APIKEY
+  value: {{ pluck .Values.global.env .Values.app.cloudflare.dns_apikey | first | default .Values.app.cloudflare.dns_apikey._default }}
+{{ end }}

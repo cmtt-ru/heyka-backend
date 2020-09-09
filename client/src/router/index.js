@@ -17,6 +17,7 @@ const GuestExpanded = () => import(/* webpackChunkName: "main" */ '../views/Gues
 const GuestFinish = () => import(/* webpackChunkName: "main" */ '../views/Guest/Finish');
 
 const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
+const WorkspaceEdit = () => import(/* webpackChunkName: "main" */ '../views/WorkspaceEdit');
 
 Vue.use(VueRouter);
 
@@ -77,6 +78,31 @@ const routes = [
       {
         path: ':code',
         component: Manage,
+      },
+    ],
+  },
+
+  /**
+   * Create & edit workspace
+   */
+  {
+    path: '/workspace',
+    component: WorkspaceEdit,
+    children: [
+      {
+        path: 'create',
+        name: 'workspace-create',
+        component: WorkspaceEdit,
+      },
+      {
+        path: 'create/:code',
+        name: 'workspace-create',
+        component: WorkspaceEdit,
+      },
+      {
+        path: 'edit/:id',
+        name: 'workspace-edit',
+        component: WorkspaceEdit,
       },
     ],
   },

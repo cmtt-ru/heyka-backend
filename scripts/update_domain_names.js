@@ -17,7 +17,7 @@ async function startWatcher () {
 
     // collect janus nodes
     const nodes = (await janusWorkspaceService.fetchJanusNodes()).map(node => ({
-      ip: node.addresses.find(address => address.type === 'ExternalIP').address
+      ip: node.status.addresses.find(address => address.type === 'ExternalIP').address
     }));
     // collect all dns-records
     const dnsRecords = (await cf.dnsRecords.browse(config.cloudflare.dnsZoneId)).result

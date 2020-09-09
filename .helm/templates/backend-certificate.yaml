@@ -11,9 +11,15 @@ spec:
   commonName: {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
   dnsNames:
   - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+{{- if (eq $.Values.global.env "stage") }}
+  - {{ pluck .Values.global.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
+{{- end }}
   acme:
     config:
     - http01:
         ingressClass: nginx
       domains:
       - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+{{- if (eq $.Values.global.env "stage") }}
+      - {{ pluck .Values.global.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
+{{- end }}

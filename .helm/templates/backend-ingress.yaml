@@ -19,10 +19,25 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: web
-        
+{{- if (eq $.Values.global.env "stage") }}
+  - host: {{ pluck .Values.global.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: web
+      - path: /swaggerui/.+\.(js|css|ico|woff2|png|jpeg|jpg|gif|svg)$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: web
+{{- end }}
   tls:
   - hosts:
       - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+{{- if (eq $.Values.global.env "stage") }}     
+      - {{ pluck .Values.global.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
+{{- end }}
     secretName: {{ printf "tls-%s" .Chart.Name | quote }}
 ---
 apiVersion: networking.k8s.io/v1beta1
@@ -52,8 +67,27 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
+{{- if (eq $.Values.global.env "stage") }}
+  - host: {{ pluck .Values.global.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
+    http:
+      paths:
+      - path: /$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
+      - path: /(auth|guest|manage)
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
+      - path: /.+\.(js|css|ico|woff2|png|jpeg|jpg|gif|svg|js\.map)$
+        backend:
+          serviceName: {{ .Chart.Name }}
+          servicePort: static
+{{- end }}
   tls:
   - hosts:
       - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
+{{- if (eq $.Values.global.env "stage") }}     
+      - {{ pluck .Values.global.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
+{{- end }}
     secretName: {{ printf "tls-%s" .Chart.Name | quote }}
-

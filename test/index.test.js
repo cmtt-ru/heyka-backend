@@ -2067,6 +2067,77 @@ describe('Test routes', () => {
     });
   });
 
+  describe('DELETE /channels/{channelId/invites', () => {
+    describe('Delete all channel invites with revoking access', () => {
+      it('Invite should be deleted, access should be revoked', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelService,
+          workspaceDatabaseService: wdb,
+          inviteCodesDatabaseService: invdb,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const tokens = await userService.createTokens(user);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'global'
+        });
+        const inviteToken1 = await channelService.getInviteChannelToken(channel.id, user.id);
+        const inviteToken2 = await channelService.getInviteChannelToken(channel.id, user.id);
+          
+        // sign up with these invites
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/channels/join/${inviteToken1}`,
+          payload: {
+            name: 'guest1',
+          }
+        });
+        expect(response1.statusCode).equals(200);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/channels/join/${inviteToken1}`,
+          payload: {
+            name: 'guest2',
+          }
+        });
+        expect(response2.statusCode).equals(200);
+        const response3 = await server.inject({
+          method: 'POST',
+          url: `/channels/join/${inviteToken2}`,
+          payload: {
+            name: 'guest3',
+          }
+        });
+        expect(response3.statusCode).equals(200);
+          
+        // check that there are 4 users in workspace
+        const members = await wdb.getWorkspaceMembers(workspace.id);
+        expect(members).length(4);
+  
+        const invites = await invdb.getInvitesByChannel(channel.id);
+        expect(invites).length(2);
+  
+        // delete invite with revoking access
+        const response4 = await server.inject({
+          method: 'DELETE',
+          url: `/channels/${channel.id}/invites?revokeAccess=true`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response4.statusCode).equals(200);
+  
+        // check that invite doesnt exist
+        const invitesAfterDelete = await invdb.getInvitesByChannel(channel.id);
+        expect(invitesAfterDelete).length(0);
+  
+        // check that there is only one user in workspace
+        const membersAfterDelete = await wdb.getWorkspaceMembers(workspace.id);
+        expect(membersAfterDelete).length(1);
+      });
+    });
+  });
+
   /**
    * Invites
    */
@@ -2435,6 +2506,60 @@ describe('Test routes', () => {
         expect(args[1]).equals(slackAccessToken);
         expect(args[2]).equals(slackUserId);
         expect(args[3]).equals(workspace.name);
+      });
+    });
+  });
+
+  describe('DELETE /invites/{inviteId}', () => {
+    describe('Delete invite with revoking access', () => {
+      it('Invite should be deleted, access should be revoked', async () => {
+        const {
+          userService,
+          workspaceService,
+          channelService,
+          workspaceDatabaseService: wdb,
+          inviteCodesDatabaseService: invdb,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const tokens = await userService.createTokens(user);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'global'
+        });
+        const inviteToken = await channelService.getInviteChannelToken(channel.id, user.id);
+        
+        // sign up with this invite
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/channels/join/${inviteToken}`,
+          payload: {
+            name: 'guest',
+          }
+        });
+        expect(response1.statusCode).equals(200);
+        
+        // check that there are two users in workspace
+        const members = await wdb.getWorkspaceMembers(workspace.id);
+        expect(members).length(2);
+
+        const invites = await invdb.getInvitesByChannel(channel.id);
+        expect(invites).length(1);
+
+        // delete invite with revoking access
+        const response2 = await server.inject({
+          method: 'DELETE',
+          url: `/invites/${invites[0].id}?revokeAccess=true`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response2.statusCode).equals(200);
+
+        // check that invite doesnt exist
+        const invitesAfterDelete = await invdb.getInvitesByChannel(channel.id);
+        expect(invitesAfterDelete).length(0);
+
+        // check that there is only one user in workspace
+        const membersAfterDelete = await wdb.getWorkspaceMembers(workspace.id);
+        expect(membersAfterDelete).length(1);
       });
     });
   });

@@ -153,7 +153,7 @@ export default {
 };
 </script>
 
-<style lang="stylus">
+<style lang="stylus" scoped>
   .layout__wrapper
     --app-bg #000000
     --text-0 #E5E5E5

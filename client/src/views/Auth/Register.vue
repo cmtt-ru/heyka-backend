@@ -79,6 +79,7 @@
 import UiButton from '@components/UiButton';
 import { UiForm, UiInput } from '@components/Form';
 import { determineLocale } from '@/i18n';
+import { authFileStore } from '@/store/localStore';
 import { errorMessages } from '@api/errors/types';
 
 export default {
@@ -135,6 +136,11 @@ export default {
       try {
         console.log(this.newUser);
         const res = await this.$API.auth.signup({ user: this.newUser });
+
+        if (authFileStore.get('inviteCode')) {
+          this.$API.workspace.joinByCode(authFileStore.get('inviteCode'));
+          authFileStore.set('inviteCode', null);
+        }
 
         console.log(res);
       } catch (err) {

@@ -5,7 +5,7 @@ import axios from 'axios';
  *
  * @param {object} params - params
  *  @param {string} params.token - json web token
- *  @param {string} params.password - emaipasswordl
+ *  @param {string} params.password - password
  *
  * @returns {string} auth link
  */

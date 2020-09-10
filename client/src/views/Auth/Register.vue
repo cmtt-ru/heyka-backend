@@ -8,62 +8,35 @@
     </div>
     <div class="page l-p-18">
       <p class="l-fs-18">
-        Welcome to Heyka
+        {{ texts.welcome }}
       </p>
       <div class="page__content">
-        <div class="currently-not-needed">
-          <ui-button
-            :type="3"
-            wide
-            class="sns-button"
-            @click="socialHandler('slack')"
-          >
-            Slack
-            <svg-icon
-              slot="right"
-              color="var(--icon-1)"
-              name="close"
-              size="medium"
-            />
-          </ui-button>
-          <ui-button
-            :type="3"
-            wide
-            class="sns-button"
-            @click="socialHandler('facebook')"
-          >
-            Facebook
-          </ui-button>
-          <ui-button
-            :type="3"
-            wide
-            class="sns-button"
-            @click="socialHandler('google')"
-          >
-            Google
-          </ui-button>
-
-          <div class="or-delimiter">
-            <span>or</span>
-          </div>
-        </div>
         <ui-form
-          v-if="!passReset"
           class="reset-form"
-          @submit="loginHandler()"
+          @submit="registerHandler()"
         >
           <ui-input
-            v-model="login.email"
+            v-model="newUser.name"
             icon="user"
+            class="login__input"
+            :placeholder="texts.name"
+            :minlength="3"
+            required
+          />
+          <ui-input
+            v-model="newUser.email"
+            icon="mail"
             class="login__input"
             placeholder="example@mail.com"
             email
             required
           />
           <ui-input
-            v-model="login.password"
+            v-model="newUser.password"
             icon="lock"
             required
+            :minlength="8"
+            :maxlength="120"
             type="password"
             class="login__input"
             placeholder="******"
@@ -74,62 +47,29 @@
             class="login__button"
             submit
           >
-            LOGIN
-          </ui-button>
-          <div class="info">
-            <div class="info__text">
-              Forgot your password?
-            </div>
-            <div
-              class="info__link"
-              @click="toggleReset"
-            >
-              Reset
-            </div>
-          </div>
-        </ui-form>
-        <ui-form
-          v-if="passReset"
-          class="reset-form"
-          @submit="resetHandler"
-        >
-          <ui-input
-            v-model="login.email"
-            icon="user"
-            class="login__input"
-            placeholder="example@mail.com"
-            email
-            required
-          />
-          <ui-button
-            :type="12"
-            wide
-            class="login__button"
-            submit
-          >
-            RESET
-          </ui-button>
-          <ui-button
-            :type="10"
-            wide
-            class="login__button"
-            @click="toggleReset"
-          >
-            cancel
+            {{ texts.register }}
           </ui-button>
         </ui-form>
 
         <div class="info">
           <div class="info__text">
-            Not a member?
+            {{ texts.oldMember }}
           </div>
-          <div
+          <router-link
+            :to="{ name: 'signIn'}"
             class="info__link"
           >
-            Sign up now
-          </div>
+            {{ texts.login }}
+          </router-link>
         </div>
-        <br>
+        <ui-button
+          :type="12"
+          wide
+          class="login__button--delete"
+          @click="deleteHandler()"
+        >
+          Удалить пользователя
+        </ui-button>
       </div>
     </div>
   </div>
@@ -138,6 +78,8 @@
 <script>
 import UiButton from '@components/UiButton';
 import { UiForm, UiInput } from '@components/Form';
+import { determineLocale } from '@/i18n';
+import { errorMessages } from '@api/errors/types';
 
 export default {
   components: {
@@ -149,12 +91,23 @@ export default {
   data() {
     return {
       coverSrc: null,
-      passReset: false,
-      login: {
-        email: 'ivanb@cmtt.ru',
-        password: 'VT3O2O',
+      newUser: {
+        name: '',
+        email: '',
+        password: '',
+        lang: determineLocale(),
       },
     };
+  },
+
+  computed: {
+    /**
+     * Get needed texts from I18n-locale file
+     * @returns {object}
+     */
+    texts() {
+      return this.$t('register');
+    },
   },
 
   mounted() {
@@ -171,50 +124,41 @@ export default {
 
   methods: {
 
-    toggleReset() {
-      console.log(this.passReset);
-      this.passReset = !this.passReset;
-    },
-
     async socialHandler(socialName) {
       const baseUrl = IS_DEV ? process.env.VUE_APP_DEV_URL : process.env.VUE_APP_PROD_URL;
       const link = `${baseUrl}/auth/social/${socialName}/login`;
 
-      window.open(link); // TODO: can replace with window.open (see main index.js)
+      window.open(link);
     },
 
-    async loginHandler() {
+    async registerHandler() {
       try {
-        await this.$API.auth.signin({ credentials: this.login });
+        console.log(this.newUser);
+        const res = await this.$API.auth.signup({ user: this.newUser });
 
-        await this.$router.push({
-          name: 'landing',
-        });
+        console.log(res);
       } catch (err) {
-        console.log('ERROR:', err);
-        if (err.response.data.message === 'Email or password are invalid') {
+        if (err.response.data.message === errorMessages.emailExists) {
           const notification = {
             data: {
-              text: 'Wrong email/password!',
+              text: errorMessages.emailExists,
             },
           };
 
           await this.$store.dispatch('app/addNotification', notification);
         }
+        console.log('ERROR:', err);
       }
     },
 
-    async resetHandler() {
+    async deleteHandler() {
       try {
-        // await this.$API.auth.resetPass(this.login.email);
-        this.toggleReset();
-        const notification = {
-          data: {
-            text: 'Check your email inbox!',
-          },
-        };
+        const res = await this.$API.auth.deleteAccount({ password: this.newUser.password });
 
-        await this.$store.dispatch('app/addNotification', notification);
+        console.log(res);
+        // await this.$router.push({
+        //   name: 'landing',
+        // });
       } catch (err) {
         console.log('ERROR:', err);
       }
@@ -224,7 +168,9 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
-
+.currently-not-needed
+  opacity 0.5
+  pointer-events none
 .sidebar-image
     width 100%
     height 100vh
@@ -234,6 +180,8 @@ export default {
 
 .page-wrapper
     height 100%
+    max-width 1200px
+    margin 0 auto
     box-sizing border-box
     display flex
     flex-direction row
@@ -266,13 +214,13 @@ export default {
     margin-bottom 12px
 
 .login__input
-    margin 6px 0
-
-    &:first-of-type
-        margin-bottom 12px
+    margin 6px 0 12px
 
 .login__button
     margin-top 12px
+
+    &--delete
+      display none
 
 .info
     display flex

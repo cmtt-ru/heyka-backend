@@ -11,7 +11,6 @@ import mediaDevices from '@classes/mediaDevices';
 import { mapState, mapGetters } from 'vuex';
 import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
 
-// const CHANNEL_ID = '3e6e738c-0317-4037-baf6-0eb8207a5939';
 
 export default {
   components: {

@@ -79,6 +79,7 @@
 import UiButton from '@components/UiButton';
 import { UiForm, UiInput } from '@components/Form';
 import { determineLocale } from '@/i18n';
+import { errorMessages } from '@api/errors/types';
 
 export default {
   components: {
@@ -137,6 +138,15 @@ export default {
 
         console.log(res);
       } catch (err) {
+        if (err.response.data.message === errorMessages.emailExists) {
+          const notification = {
+            data: {
+              text: errorMessages.emailExists,
+            },
+          };
+
+          await this.$store.dispatch('app/addNotification', notification);
+        }
         console.log('ERROR:', err);
       }
     },

@@ -35,7 +35,7 @@ function loadLocaleMessages() {
  * Select locale. Get locale from electron store, if none we use system language, if none/not_supported we use 'en'
  * @returns {string} locale's short string (eg. 'en')
  */
-function determineLocale() {
+export function determineLocale() {
   for (const locale of navigator.languages) {
     if (supportedLocales.includes(locale)) {
       return locale;

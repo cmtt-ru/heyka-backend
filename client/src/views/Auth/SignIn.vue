@@ -54,7 +54,7 @@
         >
           <ui-input
             v-model="login.email"
-            icon="user"
+            icon="mail"
             class="login__input"
             placeholder="example@mail.com"
             email
@@ -95,7 +95,7 @@
         >
           <ui-input
             v-model="login.email"
-            icon="user"
+            icon="mail"
             class="login__input"
             placeholder="example@mail.com"
             email
@@ -119,15 +119,16 @@
           </ui-button>
         </ui-form>
 
-        <div class="info currently-not-needed">
+        <div class="info">
           <div class="info__text">
             {{ texts.newMember }}
           </div>
-          <div
+          <router-link
             class="info__link"
+            :to="{ name: 'register'}"
           >
             {{ texts.signup }}
-          </div>
+          </router-link>
         </div>
         <br>
       </div>

@@ -209,6 +209,7 @@ export default {
 
         if (authFileStore.get('inviteCode')) {
           this.$API.workspace.joinByCode(authFileStore.get('inviteCode'));
+          authFileStore.set('inviteCode', null);
         }
 
         await this.$router.push({

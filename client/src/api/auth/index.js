@@ -6,6 +6,8 @@ import discardPass from './discardPass';
 import resetPass from './resetPass';
 import check from './check';
 import checkWebToken from './checkWebToken';
+import verify from './verify';
+import deleteAccount from './deleteAccount';
 import link from './link';
 
 export default {
@@ -17,5 +19,7 @@ export default {
   resetPass,
   check,
   checkWebToken,
+  verify,
+  deleteAccount,
   link,
 };

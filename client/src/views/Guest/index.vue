@@ -105,24 +105,6 @@ export default {
       mediaDevices.updateDevices();
     },
 
-    /**
-     * Get screen sharing stream
-     * @returns {stream}
-     */
-    async getScreenStream() {
-      let captureStream = null;
-
-      try {
-        captureStream = await navigator.mediaDevices.getDisplayMedia({
-          audio: false,
-          video: true,
-        });
-      } catch (err) {
-        console.error('Error: ' + err);
-      }
-
-      return captureStream;
-    },
 
     /**
      * Initialize Janus Video Room Plugin

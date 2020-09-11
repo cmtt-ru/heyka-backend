@@ -31,7 +31,7 @@
     "openApp": "Открыть Heyka",
     "download": "Здесь можно скачать Heyka"
   },
-  "notifications":{
+  "notifications": {
     "notImplemented": "Этой функции пока нет, но есть другие, тоже хорошие ✨",
     "login": {
       "wrongPass": "Неправильный логин/пароль!",
@@ -47,5 +47,25 @@
     "minlength": "минимальная длина —",
     "maxlength": "максимальная длина —",
     "passNotMatch": "пароли не совпадают"
+  },
+  "settings": {
+    "devices": {
+      "speakersLabel": "Вывод аудио",
+      "micLabel": "Микрофон",
+      "cameraLabel": "Камера",
+      "defaultDevice": "По умолчанию"
+    }
+  },
+  "call": {
+    "grid": {
+      "users": "0 участников | {n} участник | {n} участника | {n} участников",
+      "you": "(Вы)"
+    }
+  },
+  "popover": {
+    "griduser": {
+      "fullscreen": "Полный экран",
+      "mute": "Выкл. микрофон для всех"
+    }
   }
 }

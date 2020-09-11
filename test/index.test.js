@@ -2877,7 +2877,7 @@ describe('Test routes', () => {
     describe('Try to verify valid verification code', () => {
       it('should set "email_verified" true', async () => {
         const { userService } = server.services();
-        const user = await userService.signup({ email: 'admin@admin.ru' });
+        const user = await userService.signup({ name: 'name', email: 'admin@admin.ru' });
         const token = stubbedMethods.sendEmail.firstCall.args[0][1];
         const response = await server.inject({
           method: 'GET',

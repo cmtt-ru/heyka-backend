@@ -3,20 +3,21 @@
     class="avatar"
     :style="containerSize"
   >
-    <img
-      v-if="!loaded"
+    <div
       class="avatar__no-image"
-      src="@assets/apng/loader.png"
-    >
+      :class="{'avatar__image--square': square}"
+      :style="{'background-color': imageColor}"
+    />
 
     <img
+      v-if="image"
       loading="lazy"
       class="avatar__image"
       :class="{'avatar__image--square': square}"
       alt=""
       :width="size"
       :height="size"
-      :src="avatarImage"
+      :src="image"
       @load="loadHandler"
     >
 
@@ -38,6 +39,20 @@
 </template>
 
 <script>
+
+const COLORS = [
+  '#ff0074AA',
+  '#EFCA08',
+  '#EE7674',
+  '#D33F49',
+  '#845EC2',
+  '#008E83',
+  '#266DD3',
+  '#C64191',
+  '#B0A8B9',
+  '#4FFBDF',
+  '#4B4453', // used when no userId is provided
+];
 
 /**
  * status-to-color map (small circle in bottom right corner)
@@ -108,6 +123,14 @@ export default {
       type: [ Boolean ],
       default: true,
     },
+
+    /**
+     * ID of avatar's user
+     */
+    userId: {
+      type: [ String ],
+      default: null,
+    },
   },
   data() {
     return {
@@ -116,20 +139,6 @@ export default {
   },
 
   computed: {
-
-    /**
-     * Set img as bg-image in css
-     * @returns {object} corresponding background-image
-     */
-    avatarImage() {
-      if (this.image) {
-        return this.$options.filters.formImageUrl(this.image, this.size);
-        // TODO: поставить таймаут и перескачивание, если '429 Too many requests'
-      }
-
-      return {};
-    },
-
     /**
      * Set img size in css
      * @returns {object} height and width
@@ -148,6 +157,15 @@ export default {
     statusStyle() {
       return STATUS_COLORS[this.status] || null;
     },
+
+    imageColor() {
+      if (this.userId === null) {
+        return COLORS[10];
+      }
+      const firstDigit = this.userId.match(/\d/);
+
+      return COLORS[firstDigit];
+    },
   },
 
   methods: {
@@ -157,75 +175,74 @@ export default {
       this.$emit('load');
     },
   },
-
 };
 </script>
 
 <style lang="stylus" scoped>
-    .avatar
-        position relative
+.avatar
+  position relative
 
-        &__no-image
-            position absolute
-            top 0
-            left 0
-            width 100%
-            height 100%
-            color var(--shadow-50)
+  &__no-image
+    position absolute
+    top 0
+    left 0
+    width 100%
+    height 100%
+    border-radius 50%
 
-        &__image
-            position relative
-            display block
-            width 100%
-            height 100%
-            border-radius 50%
-            object-fit cover
+  &__image
+    position relative
+    display block
+    width 100%
+    height 100%
+    border-radius 50%
+    object-fit cover
 
-            &--square
-              border-radius 0
+    &--square
+      border-radius 0
 
-        &__status
-            position absolute
-            bottom -2px
-            right -2px
-            width calc(100% * 1/3)
-            height calc(100% * 1/3)
-            min-width 4px
-            min-height 4px
-            max-width 12px
-            max-height 12px
-            border-radius 50%
-            background-color var(--app-bg)
-            border 2px solid var(--app-bg)
+  &__status
+    position absolute
+    bottom -2px
+    right -2px
+    width calc(100% * 1/3)
+    height calc(100% * 1/3)
+    min-width 4px
+    min-height 4px
+    max-width 12px
+    max-height 12px
+    border-radius 50%
+    background-color var(--app-bg)
+    border 2px solid var(--app-bg)
 
-            &__dot
-                position absolute
-                box-sizing border-box
-                bottom 0
-                right 0
-                width 100%
-                height 100%
-                border-radius 50%
-                border: 2px solid
+    &__dot
+      position absolute
+      box-sizing border-box
+      bottom 0
+      right 0
+      width 100%
+      height 100%
+      border-radius 50%
+      border: 2px solid
 
-        &__onair
-            position absolute
-            bottom 0
-            right 0
-            left 0
-            top 0
-            border-radius 50%
-            background-color transparent
-            border 2px solid var(--color-1)
+  &__onair
+    position absolute
+    bottom 0
+    right 0
+    left 0
+    top 0
+    border-radius 50%
+    background-color transparent
+    border 2px solid var(--color-1)
 
-            &::after
-                content ''
-                position absolute
-                bottom 0
-                right 0
-                left 0
-                top 0
-                border-radius 50%
-                background-color transparent
-                border 2px solid var(--app-bg)
+    &::after
+      content ''
+      position absolute
+      bottom 0
+      right 0
+      left 0
+      top 0
+      border-radius 50%
+      background-color transparent
+      border 2px solid var(--app-bg)
 </style>

@@ -47,5 +47,25 @@
     "minlength": "min length is:",
     "maxlength": "max length is:",
     "passNotMatch": "passwords do not match"
+  },
+  "settings": {
+    "devices": {
+      "speakersLabel": "Speakers",
+      "micLabel": "Microphone",
+      "cameraLabel": "Camera",
+      "defaultDevice": "Default"
+    }
+  },
+  "call": {
+    "grid": {
+      "users": "1 user | {n} users",
+      "you": "(you)"
+    }
+  },
+  "popover": {
+    "griduser": {
+      "fullscreen": "Fullscreen",
+      "mute": "Mute for all"
+    }
   }
 }

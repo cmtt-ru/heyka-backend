@@ -1,7 +1,37 @@
 const path = require('path');
 const webpackPlugins = [];
+const fs = require('fs');
+
+/**
+ * SSL cert file paths
+ * @type {{cert: string, key: string}}
+ */
+const ssl = {
+  key: './certs/localhost.key',
+  cert: './certs/localhost.crt',
+};
+
+/**
+ * Webpack dev server options
+ * @type {object}
+ */
+let devServer = {};
+
+/**
+ * If ssl cert files exist, enable local https
+ */
+if (fs.existsSync(ssl.key)) {
+  devServer = {
+    https: {
+      key: fs.readFileSync(ssl.key),
+      cert: fs.readFileSync(ssl.cert),
+    },
+    public: 'https://localhost:8080/',
+  };
+}
 
 module.exports = {
+  devServer,
   configureWebpack: {
     resolve: {
       alias: {
@@ -13,6 +43,7 @@ module.exports = {
         '@views': path.resolve(__dirname, 'src/views'),
         '@static': path.resolve(__dirname, 'public'),
         '@libs': path.resolve(__dirname, 'src/libs'),
+        '@classes': path.resolve(__dirname, 'src/classes'),
       },
     },
     plugins: webpackPlugins,

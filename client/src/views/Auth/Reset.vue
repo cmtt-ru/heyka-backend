@@ -155,6 +155,7 @@ export default {
   &__header
     font-size 25px
     margin 24px 0 8px
+    text-transform uppercase
 
   &__info
     margin-bottom 20px

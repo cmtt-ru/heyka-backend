@@ -66,7 +66,7 @@ async function startWatcher () {
     }
 
     server.start();  
-    server.log(['info'], 'Script started');
+    console.log(`Server started at ${server.info.uri}`);
   } catch(e) {
     console.error(e);
     process.exit(1);

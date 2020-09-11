@@ -54,7 +54,7 @@
         >
           <ui-input
             v-model="login.email"
-            icon="user"
+            icon="mail"
             class="login__input"
             placeholder="example@mail.com"
             email
@@ -95,7 +95,7 @@
         >
           <ui-input
             v-model="login.email"
-            icon="user"
+            icon="mail"
             class="login__input"
             placeholder="example@mail.com"
             email
@@ -119,15 +119,16 @@
           </ui-button>
         </ui-form>
 
-        <div class="info currently-not-needed">
+        <div class="info">
           <div class="info__text">
             {{ texts.newMember }}
           </div>
-          <div
+          <router-link
             class="info__link"
+            :to="{ name: 'register'}"
           >
             {{ texts.signup }}
-          </div>
+          </router-link>
         </div>
         <br>
       </div>
@@ -138,6 +139,7 @@
 <script>
 import UiButton from '@components/UiButton';
 import { UiForm, UiInput } from '@components/Form';
+import { authFileStore } from '@/store/localStore';
 
 export default {
   components: {
@@ -177,6 +179,15 @@ export default {
     } else {
       this.coverSrc = require('@assets/img/cover_day.png');
     }
+
+    const inviteCode = this.$route.query.invite;
+
+    if (inviteCode) {
+      authFileStore.set('inviteCode', inviteCode);
+      if (authFileStore.get('accessToken')) {
+        this.$API.workspace.joinByCode(inviteCode);
+      }
+    }
   },
 
   methods: {
@@ -195,6 +206,11 @@ export default {
     async loginHandler() {
       try {
         await this.$API.auth.signin({ credentials: this.login });
+
+        if (authFileStore.get('inviteCode')) {
+          this.$API.workspace.joinByCode(authFileStore.get('inviteCode'));
+          authFileStore.set('inviteCode', null);
+        }
 
         await this.$router.push({
           name: 'landing',

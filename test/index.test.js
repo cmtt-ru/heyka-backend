@@ -1,11 +1,11 @@
 'use strict';
 
+const config = require('../config');
 const Lab = require('@hapi/lab');
 const { describe, it, before, beforeEach } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
-const crypto = require('crypto-promise');
 const MockDate = require('mockdate');
 const serviceHelpers = require('../lib/services/helpers');
 const { methods: stubbedMethods } = require('./stub_external');
@@ -199,7 +199,44 @@ describe('Test routes', () => {
         expect(response.statusCode).to.be.equal(200);
         // check that email is sent
         expect(stubbedMethods.sendEmail.calledOnce).true();
-        expect(stubbedMethods.sendEmail.args[0][0][0]).equals(email);
+        expect(stubbedMethods.sendEmail.args[0][0][0].email).equals(email);
+      });
+    });
+  });
+
+  describe('POST /signout', () => {
+    describe('Signout out from one session', () => {
+      it('Cant use this session anymore', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({
+          name: 'name',
+          email: 'email@email.email',
+          password: 'password',
+        });
+        const tokens1 = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: '/signout',
+          ...helpers.withAuthorization(tokens1),
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(response.payload).equals('ok');
+
+        const response2 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens1),
+        });
+        expect(response2.statusCode).equals(401);
+
+        const response3 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens2),
+        });
+        expect(response3.statusCode).equals(200);
       });
     });
   });
@@ -361,6 +398,86 @@ describe('Test routes', () => {
         const payload = JSON.parse(response.payload);
         expect(payload.id).equals(user.id);
         expect(payload.email).equals(userInfo.email);
+      });
+    });
+  });
+
+  describe('DELETE /me', () => {
+    describe('Cant delete if password is invalid', () => {
+      it('should return 403 forbidden', async () => {
+        const {
+          userService
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+          password: 'very-strong-password'
+        };
+        const user = await userService.signup(userInfo);
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/me/delete',
+          payload: {
+            password: 'invalid-password'
+          },
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(403);
+      });
+    });
+    describe('Cant delete if there are workspaces where user is admin', () => {
+      it('should return 400 bad request', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+        };
+        const user = await userService.signup(userInfo);
+        await workspaceService.createWorkspace(user, 'test');
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/me/delete',
+          payload: {
+          },
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(400);
+      });
+    });
+    describe('Delete account', () => {
+      it('Check that user leaved workspace when delete account', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb,
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'testEmail@mail.ru',
+          password: 'qwerty',
+        };
+        const user = await userService.signup(userInfo);
+        const admin = await userService.signup({ name: 'admin', email: 'admin@admin.ru' });
+        const { workspace: w } = await workspaceService.createWorkspace(admin, 'test');
+        await workspaceService.addUserToWorkspace(w.id, user.id, 'user');
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: '/me/delete',
+          payload: {
+            password: 'qwerty',
+          },
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        const allWorkspaceMembers = await wdb.getWorkspaceMembers(w.id);
+        expect(allWorkspaceMembers).length(1);
+        expect(allWorkspaceMembers[0].id).equals(admin.id); 
       });
     });
   });
@@ -779,6 +896,75 @@ describe('Test routes', () => {
         });
       });
     });
+    describe('Init process, reset password and ensure, that all user sessions are discarded', () => {
+      it('For second time an error should be returned', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+        const userInfo = {
+          name: 'test',
+          email: 'admin@mail.ru',
+          password: 'old-password',
+        };
+        const user = await userService.signup(userInfo);
+        const tokens1 = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user);
+        await udb.updateUser(user.id, { is_email_verified: true });
+        const response = await server.inject({
+          method: 'POST',
+          url: `/reset-password/init`,
+          payload: {
+            email: 'admin@mail.ru'
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.payload).equals('ok');
+        expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
+        const args = stubbedMethods.sendResetPasswordToken.args[0][0];
+        expect(args[0].id).equals(user.id);
+        
+        const token = args[1];
+
+        // try to use tokens created before password resetting
+        const response2 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens1),
+        });
+        const response3 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens2),
+        });
+        expect(response2.statusCode).equals(200);
+        expect(response3.statusCode).equals(200);
+
+        const response4 = await server.inject({
+          method: 'POST',
+          url: '/reset-password',
+          payload: {
+            token,
+            password: 'new-password'
+          }
+        });
+        expect(response4.statusCode).equals(200);
+
+        // try to use tokens created after password resetting
+        const response5 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens1),
+        });
+        const response6 = await server.inject({
+          method: 'GET',
+          url: '/protected',
+          ...helpers.withAuthorization(tokens2),
+        });
+        expect(response5.statusCode).equals(401);
+        expect(response6.statusCode).equals(401);
+      });
+    });
   });
 
   describe('GET /check-token', () => {
@@ -833,6 +1019,67 @@ describe('Test routes', () => {
       expect(response.statusCode).equals(200);
       const payload = JSON.parse(response.payload);
       expect(payload.result).false();
+    });
+  });
+
+  describe('GET /detach-account/{socialNetworkService}', () => {
+    describe('Check that can\'t detach last login method', () => {
+      it('return Bad Request', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({
+          name: 'name',
+          email: 'email@email.email',
+        });
+        await udb.updateUser(user.id, {
+          auth: {
+            facebook: {
+              id: 'some-facebook-id'
+            }
+          }
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: '/detach-account/facebook',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response.statusCode).equals(400);
+        const payload = JSON.parse(response.payload);
+        expect(payload.message).equals(errorMessages.lastLoginMethod);
+      });
+    });
+    describe('Check that extenral account detached', () => {
+      it('there is no info for that external account', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({
+          name: 'name',
+          email: 'email@email.email',
+          password: 'password',
+        });
+        await udb.updateUser(user.id, {
+          auth: {
+            facebook: {
+              id: 'some-facebook-id',
+            }
+          }
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'GET',
+          url: '/detach-account/facebook',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response.statusCode).equals(200);
+
+        const updatedUser = await udb.findById(user.id);
+        expect(updatedUser.auth.facebook).not.exists();
+      });
     });
   });
 
@@ -2568,11 +2815,15 @@ describe('Test routes', () => {
    * Email verification functionality
    */
   describe('POST /vefiry/{code}', () => {
-    describe('Try to verify not existed verification code', () => {
+    describe('Try to verify not valid verification code', () => {
       it('should return fail status, reason should be "invalid code"', async () => {
+        const token = jwt.sign({
+          userId: uuid4(),
+          email: 'random@email.ru',
+        }, config.jwtSecret);
         const response = await server.inject({
           method: 'GET',
-          url: `/verify/${(await crypto.randomBytes(41)).toString('hex')}`
+          url: `/verify/${token}`
         });
         expect(response.statusCode).equals(400);
         const payload = JSON.parse(response.payload);
@@ -2582,59 +2833,32 @@ describe('Test routes', () => {
     describe('Try to verify an expired verification code', () => {
       it('should return fail status, reason should be "invalid code"', async () => {
         const { userService } = server.services();
-        const db = server.plugins['hapi-pg-promise'].db;
-        const user = await userService.signup({ email: 'admin@admin.ru' });
-        const expiredDate = new Date(Date.now() - 1);
-        const query = `
-          UPDATE verification_codes
-          SET expired_at=$1
-          WHERE user_id=$2
-          RETURNING *
-        `;
-        const record = await db.one(query, [expiredDate, user.id]);
-        const fullCode = serviceHelpers.codeConvertToUrl(record.id, record.code);
+        await userService.signup({ email: 'admin@admin.ru' });
+        const token = stubbedMethods.sendEmail.firstCall.args[0][1];
+        MockDate.set(Date.now() + 36000000000);
         const response = await server.inject({
           method: 'GET',
-          url: `/verify/${fullCode}`
+          url: `/verify/${token}`
         });
-        expect(response.statusCode).equals(400);
-        const payload = JSON.parse(response.payload);
-        expect(payload.message).equals('Verification code is not valid');
-      });
-    });
-    describe('Try to verify verification code, but email are not matched', () => {
-      it('should return fail status, reason should be "invalid code"', async () => {
-        const { userService } = server.services();
-        const db = server.plugins['hapi-pg-promise'].db;
-        const user = await userService.signup({ email: 'admin@admin.ru' });
-        await db.none('UPDATE users SET email=$1 WHERE id=$2', ['notadmin@admin.ru', user.id]);
-        const fullCode = stubbedMethods.sendEmail.firstCall.args[0][1];
-        const response = await server.inject({
-          method: 'GET',
-          url: `/verify/${fullCode}`
-        });
+        MockDate.reset();
         expect(response.statusCode).equals(400);
         const payload = JSON.parse(response.payload);
         expect(payload.message).equals('Verification code is not valid');
       });
     });
     describe('Try to verify valid verification code', () => {
-      it('should set "email_verified" true, should delete verification code', async () => {
+      it('should set "email_verified" true', async () => {
         const { userService } = server.services();
-        const db = server.plugins['hapi-pg-promise'].db;
         const user = await userService.signup({ email: 'admin@admin.ru' });
-        const fullCode = stubbedMethods.sendEmail.firstCall.args[0][1];
+        const token = stubbedMethods.sendEmail.firstCall.args[0][1];
         const response = await server.inject({
           method: 'GET',
-          url: `/verify/${fullCode}`
+          url: `/verify/${token}`
         });
         expect(response.statusCode).equals(200);
         // check is email verified
         const userUpdated = await userService.findById(user.id);
         expect(userUpdated.is_email_verified).true();
-        // check verification code is not exist
-        const verificationCode = await db.oneOrNone('SELECT * FROM verification_codes WHERE user_id=$1', [user.id]);
-        expect(verificationCode).null();
       });
     });
   });

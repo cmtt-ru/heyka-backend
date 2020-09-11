@@ -36,7 +36,7 @@ export default {
      * @returns {array}
     */
     notifications() {
-      return this.$store.state.notifications;
+      return this.$store.state.app.notifications;
     },
 
     /**

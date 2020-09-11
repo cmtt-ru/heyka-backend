@@ -402,6 +402,34 @@ describe('Test routes', () => {
     });
   });
 
+  describe('POST /me/app-settings', () => {
+    describe('Just check route', () => {
+      it('should return 200 and new updated user', async () => {
+        const {
+          userService,
+          userDatabaseService: udb
+        } = server.services();
+
+        const user = await userService.signup({ name: 'user' });
+        const tokens = await userService.createTokens(user);
+        const newAppSettings = {
+          theme: 'dark',
+        };
+
+        const response = await server.inject({
+          method: 'POST',
+          url: '/me/app-settings',
+          ...helpers.withAuthorization(tokens),
+          payload: newAppSettings,
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.appSettings).exists();
+        expect(response.result.appSettings.theme).equals(newAppSettings.theme);
+        const newUser = await udb.findById(user.id);
+        expect(newUser.app_settings.theme).equals(newAppSettings.theme);
+      });
+    });
+  });
   describe('DELETE /me', () => {
     describe('Cant delete if password is invalid', () => {
       it('should return 403 forbidden', async () => {

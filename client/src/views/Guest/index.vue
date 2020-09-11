@@ -11,7 +11,6 @@ import mediaDevices from '@classes/mediaDevices';
 import { mapState, mapGetters } from 'vuex';
 import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
 
-
 export default {
   components: {
     Janus,
@@ -104,7 +103,6 @@ export default {
 
       mediaDevices.updateDevices();
     },
-
 
     /**
      * Initialize Janus Video Room Plugin

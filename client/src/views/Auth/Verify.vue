@@ -90,14 +90,11 @@ export default {
       const res = await this.$API.auth.verify(this.JWT);
 
       console.log(res);
-      if (res !== 'ok') {
-        this.$router.push({ name: 'signIn' });
-      } else {
-        const linkData = await this.$API.auth.link();
+      const linkData = await this.$API.auth.link();
 
-        this.authlink = linkData.code;
-      }
+      this.authlink = linkData.code;
     } catch (err) {
+      this.$router.push({ name: 'signIn' });
       console.log('ERROR:', err);
     }
   },

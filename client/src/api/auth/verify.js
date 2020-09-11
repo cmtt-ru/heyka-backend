@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { setTokens } from '../tokens';
 
 /**
  * Verify email by triggering this API with JWT in email
@@ -7,6 +8,10 @@ import axios from 'axios';
  *
  * @returns {string} result data
  */
-export default function (jwt) {
-  return axios.get(`/verify/${jwt}`).then(res => res.data);
+export default async function (jwt) {
+  const res = await axios.get(`/verify/${jwt}`);
+
+  setTokens(res.data.credentials);
+
+  return res.data;
 }

@@ -17,6 +17,10 @@
     "oldMember": "Have an account?",
     "login": "Log in"
   },
+  "regSuccess":{
+    "header": "Account registered!",
+    "disclaimer": "Please check your inbox for email verification"
+  },
   "verify": {
     "header": "Email verified!",
     "openApp": "or open the app",

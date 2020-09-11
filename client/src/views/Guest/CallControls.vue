@@ -5,11 +5,13 @@
     :class="{'call-controls--row': row}"
   >
     <div class="call-controls__row">
-      <img
+      <avatar
         class="call-controls__avatar"
-        :src="speakingUserAvatar"
-        alt=""
-      >
+        :user-id="speakingUser.id"
+        :image="userAvatar(speakingUser.id, 12)"
+        :size="36"
+        rounded
+      />
 
       <div class="call-controls__col">
         <p class="call-controls__user-name">
@@ -45,16 +47,17 @@
 
 <script>
 import CallButtons from './CallButtons';
+import Avatar from '@components/Avatar';
 import { mapGetters } from 'vuex';
 
 const LAST_USER_INTERVAL = 4000;
-const AVATAR_36 = 36;
 
 let lastUserTimer = null;
 
 export default {
   components: {
     CallButtons,
+    Avatar,
   },
 
   props: {
@@ -90,7 +93,7 @@ export default {
   computed: {
     ...mapGetters({
       user: 'myInfo',
-      speakingUser: 'getSpeakingUser',
+      getSpeakingUser: 'getSpeakingUser',
       selectedChannel: 'myChannel',
       userById: 'users/getUserById',
       userAvatar: 'users/getUserAvatarUrl',
@@ -108,13 +111,13 @@ export default {
      * Speaking user avatar
      * @return {string}
      */
-    speakingUserAvatar() {
-      if (this.speakingUser) {
-        return this.userAvatar(this.speakingUser.id, AVATAR_36);
+    speakingUser() {
+      if (this.getSpeakingUser) {
+        return this.getSpeakingUser;
       }
 
       if (this.user) {
-        return this.userAvatar(this.user.id, AVATAR_36);
+        return this.user;
       }
 
       return '';
@@ -190,81 +193,81 @@ export default {
 </script>
 
 <style lang="stylus" scoped>
-  .call-controls
+.call-controls
+  display flex
+  flex-direction column
+  padding 8px
+
+  &__row
     display flex
-    flex-direction column
-    padding 8px
+    margin-bottom 8px
 
-    &__row
-      display flex
-      margin-bottom 8px
-
-      &--controls
-        flex-shrink 0
-
-      &:last-child
-        margin-bottom 0
-
-    &__col
-      margin-left 8px
-
-    &__avatar
-      display block
-      width 36px
-      height 36px
-      border-radius 4px
+    &--controls
       flex-shrink 0
 
-    &__user-name
-      margin-top 3px
+    &:last-child
+      margin-bottom 0
+
+  &__col
+    margin-left 8px
+
+  &__avatar
+    display block
+    width 36px
+    height 36px
+    border-radius 4px
+    flex-shrink 0
+
+  &__user-name
+    margin-top 3px
+    overflow hidden
+    text-overflow ellipsis
+    white-space nowrap
+
+  &__channel
+    display flex
+    color var(--text-1)
+    align-items center
+    font-size 12px
+    line-height 14px
+    margin-left -2px
+    margin-top 1px
+
+    svg
+      flex-shrink 0
+      margin-top -1px
+
+    span
+      min-width 0
       overflow hidden
       text-overflow ellipsis
       white-space nowrap
 
-    &__channel
-      display flex
-      color var(--text-1)
-      align-items center
-      font-size 12px
-      line-height 14px
-      margin-left -2px
-      margin-top 1px
+  &__button
+    margin-right 8px
+    flex-shrink 0
 
-      svg
-        flex-shrink 0
-        margin-top -1px
+    &--disconnect
+      color var(--color-0)
 
-      span
-        min-width 0
-        overflow hidden
-        text-overflow ellipsis
-        white-space nowrap
+    &:last-child
+      margin-right 0
 
-    &__button
-      margin-right 8px
-      flex-shrink 0
+  &--row
+    flex-direction row
 
-      &--disconnect
-        color var(--color-0)
+    .call-controls__row
+      margin-bottom 0
 
-      &:last-child
-        margin-right 0
+    .call-controls__row--controls
+      margin-left auto
 
-    &--row
-      flex-direction row
+.fade-enter-active,
+.fade-leave-active
+  transition all 0.25s
 
-      .call-controls__row
-        margin-bottom 0
-
-      .call-controls__row--controls
-        margin-left auto
-
-  .fade-enter-active,
-  .fade-leave-active
-    transition all 0.25s
-
-  .fade-enter,
-  .fade-leave-to
-    opacity 0
+.fade-enter,
+.fade-leave-to
+  opacity 0
 
 </style>

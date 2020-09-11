@@ -35,15 +35,17 @@ function setAxiosTokenHeader(token) {
  * @param {object} newTokens – access and refresh token
  * @returns {void}
  */
-export function setTokens(newTokens) {
+export function setTokens(newTokens, save = true) {
   tokens = newTokens;
 
   setAxiosTokenHeader(tokens.accessToken);
 
-  authFileStore.set('accessToken', tokens.accessToken);
-  authFileStore.set('accessTokenExpiredAt', tokens.accessTokenExpiredAt);
-  authFileStore.set('refreshToken', tokens.refreshToken);
-  authFileStore.set('refreshTokenExpiredAt', tokens.refreshTokenExpiredAt);
+  if (save) {
+    authFileStore.set('accessToken', tokens.accessToken);
+    authFileStore.set('accessTokenExpiredAt', tokens.accessTokenExpiredAt);
+    authFileStore.set('refreshToken', tokens.refreshToken);
+    authFileStore.set('refreshTokenExpiredAt', tokens.refreshTokenExpiredAt);
+  }
 }
 
 /**

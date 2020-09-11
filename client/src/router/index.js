@@ -51,7 +51,7 @@ const routes = [
         component: Register,
       },
       {
-        path: 'regSuccess',
+        path: 'reg-success',
         name: 'regSuccess',
         component: RegSuccess,
       },

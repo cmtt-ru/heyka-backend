@@ -10,6 +10,8 @@ const JSONStream = require('json-stream');
 async function startWatcher () {
   try {
     const server = await createServer();
+    
+    console.log(`Server created`);
 
     const {
       janusWorkspaceService,
@@ -22,6 +24,8 @@ async function startWatcher () {
     // collect all dns-records
     const dnsRecords = (await cf.dnsRecords.browse(config.cloudflare.dnsZoneId)).result
       .filter(record => record.type === 'A' && record.name.includes('.infr.heyka.io'));
+
+    console.log(`Collected all janus nodes`, dnsRecords);
 
     // check domain that should be added
     await Promise.all(
@@ -41,6 +45,8 @@ async function startWatcher () {
       })
     );
 
+    console.log(`Added domain name servers`);
+
     // check domain that should be deleted
     await Promise.all(
       dnsRecords.map(async record => {
@@ -50,6 +56,8 @@ async function startWatcher () {
         }
       })
     );
+
+    console.log(`Deleted domain name servers`);
 
     // subscribe for further changes
     const janusStream = await janusWorkspaceService.getNodeUpdatesStream();
@@ -65,7 +73,10 @@ async function startWatcher () {
       });
     }
 
-    server.start();  
+    console.log(`Bind handlers on stream data from janus nodes`);
+
+    server.start();
+    
     console.log(`Server started at ${server.info.uri}`);
   } catch(e) {
     console.error(e);

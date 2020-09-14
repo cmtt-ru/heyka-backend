@@ -5,7 +5,7 @@ const config = require('../config');
 const cf = require('cloudflare')({
   token: config.cloudflare.dnsAPIKey,
 });
-const SYNC_INTERVAL = 60 * 1000;
+const SYNC_INTERVAL = 5 * 60 * 1000; // every 5 minutes
 
 async function syncDomainNamesWithJanusNodes(janusWorkspaceService) {
   // collect janus nodes
@@ -64,7 +64,7 @@ async function startWatcher () {
     await syncDomainNamesWithJanusNodes(janusWorkspaceService);
 
     let processing = false;
-    setTimeout(async () => {
+    setInterval(async () => {
       if (!processing) {
         processing = true;
         await syncDomainNamesWithJanusNodes(janusWorkspaceService);

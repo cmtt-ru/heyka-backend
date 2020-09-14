@@ -51,6 +51,14 @@ async function syncDomainNamesWithJanusNodes(janusWorkspaceService) {
   console.log(`Deleted domain name servers`);
 }
 
+async function startSyncLoop(janusWorkspaceService) {
+  // eslint-disable-next-line
+  while (true) {
+    await new Promise(resolve => setTimeout(resolve, SYNC_INTERVAL));
+    await syncDomainNamesWithJanusNodes(janusWorkspaceService);
+  }
+}
+
 async function startWatcher () {
   try {
     const server = await createServer();
@@ -63,14 +71,7 @@ async function startWatcher () {
 
     await syncDomainNamesWithJanusNodes(janusWorkspaceService);
 
-    let processing = false;
-    setInterval(async () => {
-      if (!processing) {
-        processing = true;
-        await syncDomainNamesWithJanusNodes(janusWorkspaceService);
-        processing = false;
-      }
-    }, SYNC_INTERVAL);
+    startSyncLoop(janusWorkspaceService);
 
     server.start();
     

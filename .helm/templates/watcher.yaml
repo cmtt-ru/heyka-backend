@@ -1,0 +1,56 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}-watcher
+  labels:
+    app: {{ .Chart.Name }}-watcher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Chart.Name }}-watcher
+  template:
+    metadata:
+      labels:
+        app: {{ .Chart.Name }}-watcher
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/node: ""
+      serviceAccountName: {{ .Chart.Name }}-sa
+      imagePullSecrets:
+        - name: registrysecret
+      containers:
+        - name: backend
+{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
+          command: ["/bin/sh"]
+          args:
+            - -c
+            - "node scripts/update_domain_names.js"
+          workingDir: /app/
+          resources:
+            requests:
+              memory: {{ pluck .Values.global.env .Values.app.requests.memory | first | default .Values.app.requests.memory._default | quote }}
+              cpu: {{ pluck .Values.global.env .Values.app.requests.cpu | first | default .Values.app.requests.cpu._default | quote }}
+            limits:
+              memory: {{ pluck .Values.global.env .Values.app.limits.memory | first | default .Values.app.limits.memory._default | quote }}
+          env:
+{{ tuple "backend" . | include "werf_container_env" | indent 12 }}
+{{- include "backend_env_watcher" . | indent 12 }}
+          ports:
+            - containerPort: 5000
+              name: web
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: web
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: web
+              scheme: HTTP
+            initialDelaySeconds: 15
+            periodSeconds: 3

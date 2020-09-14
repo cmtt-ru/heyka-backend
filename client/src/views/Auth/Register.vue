@@ -143,6 +143,8 @@ export default {
         }
 
         console.log(res);
+
+        this.$router.push({ name: 'regSuccess' });
       } catch (err) {
         if (err.response.data.message === errorMessages.emailExists) {
           const notification = {

@@ -49,7 +49,7 @@ export default {
   },
   data() {
     return {
-      version: '1.1.2',
+      version: '1.1.5',
       pingInterval: null,
     };
   },

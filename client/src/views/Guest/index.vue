@@ -78,30 +78,34 @@ export default {
      * @returns {void}
      */
     listenDevices() {
-      mediaDevices.on('change', (devices) => {
-        console.log('change', devices);
-        this.$store.commit('app/SET_DEVICES', devices);
+      return new Promise((resolve, reject) => {
+        mediaDevices.on('change', (devices) => {
+          console.log('change', devices);
+          this.$store.commit('app/SET_DEVICES', devices);
 
-        /* re-set default devices if previous id's are not found */
-        const data = { ...this.selectedDevices };
+          /* re-set default devices if previous id's are not found */
+          const data = { ...this.selectedDevices };
 
-        if (!this.devices.speakers.map(el => el.id).includes(this.selectedDevices.speaker)) {
-          data.speaker = 'default';
-        }
-        if (!this.devices.microphones.map(el => el.id).includes(this.selectedDevices.microphone)) {
-          data.microphone = 'default';
-        }
-        if (!this.devices.cameras.map(el => el.id).includes(this.selectedDevices.camera)) {
-          if (this.devices.cameras[0]) {
-            data.camera = this.devices.cameras[0].id;
-          } else {
-            data.camera = '';
+          if (!this.devices.speakers.map(el => el.id).includes(this.selectedDevices.speaker)) {
+            data.speaker = 'default';
           }
-        }
-        this.$store.dispatch('app/setSelectedDevices', data);
-      });
+          if (!this.devices.microphones.map(el => el.id).includes(this.selectedDevices.microphone)) {
+            data.microphone = 'default';
+          }
+          if (!this.devices.cameras.map(el => el.id).includes(this.selectedDevices.camera)) {
+            if (this.devices.cameras[0]) {
+              data.camera = this.devices.cameras[0].id;
+            } else {
+              data.camera = '';
+            }
+          }
+          this.$store.dispatch('app/setSelectedDevices', data);
 
-      mediaDevices.updateDevices();
+          resolve();
+        });
+
+        mediaDevices.updateDevices();
+      });
     },
 
     /**
@@ -121,7 +125,7 @@ export default {
      * @returns {Promise<void>}
      */
     async joinHandler() {
-      this.listenDevices();
+      await this.listenDevices();
       await this.joinToChannel();
       await this.initJanusVideoRoom();
       this.$router.replace({ name: 'guest-grid' });

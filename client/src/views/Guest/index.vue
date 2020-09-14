@@ -59,7 +59,7 @@ export default {
         await this.$store.dispatch('initial');
         console.log('auth success');
       } catch (e) {
-        console.error(e);
+        this.$router.replace({ name: 'landing' }).catch(() => {});
       }
     },
 

@@ -42,9 +42,12 @@ mockery.registerMock(
     getJanus () {
       return {
         url: 'http://localhost',
-        publicUrl: 'http://localhost',
+        publicHttpsUrl: 'https://localhost',
+        publicWssUrl: 'wss://localhost',
         apiPath: 'janus',
         apiPort: 8088,
+        publicHttpsPort: 8089,
+        publicWssPort: 8989,
         adminPath: 'admin',
         adminPort: 7088,
         adminSecret: 'wowwhattheheck',

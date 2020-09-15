@@ -4,7 +4,7 @@ require('dotenv').config();
 
 module.exports = {
   port: process.env.PORT || 5000,
-  host: process.env.HOST || 'localhost',
+  host: process.env.HOST || '0.0.0.0',
   jwtSecret: process.env.JWT_SECRET || 'default_jwt_token',
   publicHostname: process.env.DEPLOYMENT_ENV === 'stage'
     ? 'heyka.app'

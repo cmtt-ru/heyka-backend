@@ -73,6 +73,16 @@ socket.on(`socket-api-error-${transaction}`, error => {
 
 Чтобы сервер посылал нижеприведенные события, нужно для начала [аутентифицировать](#аутентификация) сокет соединение.
 
+## Воркспейсы
+
+### worskpace-updated (обновлена информация о воркспейсе)
+
+```
+socket.on('workspace-updated', data => {
+  // data.workspace: {WorkspaceSchema}
+})
+```
+
 ## Каналы
 
 ### channel-created (канал создан)

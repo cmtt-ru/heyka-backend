@@ -25,4 +25,6 @@ new Vue({
  * Dummy polyfill for `setSinkId` method for unsupported browsers e.g. Safari
  * @returns {void}
  */
-Audio.prototype.setSinkId = () => {};
+if (Audio.setSinkId === undefined) {
+  Audio.prototype.setSinkId = () => {};
+}

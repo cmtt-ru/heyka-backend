@@ -11,6 +11,6 @@ export default function logout(redirectToAuth = true) {
   clearTokens();
 
   if (redirectToAuth) {
-    router.replace({ name: 'auth' });
+    router.replace({ name: 'signIn' });
   }
 }

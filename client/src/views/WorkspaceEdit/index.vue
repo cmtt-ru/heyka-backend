@@ -83,7 +83,7 @@ export default {
      * @returns {void}
      */
     setNewAvatar(fileId) {
-      console.log(fileId);
+      this.avatar = fileId;
     },
 
     /**
@@ -91,7 +91,26 @@ export default {
      * @returns {Promise<void>}
      */
     async createHandler() {
+      if (!this.name || !this.avatar) {
+        const notification = {
+          data: {
+            text: 'Some fields are empty',
+          },
+        };
 
+        await this.$store.dispatch('app/addNotification', notification);
+
+        return;
+      }
+
+      try {
+        await this.$API.workspace.create({
+          avatarFileId: this.avatar,
+          name: this.name,
+        });
+      } catch (e) {
+        console.error(e);
+      }
     },
   },
 };

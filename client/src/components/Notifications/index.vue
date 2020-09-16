@@ -56,7 +56,7 @@ export default {
      * @returns {void}
     */
     closeHandler(id) {
-      this.$store.commit('REMOVE_NOTIFICATION', id);
+      this.$store.commit('app/REMOVE_NOTIFICATION', id);
     },
   },
 };

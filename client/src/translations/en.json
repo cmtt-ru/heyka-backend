@@ -10,8 +10,25 @@
     "newMember": "Not a member?",
     "signup": "Sign up now"
   },
+  "register": {
+    "welcome": "Please register",
+    "name": "Username",
+    "register": "Register",
+    "oldMember": "Have an account?",
+    "login": "Log in"
+  },
+  "regSuccess":{
+    "header": "Account registered!",
+    "disclaimer": "Please check your inbox for email verification"
+  },
+  "verify": {
+    "header": "Email verified!",
+    "openApp": "or open the app",
+    "download": "Download Heyka",
+    "createWorkspace": "Create workspace"
+  },
   "reset": {
-    "header": "PASSWORD RESET",
+    "header": "Password reset",
     "disclaimer": "Please enter your new password below to access your account",
     "button": "Reset",
     "saved": "New password saved!",

@@ -11,9 +11,6 @@ import mediaDevices from '@classes/mediaDevices';
 import { mapState, mapGetters } from 'vuex';
 import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
 
-// const AUTH_CODE = 'be0022025d014923a114ffcaee138b772162c39cfb959d061cf8d2c3eb395ae1e49ea3c2a12576d57b';
-// const CHANNEL_ID = '3e6e738c-0317-4037-baf6-0eb8207a5939';
-
 export default {
   components: {
     Janus,
@@ -62,7 +59,7 @@ export default {
         await this.$store.dispatch('initial');
         console.log('auth success');
       } catch (e) {
-        console.error(e);
+        this.$router.replace({ name: 'landing' }).catch(() => {});
       }
     },
 
@@ -81,49 +78,34 @@ export default {
      * @returns {void}
      */
     listenDevices() {
-      mediaDevices.on('change', (devices) => {
-        console.log('change', devices);
-        this.$store.commit('app/SET_DEVICES', devices);
+      return new Promise((resolve, reject) => {
+        mediaDevices.on('change', (devices) => {
+          console.log('change', devices);
+          this.$store.commit('app/SET_DEVICES', devices);
 
-        /* re-set default devices if previous id's are not found */
-        const data = { ...this.selectedDevices };
+          /* re-set default devices if previous id's are not found */
+          const data = { ...this.selectedDevices };
 
-        if (!this.devices.speakers.map(el => el.id).includes(this.selectedDevices.speaker)) {
-          data.speaker = 'default';
-        }
-        if (!this.devices.microphones.map(el => el.id).includes(this.selectedDevices.microphone)) {
-          data.microphone = 'default';
-        }
-        if (!this.devices.cameras.map(el => el.id).includes(this.selectedDevices.camera)) {
-          if (this.devices.cameras[0]) {
-            data.camera = this.devices.cameras[0].id;
-          } else {
-            data.camera = '';
+          if (!this.devices.speakers.map(el => el.id).includes(this.selectedDevices.speaker)) {
+            data.speaker = 'default';
           }
-        }
-        this.$store.dispatch('app/setSelectedDevices', data);
-      });
+          if (!this.devices.microphones.map(el => el.id).includes(this.selectedDevices.microphone)) {
+            data.microphone = 'default';
+          }
+          if (!this.devices.cameras.map(el => el.id).includes(this.selectedDevices.camera)) {
+            if (this.devices.cameras[0]) {
+              data.camera = this.devices.cameras[0].id;
+            } else {
+              data.camera = '';
+            }
+          }
+          this.$store.dispatch('app/setSelectedDevices', data);
 
-      mediaDevices.updateDevices();
-    },
-
-    /**
-     * Get screen sharing stream
-     * @returns {stream}
-     */
-    async getScreenStream() {
-      let captureStream = null;
-
-      try {
-        captureStream = await navigator.mediaDevices.getDisplayMedia({
-          audio: false,
-          video: true,
+          resolve();
         });
-      } catch (err) {
-        console.error('Error: ' + err);
-      }
 
-      return captureStream;
+        mediaDevices.updateDevices();
+      });
     },
 
     /**
@@ -143,7 +125,7 @@ export default {
      * @returns {Promise<void>}
      */
     async joinHandler() {
-      this.listenDevices();
+      await this.listenDevices();
       await this.joinToChannel();
       await this.initJanusVideoRoom();
       this.$router.replace({ name: 'guest-grid' });

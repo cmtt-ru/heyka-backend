@@ -6,6 +6,9 @@ const Landing = () => import(/* webpackChunkName: "main" */ '../views/Landing.vu
 const Auth = () => import(/* webpackChunkName: "main" */ '../views/Auth/Auth.vue');
 const SignIn = () => import(/* webpackChunkName: "main" */ '../views/Auth/SignIn.vue');
 const Reset = () => import(/* webpackChunkName: "main" */ '../views/Auth/Reset.vue');
+const Register = () => import(/* webpackChunkName: "main" */ '../views/Auth/Register.vue');
+const RegSuccess = () => import(/* webpackChunkName: "main" */ '../views/Auth/RegSuccess.vue');
+const VerifyEmail = () => import(/* webpackChunkName: "main" */ '../views/Auth/Verify.vue');
 
 const SocialLogin = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialLogin.vue');
 const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Auth/SocialCallback.vue');
@@ -36,13 +39,27 @@ const routes = [
    */
   {
     path: '/auth',
-    name: 'auth',
     component: Auth,
     children: [
       {
         path: '',
         name: 'signIn',
         component: SignIn,
+      },
+      {
+        path: 'register',
+        name: 'register',
+        component: Register,
+      },
+      {
+        path: 'reg-success',
+        name: 'regSuccess',
+        component: RegSuccess,
+      },
+      {
+        path: 'email/verify',
+        name: 'verify',
+        component: VerifyEmail,
       },
       {
         path: 'social/callback',

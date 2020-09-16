@@ -22,6 +22,7 @@ const stubbedMethods = {
   getConnectingSlackUrl: sinon.stub(),
 
   uploadImageFromUrl: sinon.stub(),
+  uploadS3FromUrl: sinon.stub(),
 };
 
 // mock services that make requests to external APIs
@@ -41,9 +42,12 @@ mockery.registerMock(
     getJanus () {
       return {
         url: 'http://localhost',
-        publicUrl: 'http://localhost',
+        publicHttpsUrl: 'https://localhost',
+        publicWssUrl: 'wss://localhost',
         apiPath: 'janus',
         apiPort: 8088,
+        publicHttpsPort: 8089,
+        publicWssPort: 8989,
         adminPath: 'admin',
         adminPort: 7088,
         adminSecret: 'wowwhattheheck',
@@ -112,6 +116,9 @@ mockery.registerMock(
     }
     uploadS3() {
       return '794af87c-195d-c9ee-40d6-14131c4c43a6.png';
+    }
+    uploadS3FromUrl() {
+      stubbedMethods.uploadS3FromUrl(...arguments);
     }
     getImgproxyImageSet() {
       return { image32x32: 'https://l.osn.io/794af87c', image64x64: 'https://l.osn.io/794af87c' };

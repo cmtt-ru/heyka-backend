@@ -71,5 +71,14 @@
       "fullscreen": "Fullscreen",
       "mute": "Mute for all"
     }
+  },
+  "workspace": {
+    "userSettings": {
+      "edit": "Edit profile",
+      "upload": "Upload",
+      "login": "Login settings",
+      "saved": "saved!",
+      "bigImage": "We can't upload files larger than"
+    }
   }
 }

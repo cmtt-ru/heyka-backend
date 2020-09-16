@@ -2,8 +2,12 @@
   <div class="layout">
     <ui-header />
 
-    <div class="layout__wrapper">
-      <h1>Name your workspace</h1>
+    <!-- Create state -->
+    <div
+      v-if="!finish"
+      class="layout__wrapper layout__wrapper--create"
+    >
+      <h1>{{ texts.title }}</h1>
 
       <div class="form l-mt-24">
         <ui-image
@@ -15,7 +19,7 @@
         <ui-input
           v-model="name"
           class="l-ml-24"
-          placeholder="Workspace"
+          :placeholder="texts.namePlaceHolder"
         />
       </div>
 
@@ -25,8 +29,46 @@
         class="l-mt-24"
         @click="createHandler"
       >
-        Create
+        {{ texts.createButton }}
       </ui-button>
+    </div>
+
+    <!-- Finish state -->
+    <div
+      v-if="finish"
+      class="layout__wrapper layout__wrapper--finish"
+    >
+      <h1>{{ name }} {{ texts.finish }}</h1>
+
+      <ui-button
+        :type="1"
+        class="l-mt-24"
+        @click="openAppHandler"
+      >
+        {{ texts.openApp }}
+      </ui-button>
+
+      <div class="link-wrapper l-ml-8">
+        <ui-button
+          v-show="!linkCopied"
+          :type="1"
+          class="link"
+          wide
+          @click="copyLinkHandler"
+        >
+          {{ texts.copy }}
+        </ui-button>
+
+        <ui-button
+          v-show="linkCopied"
+          :type="5"
+          class="link"
+          wide
+          @click="copyLinkHandler"
+        >
+          {{ texts.copied }}
+        </ui-button>
+      </div>
     </div>
   </div>
 </template>
@@ -48,6 +90,9 @@ export default {
     return {
       name: '',
       avatar: '',
+      finish: false,
+      linkCopied: false,
+      newWorkspace: null,
     };
   },
 
@@ -58,6 +103,14 @@ export default {
      */
     authCode() {
       return this.$route.params.code;
+    },
+
+    /**
+     * Get needed texts from I18n-locale file
+     * @returns {object}
+     */
+    texts() {
+      return this.$t('workspace.create');
     },
   },
 
@@ -104,12 +157,44 @@ export default {
       }
 
       try {
-        await this.$API.workspace.create({
+        const { workspace } = await this.$API.workspace.create({
           avatarFileId: this.avatar,
           name: this.name,
         });
+
+        this.newWorkspace = workspace;
+
+        this.finish = true;
       } catch (e) {
         console.error(e);
+      }
+    },
+
+    /**
+     * Open Heyka with specific workspace
+     * @returns {void}
+     */
+    openAppHandler() {
+      const deepLink = `heyka://workspace/${this.newWorkspace.id}`;
+
+      window.open(deepLink);
+    },
+
+    /**
+     * Copy invite link handler
+     * @returns {Promise<void>}
+     */
+    async copyLinkHandler() {
+      try {
+        const codeData = await this.$API.workspace.inviteByCode(this.newWorkspace.id);
+
+        const baseUrl = IS_DEV ? process.env.VUE_APP_DEV_URL : process.env.VUE_APP_PROD_URL;
+        const link = `${baseUrl}/auth?invite=${codeData.code}`;
+
+        navigator.clipboard.writeText(link);
+        this.linkCopied = true;
+      } catch (err) {
+        console.error(err);
       }
     },
   },
@@ -130,4 +215,8 @@ export default {
       .form
         display flex
         align-items center
+
+      .link-wrapper
+        display inline-block
+        width 122px
 </style>

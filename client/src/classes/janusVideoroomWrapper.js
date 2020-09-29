@@ -17,6 +17,7 @@ const ERROR_CODES = {
 /**
  * @typedef JanusOptions
  * @property {string} options.janusServerUrl Janus server url
+ * @property {string} options.janusWsServerUrl Janus websocket server url
  * @property {string} options.janusAuthToken Janus auth token
  * @property {string} options.channelAuthToken Auth token for Janus channel
  * @property {number} options.videoRoomId Id of video room

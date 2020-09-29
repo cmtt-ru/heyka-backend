@@ -66,7 +66,7 @@
 
 <script>
 import UiButton from '@components/UiButton';
-import UiHeader from '@components/UiHeader';
+import UiHeader from '@/components/UiHeader';
 import { UiInput, UiForm } from '@components/Form';
 
 export default {

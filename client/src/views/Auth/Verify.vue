@@ -51,7 +51,7 @@
 
 <script>
 import UiButton from '@components/UiButton';
-import UiHeader from '@components/UiHeader';
+import UiHeader from '@/components/UiHeader';
 
 export default {
   components: {

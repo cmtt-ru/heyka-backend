@@ -27,9 +27,9 @@
 </template>
 
 <script>
-import Workspaces from '@components/Manage/Workspaces';
-import Users from '@components/Manage/Users';
-import UiHeader from '@components/UiHeader';
+import Workspaces from '@/components/Manage/Workspaces';
+import Users from '@/components/Manage/Users';
+import UiHeader from '@/components/UiHeader';
 
 export default {
   components: {

@@ -5,7 +5,7 @@
         width="200"
         height="200"
         alt="Vue logo"
-        src="../assets/logo.png"
+        :src="logo"
       >
       <p class="title">
         Heyka {{ version }}
@@ -37,6 +37,7 @@
 
 <script>
 import { authFileStore } from '@/store/localStore';
+import logo from '@assets/logo.png';
 
 // eslint-disable-next-line no-magic-numbers
 const PORTS = [9615, 48757, 48852, 49057, 49086];
@@ -51,6 +52,7 @@ export default {
     return {
       version: '1.1.5',
       pingInterval: null,
+      logo,
     };
   },
   computed: {

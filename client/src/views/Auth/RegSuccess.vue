@@ -17,7 +17,7 @@
 </template>
 
 <script>
-import UiHeader from '@components/UiHeader';
+import UiHeader from '@/components/UiHeader';
 
 export default {
   components: {

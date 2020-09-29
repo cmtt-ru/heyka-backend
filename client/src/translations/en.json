@@ -71,5 +71,23 @@
       "fullscreen": "Fullscreen",
       "mute": "Mute for all"
     }
+  },
+  "workspace": {
+    "userSettings": {
+      "edit": "Edit profile",
+      "upload": "Upload",
+      "login": "Login settings",
+      "saved": "saved!",
+      "bigImage": "We can't upload files larger than"
+    },
+    "create": {
+      "title": "Name your workspace",
+      "namePlaceHolder": "Name",
+      "createButton": "Create",
+      "finish": "was created, now you can open it and invite new members",
+      "openApp": "Open app",
+      "copy": "Copy invite link",
+      "copied": "Copied!"
+    }
   }
 }

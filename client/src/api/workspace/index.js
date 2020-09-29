@@ -8,6 +8,7 @@ import inviteBySlack from './inviteBySlack';
 import joinByCode from './joinByCode';
 import leaveWorkspace from './leaveWorkspace';
 import privateTalk from './privateTalk';
+import create from './create';
 
 export default {
   checkCode,
@@ -20,4 +21,5 @@ export default {
   joinByCode,
   leaveWorkspace,
   privateTalk,
+  create,
 };

@@ -77,7 +77,7 @@ data:
                 index index.html;
             }
 
-            location ~* ^/(auth|guest|manage|workspace) {
+            location ~* ^/(auth|guest|manage|ws) {
                 set $log_location "auth";
                 try_files $uri /app.html;
             }

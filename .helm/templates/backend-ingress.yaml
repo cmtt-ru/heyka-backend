@@ -59,7 +59,7 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
-      - path: /(auth|guest|manage)
+      - path: /(auth|guest|manage|workspace)
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
@@ -75,7 +75,7 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static
-      - path: /(auth|guest|manage)
+      - path: /(auth|guest|manage|workspace)
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: static

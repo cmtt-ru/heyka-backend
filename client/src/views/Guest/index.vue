@@ -137,15 +137,6 @@ export default {
 
 <style lang="stylus" scoped>
   .layout__wrapper
-    --app-bg #000000
-    --text-0 #E5E5E5
-    --text-1 #7D7F81
-    --icon-0 #FFFFFF
-    --icon-2 #B1B3B5
-    --button-bg-5 #191919
-    --button-bg-6 #262626
-    --button-bg-7 #333333
-    --item-bg-hover #333333
     overflow auto
     background var(--app-bg)
     width 100vw

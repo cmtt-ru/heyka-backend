@@ -52,6 +52,17 @@ export default {
   },
 
   /**
+   * Set app theme
+   *
+   * @param {AppState} state – module app state
+   * @param {string} theme – new theme identifier
+   * @constructor
+   */
+  SET_THEME(state, theme) {
+    state.theme = theme;
+  },
+
+  /**
    * Set selected devices
    *
    * @param {AppState} state – module app state

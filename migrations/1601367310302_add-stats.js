@@ -17,6 +17,8 @@ exports.up = (pgm) => {
     mean_bitrate: 'real',
     janus_server_url: 'varchar(255)',
     connection_info: 'jsonb',
+    trigger_type: 'varchar(255)',
+    additional_info: 'jsonb',
     created_at: 'timestamptz',
   });
 };

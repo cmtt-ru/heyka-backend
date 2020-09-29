@@ -2,6 +2,12 @@ import localStorage from 'local-storage';
 
 const accessor = localStorage.bind({});
 
+/**
+ * get function with default value
+ * @param {string} key - key for local storage
+ * @param {object} defaultvalue default value
+ * @returns {object}
+ */
 function get(key, defaultvalue = null) {
   let item = localStorage.get(key);
 
@@ -12,6 +18,11 @@ function get(key, defaultvalue = null) {
   return item;
 }
 
+/**
+ * check if local storage has item at 'key'
+ * @param {string} key - key for local storage
+ * @returns {boolean}
+ */
 function has(key) {
   if (localStorage.get(key) === null) {
     return false;

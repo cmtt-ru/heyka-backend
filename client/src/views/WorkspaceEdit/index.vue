@@ -126,7 +126,7 @@ export default {
     async authorize() {
       if (this.authCode) {
         await this.$API.auth.signinByLink(this.authCode);
-        await this.$router.replace('/workspace/create');
+        await this.$router.replace('/ws/create');
       }
     },
 

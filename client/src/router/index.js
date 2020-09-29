@@ -103,7 +103,7 @@ const routes = [
    * Create & edit workspace
    */
   {
-    path: '/workspace',
+    path: '/ws',
     component: WorkspaceEdit,
     children: [
       {

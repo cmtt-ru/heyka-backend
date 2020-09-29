@@ -22,5 +22,5 @@ exports.up = (pgm) => {
 };
 
 exports.down = (pgm) => {
-  pgm.dropTable('users', { cascade: true });
+  pgm.dropTable('stats', { cascade: true });
 };

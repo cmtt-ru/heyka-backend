@@ -113,7 +113,7 @@ const routes = [
       },
       {
         path: 'grid',
-        name: 'guest-grid',
+        name: 'grid',
         component: GuestGrid,
       },
       {

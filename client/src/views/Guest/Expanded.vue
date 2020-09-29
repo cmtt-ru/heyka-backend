@@ -75,7 +75,7 @@ import Avatar from '@components/Avatar';
 import { mapGetters, mapState } from 'vuex';
 import Tablet from '@components/Drawing/Tablet';
 import mediaCapturer from '@classes/mediaCapturer';
-import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
+import janusVideoroomWrapper from '@sdk/classes/janusVideoroomWrapper';
 
 /* variable for watching page size */
 let __resizeObserver = {};

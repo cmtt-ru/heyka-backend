@@ -13,6 +13,8 @@ Vue.prototype.$API = API;
 Vue.component('SvgIcon', SvgIcon);
 Vue.prototype.$themes = themes;
 
+themes.manualSetTheme('light'); // TODO remove if dark theme can be selected
+
 Vue.config.productionTip = false;
 
 new Vue({

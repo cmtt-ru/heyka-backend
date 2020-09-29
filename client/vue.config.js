@@ -55,7 +55,7 @@ module.exports = {
     i18n: {
       locale: 'en',
       fallbackLocale: 'en',
-      localeDir: 'translations',
+      localeDir: 'sdk/translations',
       enableInSFC: true,
     },
     svgSprite: {

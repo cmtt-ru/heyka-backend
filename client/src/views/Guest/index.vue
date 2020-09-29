@@ -7,9 +7,9 @@
 
 <script>
 import Janus from '@components/Janus';
-import mediaDevices from '@classes/mediaDevices';
+import mediaDevices from '@sdk/classes/mediaDevices';
 import { mapState, mapGetters } from 'vuex';
-import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
+import janusVideoroomWrapper from '@sdk/classes/janusVideoroomWrapper';
 
 export default {
   components: {

@@ -16,6 +16,7 @@ const IMAGE_EXAMPLE = Buffer.from('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgA
 const errorMessages = require('../lib/error_messages');
 const jwt = require('jsonwebtoken');
 const generateFakeConnection = (userId, workspaceId) => ({
+  expiredAt: Date.now() + 15000,
   connectionId: uuid4(),
   userId,
   workspaceId,

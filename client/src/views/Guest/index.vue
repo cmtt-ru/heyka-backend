@@ -56,7 +56,6 @@ export default {
      */
     async authorize() {
       try {
-        console.log('inviteToken', this.inviteToken);
         await this.$API.channel.join(this.inviteToken, {
           name: 'Guest',
         });

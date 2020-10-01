@@ -1517,9 +1517,9 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(adminTokens)
         });
         expect(response.statusCode).equals(200);
-        expect(response.result.find(i => i.code === codes[0].code.code)).exists();
-        expect(response.result.find(i => i.code === codes[1].code.code)).exists();
-        expect(response.result.find(i => i.code === codes[2].code.code)).exists();
+        expect(response.result.find(i => i.code === codes[0])).exists();
+        expect(response.result.find(i => i.code === codes[1])).exists();
+        expect(response.result.find(i => i.code === codes[2])).exists();
       });
     });
   });
@@ -2277,7 +2277,7 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).equals(200);
         const payload = JSON.parse(response.payload);
-        expect(payload.token).exists().length(82);
+        expect(payload.token).exists();
       });
     });
   });
@@ -2466,7 +2466,7 @@ describe('Test routes', () => {
         const body = JSON.parse(response.payload);
         expect(body.code).exists();
         //ensure that it is a guid + code
-        expect(body.code).match(/^[0-9a-f]{82}$/i);
+        expect(body.code).exists();
       });
     });
   });
@@ -2486,13 +2486,13 @@ describe('Test routes', () => {
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         // make invite code is expired
         const now = new Date(Date.now() - 1000);
-        await server.plugins['hapi-pg-promise'].db.none('UPDATE invites SET expired_at=$1 WHERE id=$2', [
+        await server.plugins['hapi-pg-promise'].db.none('UPDATE invites SET expired_at=$1 WHERE code=$2', [
           now,
-          code.code.id
+          code
         ]);
         const response = await server.inject({
           method: 'GET',
-          url: `/check/${code.fullCode}`
+          url: `/check/${code}`
         });
         expect(response.statusCode).to.be.equal(400);
       });
@@ -2512,7 +2512,7 @@ describe('Test routes', () => {
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         const response = await server.inject({
           method: 'GET',
-          url: `/check/${code.fullCode}`
+          url: `/check/${code}`
         });
         expect(response.statusCode).to.be.equal(200);
         const body = JSON.parse(response.payload);
@@ -2540,13 +2540,13 @@ describe('Test routes', () => {
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         // make invite code is expired
         const now = new Date(Date.now() - 1000);
-        await server.plugins['hapi-pg-promise'].db.none('UPDATE invites SET expired_at=$1 WHERE id=$2', [
+        await server.plugins['hapi-pg-promise'].db.none('UPDATE invites SET expired_at=$1 WHERE code=$2', [
           now,
-          code.code.id
+          code
         ]);
         const response = await server.inject({
           method: 'POST',
-          url: `/join/${code.fullCode}`,
+          url: `/join/${code}`,
           headers: {
             'Authorization': `Bearer ${tokens.accessToken}`
           },
@@ -2574,7 +2574,7 @@ describe('Test routes', () => {
         const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
         const response = await server.inject({
           method: 'POST',
-          url: `/join/${code.fullCode}`,
+          url: `/join/${code}`,
           headers: {
             'Authorization': `Bearer ${tokens.accessToken}`
           },

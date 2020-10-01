@@ -57,7 +57,7 @@
             {{ texts.oldMember }}
           </div>
           <router-link
-            :to="{ name: 'signIn'}"
+            :to="{ name: 'auth'}"
             class="info__link"
           >
             {{ texts.login }}

@@ -50,7 +50,7 @@ export default {
    * @returns {void}
    */
   removeNotification({ commit }, id) {
-    commit('REMOVE_NOTIFICATION', id);
+    commit('app/REMOVE_NOTIFICATION', id);
   },
 
   /**

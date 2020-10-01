@@ -1,5 +1,8 @@
 <template>
-  <div class="layout__wrapper">
+  <div
+    class="layout__wrapper"
+    :style="$themes.getColors('popover')"
+  >
     <janus />
     <router-view @join="joinHandler" />
   </div>
@@ -53,6 +56,7 @@ export default {
      */
     async authorize() {
       try {
+        console.log('inviteToken', this.inviteToken);
         await this.$API.channel.join(this.inviteToken, {
           name: 'Guest',
         });
@@ -128,7 +132,7 @@ export default {
       await this.listenDevices();
       await this.joinToChannel();
       await this.initJanusVideoRoom();
-      this.$router.replace({ name: 'guest-grid' });
+      this.$router.replace({ name: 'grid' });
     },
 
   },

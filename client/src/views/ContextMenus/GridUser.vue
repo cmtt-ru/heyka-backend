@@ -84,7 +84,10 @@ export default {
       if (!this.isStreaming) {
         return;
       }
-      this.$router.push({ path: `/call-window/expanded/${this.userId}` });
+      this.$router.push({
+        name: 'expanded',
+        params: { id: this.userId },
+      });
     },
   },
 };

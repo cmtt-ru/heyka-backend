@@ -106,7 +106,7 @@ export default {
     const res = await this.$API.auth.checkWebToken(this.JWT);
 
     if (res.result === false) {
-      this.$router.push({ name: 'signIn' });
+      this.$router.push({ name: 'auth' });
     }
   },
 

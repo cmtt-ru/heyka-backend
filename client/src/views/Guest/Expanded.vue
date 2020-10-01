@@ -212,7 +212,7 @@ export default {
      * @returns {void}
      */
     showGridHandler() {
-      this.$router.replace({ name: 'guest-grid' });
+      this.$router.replace({ name: 'grid' });
     },
 
     handleVideoStream() {

@@ -94,7 +94,7 @@ export default {
 
       this.authlink = linkData.code;
     } catch (err) {
-      this.$router.push({ name: 'signIn' });
+      this.$router.push({ name: 'auth' });
       console.log('ERROR:', err);
     }
   },

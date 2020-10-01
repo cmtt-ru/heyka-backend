@@ -2348,6 +2348,62 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('Testing updating workspace', () => {
+    describe('Workspace is updated', () => {
+      it('All users of that workspace should be notified', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user1 = await userService.signup({ name: 'user1' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const { workspace: w1 } = await workspaceService.createNewWorkspace(user1.id, {
+          name: 'workspace1',
+        });
+        const { workspace: w2 } = await workspaceService.createNewWorkspace(user2.id, {
+          name: 'workspace2',
+        });
+        
+        // authenticate user1 and user2 to sockets
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: w1.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: w2.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // update channel, wait for event
+        const updateData = {
+          name: 'new-name',
+        };
+        
+        evtName = eventNames.socket.workspaceUpdated;
+        const checkData = data => {
+          expect(data.workspace.name).equals(updateData.name);
+        };
+        const updateChannelEvent1 = awaitSocketForEvent(true, socket1, evtName, checkData);
+        const updateChannelEvent2NotFired = awaitSocketForEvent(false, socket2, evtName);
+
+        await workspaceService.updateWorkspace(w1.id, updateData);
+
+        await Promise.race([updateChannelEvent1, updateChannelEvent2NotFired]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
+  });
 });
 
 /**

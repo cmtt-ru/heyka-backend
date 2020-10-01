@@ -1154,6 +1154,123 @@ describe('Test routes', () => {
         const workspaceState = await workspaceService.getWorkspaceStateForUser(payload.workspace.id, user.id);
         expect(workspaceState.channels.length).equals(1);
       });
+      it('should create workspace with avatarFileId', async () => {
+        const {
+          userService,
+          fileDatabaseService: fdb,
+        } = server.services();
+        const user = await userService.signup({ email: 'big_brother_is@watching.you' });
+        const fileDbInfo = {
+          id: uuid4(),
+          user_id: user.id,
+          created_at: new Date(),
+          type: 'avatar',
+          updated_at: new Date(),
+          filename: uuid4() + '.png',
+        };
+        await fdb.insertFile(fileDbInfo);
+        const tokens = await userService.createTokens({ id: user.id });
+        const response = await server.inject({
+          method: 'POST',
+          url: '/workspaces',
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          },
+          payload: {
+            name: 'TestWorkspace',
+            avatarFileId: fileDbInfo.id,
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(response.result).includes('workspace');
+        expect(response.result.workspace).includes('avatarSet');
+      });
+    });
+  });
+
+  describe('POST /workspaces/{workspaceId}', () => {
+    describe('Try to update workspace by an usual user', () => {
+      it('should return 403 error', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const admin = await userService.signup({ name: 'admin' });
+        const user = await userService.signup({ name: 'user' });
+        const tokensUser = await userService.createTokens(user);
+        const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+          name: 'test'
+        });
+        await workspaceService.addUserToWorkspace(workspace.id, user.id, 'user');
+        const responseUpdate = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}`,
+          ...helpers.withAuthorization(tokensUser),
+          payload: {
+            name: 'UpdateName'
+          },
+        });
+        expect(responseUpdate.statusCode).equals(403);
+      });
+    });
+    describe('Try to update workspace by moderator', () => {
+      it('should update workspace', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const admin = await userService.signup({ name: 'admin' });
+        const user = await userService.signup({ name: 'user' });
+        const tokensUser = await userService.createTokens(user);
+        const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+          name: 'test'
+        });
+        await workspaceService.addUserToWorkspace(workspace.id, user.id, 'moderator');
+        const responseUpdate = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}`,
+          ...helpers.withAuthorization(tokensUser),
+          payload: {
+            name: 'UpdateName'
+          },
+        });
+        expect(responseUpdate.statusCode).equals(200);
+        expect(responseUpdate.result.workspace.name).equals('UpdateName');
+      });
+      it('should update workspace with avatarFileId', async () => {
+        const {
+          userService,
+          workspaceService,
+          fileDatabaseService: fdb,
+        } = server.services();
+        const admin = await userService.signup({ name: 'admin' });
+        const tokens = await userService.createTokens(admin);
+        const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+          name: 'test'
+        });
+        const fileDbInfo = {
+          id: uuid4(),
+          user_id: admin.id,
+          created_at: new Date(),
+          type: 'avatar',
+          updated_at: new Date(),
+          filename: uuid4() + '.png',
+        };
+        await fdb.insertFile(fileDbInfo);
+
+        const responseUpdate = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'UpdateName',
+            avatarFileId: fileDbInfo.id
+          },
+        });
+        expect(responseUpdate.statusCode).equals(200);
+        expect(responseUpdate.result.workspace.name).equals('UpdateName');
+        expect(responseUpdate.result.workspace.avatarSet.image64x64).exists();
+      });
     });
   });
 

@@ -40,6 +40,7 @@
             type="password"
             class="login__input"
             placeholder="******"
+            enter-submit
           />
           <ui-button
             :type="6"
@@ -56,7 +57,7 @@
             {{ texts.oldMember }}
           </div>
           <router-link
-            :to="{ name: 'signIn'}"
+            :to="{ name: 'auth'}"
             class="info__link"
           >
             {{ texts.login }}
@@ -78,7 +79,7 @@
 <script>
 import UiButton from '@components/UiButton';
 import { UiForm, UiInput } from '@components/Form';
-import { determineLocale } from '@/i18n';
+import { determineLocale } from '@sdk/translations/i18n';
 import { authFileStore } from '@/store/localStore';
 import { errorMessages } from '@api/errors/types';
 

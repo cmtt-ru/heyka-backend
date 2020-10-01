@@ -113,8 +113,8 @@ import UiButton from '@components/UiButton';
 import Avatar from '@components/Avatar';
 import { GRIDS } from './grids';
 import { mapGetters } from 'vuex';
-import janusVideoroomWrapper from '@classes/janusVideoroomWrapper';
-import Logger from '@classes/logger';
+import janusVideoroomWrapper from '@sdk/classes/janusVideoroomWrapper';
+import Logger from '@sdk/classes/logger';
 import { getUserAvatarUrl } from '@libs/image';
 const cnsl = new Logger('Grid.vue', '#138D75');
 

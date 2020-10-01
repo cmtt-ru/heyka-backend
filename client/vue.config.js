@@ -36,13 +36,14 @@ module.exports = {
     resolve: {
       alias: {
         '@': path.resolve(__dirname, 'src/'),
-        '@api': path.resolve(__dirname, 'src/api'),
-        '@components': path.resolve(__dirname, 'src/components'),
-        '@assets': path.resolve(__dirname, 'src/assets'),
-        '@icons': path.resolve(__dirname, 'src/components/icons'),
+        '@api': path.resolve(__dirname, 'src/sdk/api'),
+        '@sdk': path.resolve(__dirname, 'src/sdk'),
+        '@components': path.resolve(__dirname, 'src/sdk/components'),
+        '@assets': path.resolve(__dirname, 'src/sdk/assets'),
+        '@styles': path.resolve(__dirname, 'src/styles'),
         '@views': path.resolve(__dirname, 'src/views'),
         '@static': path.resolve(__dirname, 'public'),
-        '@libs': path.resolve(__dirname, 'src/libs'),
+        '@libs': path.resolve(__dirname, 'src/sdk/libs'),
         '@classes': path.resolve(__dirname, 'src/classes'),
       },
     },
@@ -54,11 +55,11 @@ module.exports = {
     i18n: {
       locale: 'en',
       fallbackLocale: 'en',
-      localeDir: 'translations',
+      localeDir: 'sdk/translations',
       enableInSFC: true,
     },
     svgSprite: {
-      dir: 'src/assets/icons',
+      dir: 'src/sdk/assets/icons',
       test: /\.svg$/,
       loaderOptions: {
         extract: true,

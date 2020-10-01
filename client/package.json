@@ -17,6 +17,7 @@
     "draggable-vue-directive": "^2.1.0",
     "es7-sleep": "^1.0.0",
     "getusermedia": "^2.0.1",
+    "is-online": "^8.4.0",
     "js-cookie": "^2.2.1",
     "local-storage": "^2.0.0",
     "requestanimationframe-timer": "^3.0.3",

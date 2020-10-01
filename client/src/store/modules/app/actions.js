@@ -1,4 +1,4 @@
-import i18n from '@/i18n';
+import i18n from '@sdk/translations/i18n';
 import { v4 as uuidV4 } from 'uuid';
 import { heykaStore } from '@/store/localStore';
 

@@ -51,7 +51,7 @@
 
 <script>
 import UiButton from '@components/UiButton';
-import UiHeader from '@components/UiHeader';
+import UiHeader from '@/components/UiHeader';
 
 export default {
   components: {
@@ -94,7 +94,7 @@ export default {
 
       this.authlink = linkData.code;
     } catch (err) {
-      this.$router.push({ name: 'signIn' });
+      this.$router.push({ name: 'auth' });
       console.log('ERROR:', err);
     }
   },

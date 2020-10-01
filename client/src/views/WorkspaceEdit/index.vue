@@ -74,7 +74,7 @@
 </template>
 
 <script>
-import UiHeader from '@components/UiHeader';
+import UiHeader from '@/components/UiHeader';
 import UiButton from '@components/UiButton';
 import { UiInput, UiImage } from '@components/Form';
 

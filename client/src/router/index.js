@@ -15,8 +15,8 @@ const SocialCallback = () => import(/* webpackChunkName: "main" */ '../views/Aut
 
 const Guest = () => import(/* webpackChunkName: "main" */ '../views/Guest');
 const GuestStart = () => import(/* webpackChunkName: "main" */ '../views/Guest/Start');
-const GuestGrid = () => import(/* webpackChunkName: "main" */ '../views/Guest/Grid');
-const GuestExpanded = () => import(/* webpackChunkName: "main" */ '../views/Guest/Expanded');
+const GuestGrid = () => import(/* webpackChunkName: "main" */ '@sdk/views/Call/Grid');
+const GuestExpanded = () => import(/* webpackChunkName: "main" */ '@sdk/views/Call/Expanded');
 const GuestFinish = () => import(/* webpackChunkName: "main" */ '../views/Guest/Finish');
 
 const Manage = () => import(/* webpackChunkName: "main" */ '../views/Manage');
@@ -43,7 +43,7 @@ const routes = [
     children: [
       {
         path: '',
-        name: 'signIn',
+        name: 'auth',
         component: SignIn,
       },
       {
@@ -139,12 +139,12 @@ const routes = [
       },
       {
         path: 'grid',
-        name: 'guest-grid',
+        name: 'grid',
         component: GuestGrid,
       },
       {
         path: 'expanded/:id',
-        name: 'guest-expanded',
+        name: 'expanded',
         component: GuestExpanded,
       },
       {

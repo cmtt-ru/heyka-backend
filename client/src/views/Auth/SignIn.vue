@@ -67,6 +67,7 @@
             type="password"
             class="login__input"
             placeholder="******"
+            enter-submit
           />
           <ui-button
             :type="6"
@@ -225,7 +226,7 @@ export default {
           };
 
           console.log(notification);
-          await this.$store.dispatch('addNotification', notification);
+          await this.$store.dispatch('app/addNotification', notification);
         }
       }
     },
@@ -244,7 +245,7 @@ export default {
         },
       };
 
-      await this.$store.dispatch('addNotification', notification);
+      await this.$store.dispatch('app/addNotification', notification);
     },
   },
 };

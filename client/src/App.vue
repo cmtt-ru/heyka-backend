@@ -1,14 +1,19 @@
 <template>
-  <div>
+  <div
+    :style="$themes.getColors('content')"
+    class="app-wrapper"
+  >
     <notifications />
     <router-view />
   </div>
 </template>
 
 <script>
+import '@sdk/styles/fonts.styl';
+import '@styles/global.styl';
 import Notifications from '@components/Notifications';
 import { prepareTokens } from '@api/tokens';
-require.context('@/assets/icons', true, /[A-Za-z0-9-_,\s]+\.svg$/i);
+require.context('@assets/icons', true, /[A-Za-z0-9-_,\s]+\.svg$/i);
 
 export default {
   components: {
@@ -41,7 +46,8 @@ export default {
 };
 </script>
 
-<style lang="stylus">
-  @import './styles/fonts'
-  @import './styles/global'
+<style lang="stylus" scoped>
+.app-wrapper
+  background-color var(--app-bg)
+  color var(--text-0)
 </style>

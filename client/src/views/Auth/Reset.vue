@@ -66,7 +66,7 @@
 
 <script>
 import UiButton from '@components/UiButton';
-import UiHeader from '@components/UiHeader';
+import UiHeader from '@/components/UiHeader';
 import { UiInput, UiForm } from '@components/Form';
 
 export default {
@@ -106,7 +106,7 @@ export default {
     const res = await this.$API.auth.checkWebToken(this.JWT);
 
     if (res.result === false) {
-      this.$router.push({ name: 'signIn' });
+      this.$router.push({ name: 'auth' });
     }
   },
 

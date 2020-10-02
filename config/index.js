@@ -8,7 +8,7 @@ module.exports = {
   jwtSecret: process.env.JWT_SECRET || 'default_jwt_token',
   publicHostname: process.env.DEPLOYMENT_ENV === 'stage'
     ? 'heyka.app'
-    : process.env.PUBLIC_HOSTNAME || 'localhost:5000',
+    : process.env.PUBLIC_HOSTNAME.replace('back', 'web') || 'localhost:5000',
   leonardo: {
     uploadUrl: process.env.LEONARDO_UPLOAD_URL || 'https://leonardo-direct.osnova.io/upload/files/',
     staticServerUrl: process.env.LEONARDO_STATIC_SERVER_URL || 'https://leonardo.osnova.io/',

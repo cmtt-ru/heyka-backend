@@ -50,7 +50,7 @@ export default {
   },
   data() {
     return {
-      version: '1.1.5',
+      version: '1.1.6',
       pingInterval: null,
       logo,
     };

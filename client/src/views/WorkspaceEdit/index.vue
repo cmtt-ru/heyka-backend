@@ -188,8 +188,7 @@ export default {
       try {
         const codeData = await this.$API.workspace.inviteByCode(this.newWorkspace.id);
 
-        const baseUrl = IS_DEV ? process.env.VUE_APP_DEV_URL : process.env.VUE_APP_PROD_URL;
-        const link = `${baseUrl}/auth?invite=${codeData.code}`;
+        const link = `${document.location.origin}/auth?invite=${codeData.code}`;
 
         navigator.clipboard.writeText(link);
         this.linkCopied = true;

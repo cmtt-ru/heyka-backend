@@ -14,6 +14,13 @@ jobs:
       ENV: "stage"
     steps:
       - uses: actions/checkout@v1
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.MY_REPO_PAT }}
+          submodules: recursive
+      - name: Fix git config
+        run: |
+          git submodule foreach 'git config --global url."https://x-access-token:${{ secrets.MY_REPO_PAT }}@github.com/cmtt-ru/heyka-sdk".insteadOf "https://github.com/cmtt-ru/heyka-sdk"'
 
       - name: Docker login
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin

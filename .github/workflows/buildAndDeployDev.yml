@@ -21,6 +21,11 @@ jobs:
         uses: actions/checkout@v2
         with:
           fetch-depth: 0
+          token: ${{ secrets.MY_REPO_PAT }}
+          submodules: recursive
+      - name: Fix git config
+        run: |
+          git submodule foreach 'git config --global url."https://x-access-token:${{ secrets.MY_REPO_PAT }}@github.com/cmtt-ru/heyka-sdk".insteadOf "https://github.com/cmtt-ru/heyka-sdk"'
 
       - name: werf converge
         uses: werf/actions/converge@master
@@ -29,4 +34,4 @@ jobs:
           channel: alpha
           env: ${{ env.ENV }}
         env:
-          WERF_STAGES_STORAGE: ":local"
+          WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/${{ github.event.repository.name }}/stages-${{ github.event.repository.name }}"

@@ -2022,6 +2022,78 @@ describe('Test socket', () => {
         socket2.disconnect();
       });
     });
+    describe('Try to send message several times', () => {
+      it('Only one message should be sent', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+        const chnls = await wdb.getWorkspaceChannels(workspace.id);
+  
+        // create tokens for user
+        const tokens1 = await userService.createTokens(user1);
+        const tokens2 = await userService.createTokens(user2);
+
+        // connect second user from different devices
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        let evtName = eventNames.socket.authSuccess;
+        const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+        const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+        socket1.emit(eventNames.client.auth, { 
+          token: tokens1.accessToken,
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: tokens2.accessToken,
+          workspaceId: workspace.id 
+        });
+        await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+        // prepare message object
+        const message = { data: 'somedata' };
+
+        // send message to second user
+        process.env.NO_MESSAGE_RESPONSE_TIMEOUT = 100;
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/send-invite`,
+          ...helpers.withAuthorization(tokens1),
+          payload: {
+            userId: user2.id,
+            isResponseNeeded: true,
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/send-invite`,
+          ...helpers.withAuthorization(tokens1),
+          payload: {
+            userId: user2.id,
+            isResponseNeeded: true,
+            message,
+            workspaceId: workspace.id,
+            channelId: chnls[0].id
+          }
+        });
+        expect(response1.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(response1.result.inviteId).exists().equals(response2.result.inviteId);
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
+    });
   });
 
   describe('Testing private talks', () => {

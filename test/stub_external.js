@@ -121,10 +121,18 @@ mockery.registerMock(
       stubbedMethods.uploadS3FromUrl(...arguments);
     }
     getImgproxyImageSet() {
-      return { image32x32: 'https://l.osn.io/794af87c', image64x64: 'https://l.osn.io/794af87c' };
+      return {
+        image32x32: 'https://l.osn.io/794af87c',
+        image64x64: 'https://l.osn.io/794af87c',
+        image128x128: 'https://l.osn.io/794af87c'
+      };
     }
     getImageSetForOwnedEntity() {
-      return { image32x32: 'https://l.osn.io/794af87c', image64x64: 'https://l.osn.io/794af87c' };
+      return {
+        image32x32: 'https://l.osn.io/794af87c',
+        image64x64: 'https://l.osn.io/794af87c',
+        image128x128: 'https://l.osn.io/794af87c'
+      };
     }
     uploadImageFromUrl() {
       stubbedMethods.uploadImageFromUrl(...arguments);

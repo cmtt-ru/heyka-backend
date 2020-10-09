@@ -18,7 +18,7 @@ kubernetes:
 
 app:
   domain_main: 
-    _default: heyka.app
+    _default: api.heyka.app
   domain_base: dev.k8s.heyka.io
   url: {}
   port: 5000

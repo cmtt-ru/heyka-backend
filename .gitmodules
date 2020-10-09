@@ -1,3 +1,0 @@
-[submodule "client/src/sdk"]
-	path = client/src/sdk
-	url = https://github.com/cmtt-ru/heyka-sdk.git

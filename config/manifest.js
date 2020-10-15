@@ -40,8 +40,12 @@ module.exports = {
         options: {
           cn: config.pg.uri,
           init: {
-            noWarnings: process.env.NODE_ENV === 'test'
-          }
+            noWarnings: process.env.NODE_ENV === 'test',
+            error: (err) => {
+              console.log('Database error');
+              console.log(err);
+            }
+          },
         }
       },
       // plugin for global event emitter

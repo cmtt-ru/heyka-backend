@@ -16,6 +16,7 @@ exports.up = (pgm) => {
     usage_count: {
       type: 'int',
       default: 0,
+      notNull: true,
     },
     latest_usage: 'timestamptz',
   });
@@ -30,9 +31,15 @@ exports.up = (pgm) => {
       references: 'users(id)',
       onDelete: 'cascade'
     },
+    workspace_id: {
+      type: 'uuid',
+      references: 'workspaces(id)',
+      onDelete: 'cascade'
+    },
     calls_count: {
       type: 'int',
       default: 0,
+      notNull: true,
     },
     latest_call: 'timestamptz',
   });

@@ -3065,4 +3065,93 @@ describe('Test routes', () => {
       });
     });
   });
+
+  /**
+   * Usage counter, calls counter
+   */
+  describe('Check channel usage counter & calls counter between users', () => {
+    it('Select channel, usage counter should increase', async () => {
+      const {
+        userService,
+        workspaceService,
+        connectionService
+      } = server.services();
+      const user = await userService.signup({ email: 'test@user.ru' });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      const channel1 = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'test',
+        isPrivate: false
+      });
+      const channel2 = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'test2',
+        isPrivate: false
+      });
+      const tokens = await userService.createTokens(user);
+      const conn = generateFakeConnection(user.id, workspace.id);
+      await connectionService.setConnectionObject(conn);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel1.id}/select?socketId=${conn.connectionId}`,
+        ...helpers.withAuthorization(tokens),
+        payload: helpers.defaultUserState()
+      });
+      expect(response.statusCode).equals(200);
+      const response2 = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel1.id}/unselect?socketId=${conn.connectionId}`,
+        ...helpers.withAuthorization(tokens),
+      });
+      const response3 = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel1.id}/select?socketId=${conn.connectionId}`,
+        ...helpers.withAuthorization(tokens),
+        payload: helpers.defaultUserState()
+      });
+      expect(response.statusCode).equals(200);
+      expect(response2.statusCode).equals(200);
+      expect(response3.statusCode).equals(200);
+      await helpers.skipSomeTime(10);
+
+      const workspaceState = await workspaceService.getWorkspaceStateForUser(workspace.id, user.id);
+      expect(workspaceState.channels.find(ch => ch.id===channel1.id).usage_count).equals(2);
+      expect(workspaceState.channels.find(ch => ch.id===channel1.id).latest_usage).exists();
+      expect(workspaceState.channels.find(ch => ch.id===channel2.id).usage_count).equals(0);
+    });
+    it('Make private call, calls counter should increase', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const [
+        user1,
+        user2,
+        user3
+      ] = await Promise.all([
+        userService.signup({ email: 'user1@example.com' }),
+        userService.signup({ email: 'user2@example.com' }),
+        userService.signup({ email: 'user3@example.com' }),
+      ]);
+      const { workspace } = await workspaceService.createNewWorkspace(user1.id, { name: 'test' });
+      await Promise.all([
+        workspaceService.addUserToWorkspace(workspace.id, user2.id),
+        workspaceService.addUserToWorkspace(workspace.id, user3.id),
+      ]);
+      const tokens = await userService.createTokens(user1);
+      const startTalkResponse1 = await server.inject({
+        method: 'POST',
+        url: `/workspaces/${workspace.id}/private-talk`,
+        ...helpers.withAuthorization(tokens),
+        payload: {
+          users: [user2.id]
+        }
+      });
+      expect(startTalkResponse1.statusCode).equals(200);
+      await helpers.skipSomeTime(10);
+
+      const workspaceState = await workspaceService.getWorkspaceStateForUser(workspace.id, user1.id);
+      expect(workspaceState.users.find(u => u.id===user2.id).calls_count).equals(1);
+      expect(workspaceState.users.find(u => u.id===user2.id).latest_call).exists();
+      expect(workspaceState.users.find(u => u.id===user3.id).calls_count).null();
+    });
+  });
 });

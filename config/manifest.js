@@ -1,13 +1,24 @@
 'use strict';
 
 const config = require('./index.js');
+const Boom = require('@hapi/boom');
 
 module.exports = {
   server: {
     port: config.port,
     host: config.host,
     routes: {
-      cors: true
+      cors: true,
+      validate: {
+        failAction (request, h, err) {
+          if (process.env.NODE_ENV === 'production') {
+            throw Boom.badRequest();
+          } else {
+            console.error(err);
+            throw err;
+          }
+        }
+      },
     },
     debug: process.env.NODE_ENV === 'development' ? {
       log: ['debug-error'],

@@ -239,6 +239,39 @@ describe('Test socket', () => {
 
         adminSocket.disconnect();
       });
+      it('"workspace-added" event should be fired for added user', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // sign up users and create valid tokens
+        const admin = await userService.signup({ email: 'admin@world.net' });
+        const user = await userService.signup({ email: 'user@world.net' });
+        const tokens = await userService.createTokens(user);
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        const { workspace: workspace2 } = await workspaceService.createWorkspace(user, 'testWorkspace2');
+        // authenticate user
+        const userSocket = io(server.info.uri);
+        const successAuth = awaitSocketForEvent(true, userSocket, eventNames.socket.authSuccess);
+        userSocket.emit(eventNames.client.auth, {
+          token: tokens.accessToken,
+          transaction: uuid4(),
+          workspaceId: workspace2.id
+        });
+        await successAuth;
+        // create workspace
+        const eventName = eventNames.socket.workspaceAdded;
+        const notifyAboutWorkspaceAdded = awaitSocketForEvent(true, userSocket, eventName, data => {
+          expect(data.workspace.id).equals(workspace.id);
+          expect(data.workspace.userRelation.role).equals('admin');
+        });
+        // join user by invite (without await because
+        // we are awaiting the event
+        await workspaceService.addUserToWorkspace(workspace.id, user.id, 'admin');
+        await notifyAboutWorkspaceAdded;
+
+        userSocket.disconnect();
+      });
     });
   });
   

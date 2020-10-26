@@ -10,8 +10,8 @@ module.exports = {
       cors: true
     },
     debug: process.env.NODE_ENV === 'development' ? {
-      log: ['debug-error'],
-      request: ['debug-error'],
+      log: '*',
+      request: '*',
     } : process.env.NODE_ENV === 'test' ? {
       log: ['debug-error'],
       request: ['debug-error'],

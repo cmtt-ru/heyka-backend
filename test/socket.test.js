@@ -1338,7 +1338,7 @@ describe('Test socket', () => {
       socket2.disconnect();
       socket3.disconnect();
     });
-    it('first user joined channel, second should be notified', async () => {
+    it('first user joined workspace, second should be notified', async () => {
       const {
         userService,
         workspaceService
@@ -1381,7 +1381,7 @@ describe('Test socket', () => {
       socket1.disconnect();
       socket2.disconnect();
     });
-    it('first user left channel, second should be notified', async () => {
+    it('first user left workspace, second should be notified', async () => {
       const {
         userService,
         workspaceService
@@ -1426,6 +1426,50 @@ describe('Test socket', () => {
       await awaitSecondConnected;
 
       socket1.disconnect();
+    });
+    it('first user joined different workspace, second user should be notified in first wrksps', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+      const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+
+      const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+      const { workspace: w2 } = await workspaceService.createWorkspace(user1, 'name2');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+      // create tokens for all users
+      const tokens1 = await userService.createTokens(user1);
+      const tokens2 = await userService.createTokens(user2);
+
+      // connect second user
+      const socket2 = io(server.info.uri);
+      const awaitForAuth2 = awaitSocketForEvent(true, socket2, eventNames.socket.authSuccess);
+      socket2.emit(eventNames.client.auth, { 
+        token: tokens2.accessToken,
+        workspaceId: workspace.id
+      });
+      await Promise.all([awaitForAuth2]);
+
+      // prepare promise that wait event about second user connected
+      const awaitFirstConnected = awaitSocketForEvent(true, socket2, eventNames.socket.onlineStatusChanged, data => {
+        expect(data.userId).equals(user1.id);
+      });
+
+      // connect second user
+      const socket1 = io(server.info.uri);
+      const awaitForAuth1 = awaitSocketForEvent(true, socket1, eventNames.socket.authSuccess);
+      socket1.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: w2.id
+      });
+
+      // Await second joined workspace and the first received message about second joined
+      await Promise.all([awaitForAuth1, awaitFirstConnected]);
+
+      socket1.disconnect();
+      socket2.disconnect();
     });
   });
 

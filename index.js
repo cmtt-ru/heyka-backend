@@ -2,6 +2,7 @@
 
 const createServer = require('./server');
 const socket = require('./lib/socket');
+const { configureSocketIOMetrics } = require('./monitoring');
 
 async function startServer () {
   const server = await createServer();
@@ -17,6 +18,7 @@ async function startServer () {
   await server.services().workspaceService.initMonitoringLoop(monitoringWorkspaceId);
 
   const socketIO = await socket.getSocketIO(server);
+  configureSocketIOMetrics(socketIO);
   socketIO.attach(server.listener);
   server.start();
   server.log(['info'], 'Server started');

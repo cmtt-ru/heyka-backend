@@ -30,6 +30,8 @@ ansible:
       name:
         postgresql-client
   install:
+  - name: Add node-gyp
+    shell: apk add --no-cache --virtual .build-deps alpine-sdk python && npm install --global node-gyp && apk del .build-deps
   - name: Install packages
     shell: yarn
     args:

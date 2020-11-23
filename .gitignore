@@ -6,3 +6,7 @@ scripts/data
 yarn-error.log
 
 .werf_secret_key
+
+# appmetrics logs
+*.log
+*.heapsnapshot

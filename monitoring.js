@@ -58,6 +58,11 @@ exports.getAppMetrics = function () {
   result += '\n# TYPE cpu_process gauge';
   result += `\ncpu_process ${aggregatedMetrics.cpu.process}\n`;
 
+  // cpu.process
+  result += '\n# HELP cpu_system The percentage of CPU used by the system as a whole';
+  result += '\n# TYPE cpu_system gauge';
+  result += `\ncpu_system ${aggregatedMetrics.cpu.system}\n`;
+
   // eventloop_latency_min
   result += '\n# HELP eventloop_latency_min The shortest sampled latency';
   result += '\n# TYPE eventloop_latency_min gauge';

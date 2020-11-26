@@ -10,6 +10,7 @@ let socketio = null;
 const aggregatedMetrics = {
   cpu: {
     process: 0, // percentage of cpu used by backend itself
+    system: 0, // percentage of cpu used by the system as a whole
   },
   eventloop_latency: { 
     min: 0, // shortest sampled latency

@@ -1430,6 +1430,27 @@ describe('Test routes', () => {
     });
   });
 
+  describe('GET /workspaces/{workspaceId}/info', () => {
+    describe('request info about workspace', () => {
+      it('should return workspace info with 200 status', async () => {
+        const { userService, workspaceService } = server.services();
+        const user = await userService.signup({ email: 'user@heyka.com', name: 'n' });
+        // создаём третьего юзера, который не должен фигурировать нигде
+        const tokens = await userService.createTokens({ id: user.id });
+        const { workspace } = await workspaceService.createWorkspace(user, 'workspace1');
+        const response = await server.inject({
+          method: 'GET',
+          url: `/workspaces/${workspace.id}/info`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(response.result.name).equals(workspace.name);
+      });
+    });
+  });
+
   describe('GET /workspaces/{workspaceId}', () => {
     describe('request the state of the workspace', () => {
       it('should return workspace state, array of users and channels', async () => {

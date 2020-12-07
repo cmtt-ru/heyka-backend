@@ -1112,6 +1112,47 @@ describe('Test routes', () => {
     });
   });
 
+  describe('GET /user/${userId}/', () => {
+    describe('request info about user from another workspace', () => {
+      it('should return 403 forbidden error', async () => {
+        const { userService } = server.services();
+        const user1 = await userService.signup({ email: 'user1@watching.you' });
+        const user2 = await userService.signup({ email: 'user2@watching.you' });
+        const tokens = await userService.createTokens({ id: user1.id });
+        const response = await server.inject({
+          method: 'GET',
+          url: `/user/${user2.id}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(403);
+      });
+    });
+    describe('request info about user from your workspace', () => {
+      it('should return info with 200 status', async () => {
+        const { userService, workspaceService, } = server.services();
+        const user1 = await userService.signup({ email: 'user1@watching.you' });
+        const user2 = await userService.signup({
+          email: 'user2@watching.you',
+          name: 'Test User'
+        });
+        const tokens = await userService.createTokens({ id: user1.id });
+        const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'workspace1');
+        await workspaceService.addUserToWorkspace(w1.id, user2.id);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/user/${user2.id}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(response.result.id).equals(user2.id);
+        expect(response.result.email).equals(user2.email);
+      });
+    });
+  });
   /**
    * Workspaces
    */

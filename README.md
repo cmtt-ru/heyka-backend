@@ -1,5 +1,7 @@
 # heyka-backend
 
+[Схема авторизации](docs/auth-scheme.md)
+
 [Документация](docs/socket-api.md) по SocketAPI
 
 Универсальные [ошибки](docs/common-errors.md) API

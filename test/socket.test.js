@@ -1476,6 +1476,165 @@ describe('Test socket', () => {
     });
   });
 
+  describe('Testing online statuses in different workspaces', () => {
+    it('User1 and User2 in different workspaces, check that online status is shared', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+      const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+      const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'name');
+      const { workspace: w2 } = await workspaceService.createWorkspace(user1, 'name');
+      await workspaceService.addUserToWorkspace(w1.id, user2.id);
+      await workspaceService.addUserToWorkspace(w2.id, user2.id);
+  
+      // create tokens for all users
+      const tokens1 = await userService.createTokens(user1);
+      const tokens2 = await userService.createTokens(user2);
+  
+      // connect 2 users
+      const socket1 = io(server.info.uri);
+      const socket2 = io(server.info.uri);
+      let evtName = eventNames.socket.authSuccess;
+      const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+      const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+      socket1.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: w1.id
+      });
+      socket2.emit(eventNames.client.auth, { 
+        token: tokens2.accessToken,
+        workspaceId: w2.id 
+      });
+      await Promise.all([awaitForAuth1, awaitForAuth2]);
+  
+      // user 1 requests full state of workspace
+      const response = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${w1.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response.statusCode).equals(200);
+      // check that user2 and user1 is online
+      expect(response.result.users.find(u => u.id === user1.id).onlineStatus).equals('online');
+      expect(response.result.users.find(u => u.id === user2.id).onlineStatus).equals('online');
+
+      // wait event about user disconnected
+      evtName = eventNames.socket.onlineStatusChanged;
+      const waitForUser2GoesOffline = awaitSocketForEvent(true, socket1, evtName, data => {
+        expect(data.userId).equals(user2.id);
+        expect(data.onlineStatus).equals('offline');
+      });
+  
+      // disconnect user2
+      socket2.disconnect();
+
+      await waitForUser2GoesOffline;
+  
+      socket1.disconnect();
+      socket2.disconnect();
+    });
+    it('Connect to different workspaces by single user with several devices', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+  
+      const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'name');
+      const { workspace: w2 } = await workspaceService.createWorkspace(user1, 'name');
+  
+      // create tokens for all users
+      const tokens1 = await userService.createTokens(user1);
+  
+      // connect 2 users
+      const socket1 = io(server.info.uri);
+      const socket2 = io(server.info.uri);
+      let evtName = eventNames.socket.authSuccess;
+      const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+      const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+      socket1.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: w1.id
+      });
+      socket2.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: w2.id 
+      });
+      await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+      // go sleep by first device
+      const response = await server.inject({
+        method: 'POST',
+        url: `/user/online-status?socketId=${socket1.id}`,
+        payload: {
+          onlineStatus: 'idle',
+          cause: 'sleep',
+        },
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response.statusCode).equals(200);
+  
+      // user 1 requests full state of workspace. Online status should be online
+      const response2 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${w1.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response2.statusCode).equals(200);
+      // check that user 1 is online
+      expect(response2.result.users.find(u => u.id === user1.id).onlineStatus).equals('online');
+
+      // change online status to idle by second device
+      const response3 = await server.inject({
+        method: 'POST',
+        url: `/user/online-status?socketId=${socket2.id}`,
+        payload: {
+          onlineStatus: 'idle',
+        },
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response3.statusCode).equals(200);
+
+      // check that user has "idle"
+      const response4 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${w1.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response4.statusCode).equals(200);
+      // check that user 1 is online
+      expect(response4.result.users.find(u => u.id === user1.id).onlineStatus).equals('idle');
+
+      // awake by first device
+      const response5 = await server.inject({
+        method: 'POST',
+        url: `/user/online-status?socketId=${socket1.id}`,
+        payload: {
+          onlineStatus: 'online',
+          cause: 'sleep',
+        },
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response5.statusCode).equals(200);
+
+      // check that user has "idle"
+      const response6 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${w1.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response6.statusCode).equals(200);
+      // check that user 1 is online
+      expect(response6.result.users.find(u => u.id === user1.id).onlineStatus).equals('idle');
+  
+      socket1.disconnect();
+      socket2.disconnect();
+    });
+  });
+
   describe('Testing that connection is kept alive automatically', () => {
     it('connect to the workspace, check connections after a while it should be online', async () => {
       const {

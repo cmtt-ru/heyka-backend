@@ -2,7 +2,7 @@
 
 const config = require('../config');
 const Lab = require('@hapi/lab');
-const { describe, it, before, beforeEach } = exports.lab = Lab.script();
+const { describe, it, before, beforeEach, after } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
@@ -31,9 +31,12 @@ describe('Test routes', () => {
     server = await createServer();
   });
 
+  after(async () => {
+    await server.redis.client.flushdb();
+  });
+
   beforeEach(async () => {
     const db = server.plugins['hapi-pg-promise'].db;
-    await server.redis.client.flushdb();
     await db.query('DELETE FROM verification_codes');
     await db.query('DELETE FROM auth_links');
     await db.query('DELETE FROM users');

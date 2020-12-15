@@ -1,7 +1,7 @@
 'use strict';
 
 const Lab = require('@hapi/lab');
-const { describe, it, before, beforeEach } = exports.lab = Lab.script();
+const { describe, it, before, beforeEach, after } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
@@ -32,6 +32,10 @@ describe('Test socket', () => {
     });
   });
 
+  after(async () => {
+    await server.redis.client.flushdb();
+  });
+
   beforeEach(async () => {
     const db = server.plugins['hapi-pg-promise'].db;
     await db.none('DELETE FROM auth_links');
@@ -42,7 +46,6 @@ describe('Test socket', () => {
     await db.none('DELETE FROM channels');
     await db.none('DELETE FROM workspaces');
     await db.none('DELETE FROM sessions');
-    await server.redis.client.flushdb();
     Object.values(stubbedMethods).forEach(m => m.reset());
 
     process.env.DISCONNECT_TIMEOUT = '0';

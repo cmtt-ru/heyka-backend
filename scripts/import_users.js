@@ -3,7 +3,6 @@
 const { promises: fs, existsSync } = require('fs');
 const createServer = require('../server');
 const path = require('path');
-const uuid4 = require('uuid/v4');
 const mockery = require('mockery');
 const Schmervice = require('schmervice');
 const pathToEmailService = path.resolve(__dirname, '../lib/services/email.js');
@@ -45,7 +44,7 @@ async function importUsers () {
     users = users.map(user => ({
       ...user,
       email: `user${user.id}@example.com`,
-      password: uuid4()
+      password: 'heyka-password',
     }));
 
     // create server

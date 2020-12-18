@@ -1,7 +1,7 @@
 'use strict';
 
 const Lab = require('@hapi/lab');
-const { describe, it, before, beforeEach } = exports.lab = Lab.script();
+const { describe, it, before, beforeEach, after } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
@@ -32,6 +32,10 @@ describe('Test socket', () => {
     });
   });
 
+  after(async () => {
+    await server.redis.client.flushdb();
+  });
+
   beforeEach(async () => {
     const db = server.plugins['hapi-pg-promise'].db;
     await db.none('DELETE FROM auth_links');
@@ -42,7 +46,6 @@ describe('Test socket', () => {
     await db.none('DELETE FROM channels');
     await db.none('DELETE FROM workspaces');
     await db.none('DELETE FROM sessions');
-    await server.redis.client.flushdb();
     Object.values(stubbedMethods).forEach(m => m.reset());
 
     process.env.DISCONNECT_TIMEOUT = '0';
@@ -849,6 +852,94 @@ describe('Test socket', () => {
     });
   });
 
+  describe('Testing conversation broadcast in channels', () => {
+    it('User in channels should get conversations broadcast, user not in channel shouldnot', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const admin = await userService.signup({ email: 'admin@world.net' });
+      const user1 = await userService.signup({ email: 'user@world.net' });
+      const user2 = await userService.signup({ email: 'user2@world.net' });
+      const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user1.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      const channel = await workspaceService.createChannel(workspace.id, admin.id, {
+        isPrivate: false,
+        name: 'testChannel'
+      });
+      const adminTokens = await userService.createTokens(admin);
+      const user1Tokens = await userService.createTokens(user1);
+      const user2Tokens = await userService.createTokens(user2);
+
+      // authenticate 3 users
+      const adminSocket = io(server.info.uri);
+      const user1Socket = io(server.info.uri);
+      const user2Socket = io(server.info.uri);
+      let eventName = eventNames.socket.authSuccess;
+      const adminAuth = awaitSocketForEvent(true, adminSocket, eventName, data => {
+        expect(data).includes('userId');
+      });
+      const user1Auth = awaitSocketForEvent(true, user1Socket, eventName, data => {
+        expect(data).includes('userId');
+      });
+      const user2Auth = awaitSocketForEvent(true, user2Socket, eventName, data => {
+        expect(data).includes('userId');
+      });
+      adminSocket.emit(eventNames.client.auth, { 
+        token: adminTokens.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      user1Socket.emit(eventNames.client.auth, { 
+        token: user1Tokens.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      user2Socket.emit(eventNames.client.auth, { 
+        token: user2Tokens.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      await Promise.all([adminAuth, user1Auth, user2Auth]);
+
+      /**
+       * Админ и user1 коннектится к каналу
+       */
+      const mediaState = helpers.defaultUserState();
+      const response1 = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/select?socketId=${adminSocket.id}`,
+        ...helpers.withAuthorization(adminTokens),
+        payload: mediaState
+      });
+      const response2 = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/select?socketId=${user1Socket.id}`,
+        ...helpers.withAuthorization(user1Tokens),
+        payload: mediaState
+      });
+      expect(response1.statusCode).equals(200);
+      expect(response2.statusCode).equals(200);
+
+      /**
+       * Админ эмитит conversation broadcast, user1 получает событие, user2 и admin нет
+       */
+
+      const user2NotNotifiedCB = awaitSocketForEvent(false, user2Socket, eventNames.socket.conversationBroadcast);
+      const adminNotNotifiedCB = awaitSocketForEvent(true, adminSocket, eventNames.socket.conversationBroadcast);
+      const user1NotifiedCB = awaitSocketForEvent(true, user1Socket, eventNames.socket.conversationBroadcast, d => {
+        expect(d).equals('custom data');
+      });
+      adminSocket.emit(eventNames.client.conversationBroadcast, 'custom data');
+      await Promise.race([adminNotNotifiedCB, user1NotifiedCB, user2NotNotifiedCB]);
+
+      adminSocket.disconnect();
+      user1Socket.disconnect();
+      user2Socket.disconnect();
+    });
+  });
+
   describe('Testing update user media state', () => {
     describe('User select a channel, update media state', () => {
       it('all member gets new media state of that user', async () => {
@@ -935,6 +1026,118 @@ describe('Test socket', () => {
           user2Event,
           user3NotEvent
         ]);
+
+        socket1.disconnect();
+        socket2.disconnect();
+        socket3.disconnect();
+      });
+      it('timestamps for camera and screen work', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@world.net' });
+        const user2 = await userService.signup({ email: 'user2@world.net' });
+        const user3 = await userService.signup({ email: 'user3@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        const channel = await workspaceService.createChannel(workspace.id, user1.id, {
+          isPrivate: true,
+          name: 'first'
+        });
+        await workspaceService.addMembersToChannel(channel.id, workspace.id, [user2.id]);
+        const user1Tokens = await userService.createTokens(user1);
+        const user2Tokens = await userService.createTokens(user2);
+        const user3Tokens = await userService.createTokens(user3);
+
+        // authenticate all users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        const socket3 = io(server.info.uri);
+
+        let eventName = eventNames.socket.authSuccess;
+        const auth1 = awaitSocketForEvent(true, socket1, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth2 = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth3 = awaitSocketForEvent(true, socket3, eventName, data => {
+          expect(data).includes('userId');
+        });
+        socket1.emit(eventNames.client.auth, { 
+          token: user1Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: user2Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket3.emit(eventNames.client.auth, { 
+          token: user3Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        await Promise.all([auth1, auth2, auth3]);
+
+        // user1 selects channel
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(response1.statusCode).equals(200);
+
+        // user2 gets an event about changed media state
+        // but user3 doesnt get that event (because he is not member of the channel)
+        eventName = eventNames.socket.mediaStateUpdated;
+        const newMediaState = helpers.defaultUserState();
+        newMediaState.screen = true;
+        const user2Event = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.userId).equals(user1.id);
+          expect(data.channelId).equals(channel.id);
+          expect(data.userMediaState.screen).equals(true);
+          expect(data.userMediaState.startScreenTs).exists();
+          expect(data.userMediaState.startCameraTs).not.exists();
+        });
+        const user3NotEvent = awaitSocketForEvent(false, socket3, eventName);
+        // user1 updates media state
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/user/media-state?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: newMediaState
+        });
+        expect(response2.statusCode).equals(200);
+        await Promise.race([
+          user2Event,
+          user3NotEvent
+        ]);
+
+        // user1 updates media state one more time, and prevous timestamp should be kept
+        eventName = eventNames.socket.mediaStateUpdated;
+        newMediaState.camera = true;
+        newMediaState.screen = false;
+        const user2Event2 = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.userId).equals(user1.id);
+          expect(data.channelId).equals(channel.id);
+          expect(data.userMediaState.camera).equals(true);
+          expect(data.userMediaState.startScreenTs).not.exists();
+          expect(data.userMediaState.startCameraTs).exists();
+        });
+        // user1 updates media state
+        const response3 = await server.inject({
+          method: 'POST',
+          url: `/user/media-state?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: newMediaState
+        });
+        expect(response3.statusCode).equals(200);
+        await user2Event2;
 
         socket1.disconnect();
         socket2.disconnect();
@@ -1338,7 +1541,7 @@ describe('Test socket', () => {
       socket2.disconnect();
       socket3.disconnect();
     });
-    it('first user joined channel, second should be notified', async () => {
+    it('first user joined workspace, second should be notified', async () => {
       const {
         userService,
         workspaceService
@@ -1381,7 +1584,7 @@ describe('Test socket', () => {
       socket1.disconnect();
       socket2.disconnect();
     });
-    it('first user left channel, second should be notified', async () => {
+    it('first user left workspace, second should be notified', async () => {
       const {
         userService,
         workspaceService
@@ -1426,6 +1629,209 @@ describe('Test socket', () => {
       await awaitSecondConnected;
 
       socket1.disconnect();
+    });
+    it('first user joined different workspace, second user should be notified in first wrksps', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+      const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+
+      const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+      const { workspace: w2 } = await workspaceService.createWorkspace(user1, 'name2');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+
+      // create tokens for all users
+      const tokens1 = await userService.createTokens(user1);
+      const tokens2 = await userService.createTokens(user2);
+
+      // connect second user
+      const socket2 = io(server.info.uri);
+      const awaitForAuth2 = awaitSocketForEvent(true, socket2, eventNames.socket.authSuccess);
+      socket2.emit(eventNames.client.auth, { 
+        token: tokens2.accessToken,
+        workspaceId: workspace.id
+      });
+      await Promise.all([awaitForAuth2]);
+
+      // prepare promise that wait event about second user connected
+      const awaitFirstConnected = awaitSocketForEvent(true, socket2, eventNames.socket.onlineStatusChanged, data => {
+        expect(data.userId).equals(user1.id);
+      });
+
+      // connect second user
+      const socket1 = io(server.info.uri);
+      const awaitForAuth1 = awaitSocketForEvent(true, socket1, eventNames.socket.authSuccess);
+      socket1.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: w2.id
+      });
+
+      // Await second joined workspace and the first received message about second joined
+      await Promise.all([awaitForAuth1, awaitFirstConnected]);
+
+      socket1.disconnect();
+      socket2.disconnect();
+    });
+  });
+
+  describe('Testing online statuses in different workspaces', () => {
+    it('User1 and User2 in different workspaces, check that online status is shared', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+      const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+  
+      const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'name');
+      const { workspace: w2 } = await workspaceService.createWorkspace(user1, 'name');
+      await workspaceService.addUserToWorkspace(w1.id, user2.id);
+      await workspaceService.addUserToWorkspace(w2.id, user2.id);
+  
+      // create tokens for all users
+      const tokens1 = await userService.createTokens(user1);
+      const tokens2 = await userService.createTokens(user2);
+  
+      // connect 2 users
+      const socket1 = io(server.info.uri);
+      const socket2 = io(server.info.uri);
+      let evtName = eventNames.socket.authSuccess;
+      const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+      const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+      socket1.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: w1.id
+      });
+      socket2.emit(eventNames.client.auth, { 
+        token: tokens2.accessToken,
+        workspaceId: w2.id 
+      });
+      await Promise.all([awaitForAuth1, awaitForAuth2]);
+  
+      // user 1 requests full state of workspace
+      const response = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${w1.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response.statusCode).equals(200);
+      // check that user2 and user1 is online
+      expect(response.result.users.find(u => u.id === user1.id).onlineStatus).equals('online');
+      expect(response.result.users.find(u => u.id === user2.id).onlineStatus).equals('online');
+
+      // wait event about user disconnected
+      evtName = eventNames.socket.onlineStatusChanged;
+      const waitForUser2GoesOffline = awaitSocketForEvent(true, socket1, evtName, data => {
+        expect(data.userId).equals(user2.id);
+        expect(data.onlineStatus).equals('offline');
+      });
+  
+      // disconnect user2
+      socket2.disconnect();
+
+      await waitForUser2GoesOffline;
+  
+      socket1.disconnect();
+      socket2.disconnect();
+    });
+    it('Connect to different workspaces by single user with several devices', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+  
+      const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'name');
+      const { workspace: w2 } = await workspaceService.createWorkspace(user1, 'name');
+  
+      // create tokens for all users
+      const tokens1 = await userService.createTokens(user1);
+  
+      // connect 2 users
+      const socket1 = io(server.info.uri);
+      const socket2 = io(server.info.uri);
+      let evtName = eventNames.socket.authSuccess;
+      const awaitForAuth1 = awaitSocketForEvent(true, socket1, evtName);
+      const awaitForAuth2 = awaitSocketForEvent(true, socket2, evtName);
+      socket1.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: w1.id
+      });
+      socket2.emit(eventNames.client.auth, { 
+        token: tokens1.accessToken,
+        workspaceId: w2.id 
+      });
+      await Promise.all([awaitForAuth1, awaitForAuth2]);
+
+      // go sleep by first device
+      const response = await server.inject({
+        method: 'POST',
+        url: `/user/online-status?socketId=${socket1.id}`,
+        payload: {
+          onlineStatus: 'idle',
+          cause: 'sleep',
+        },
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response.statusCode).equals(200);
+  
+      // user 1 requests full state of workspace. Online status should be online
+      const response2 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${w1.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response2.statusCode).equals(200);
+      // check that user 1 is online
+      expect(response2.result.users.find(u => u.id === user1.id).onlineStatus).equals('online');
+
+      // change online status to idle by second device
+      const response3 = await server.inject({
+        method: 'POST',
+        url: `/user/online-status?socketId=${socket2.id}`,
+        payload: {
+          onlineStatus: 'idle',
+        },
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response3.statusCode).equals(200);
+
+      // check that user has "idle"
+      const response4 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${w1.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response4.statusCode).equals(200);
+      // check that user 1 is online
+      expect(response4.result.users.find(u => u.id === user1.id).onlineStatus).equals('idle');
+
+      // awake by first device
+      const response5 = await server.inject({
+        method: 'POST',
+        url: `/user/online-status?socketId=${socket1.id}`,
+        payload: {
+          onlineStatus: 'online',
+          cause: 'sleep',
+        },
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response5.statusCode).equals(200);
+
+      // check that user has "idle"
+      const response6 = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${w1.id}`,
+        ...helpers.withAuthorization(tokens1)
+      });
+      expect(response6.statusCode).equals(200);
+      // check that user 1 is online
+      expect(response6.result.users.find(u => u.id === user1.id).onlineStatus).equals('idle');
+  
+      socket1.disconnect();
+      socket2.disconnect();
     });
   });
 

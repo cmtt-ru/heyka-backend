@@ -3,7 +3,6 @@
 const { promises: fs, existsSync } = require('fs');
 const createServer = require('../server');
 const path = require('path');
-const uuid4 = require('uuid/v4');
 const mockery = require('mockery');
 const Schmervice = require('schmervice');
 const pathToEmailService = path.resolve(__dirname, '../lib/services/email.js');
@@ -45,7 +44,7 @@ async function importUsers () {
     users = users.map(user => ({
       ...user,
       email: `user${user.id}@example.com`,
-      password: uuid4()
+      password: 'heyka-password',
     }));
 
     // create server
@@ -68,10 +67,12 @@ async function importUsers () {
 
     // create workspace "Комитет"
     const { workspace } = await workspaceService.createWorkspace(signedUpUsers[0], 'Комитет');
+    const { workspace: w2 } = await workspaceService.createWorkspace(signedUpUsers[0], 'TJournal');
     console.log(`Workspace created`);
 
     // add all users except the first one to the workspace
     await Promise.all(signedUpUsers.slice(1).map(user => workspaceService.addUserToWorkspace(workspace.id, user.id)));
+    await Promise.all(signedUpUsers.slice(1).map(user => workspaceService.addUserToWorkspace(w2.id, user.id)));
     console.log(`Users added to the created workspace`);
 
     // create public channels

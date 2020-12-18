@@ -852,6 +852,94 @@ describe('Test socket', () => {
     });
   });
 
+  describe('Testing conversation broadcast in channels', () => {
+    it('User in channels should get conversations broadcast, user not in channel shouldnot', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const admin = await userService.signup({ email: 'admin@world.net' });
+      const user1 = await userService.signup({ email: 'user@world.net' });
+      const user2 = await userService.signup({ email: 'user2@world.net' });
+      const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user1.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      const channel = await workspaceService.createChannel(workspace.id, admin.id, {
+        isPrivate: false,
+        name: 'testChannel'
+      });
+      const adminTokens = await userService.createTokens(admin);
+      const user1Tokens = await userService.createTokens(user1);
+      const user2Tokens = await userService.createTokens(user2);
+
+      // authenticate 3 users
+      const adminSocket = io(server.info.uri);
+      const user1Socket = io(server.info.uri);
+      const user2Socket = io(server.info.uri);
+      let eventName = eventNames.socket.authSuccess;
+      const adminAuth = awaitSocketForEvent(true, adminSocket, eventName, data => {
+        expect(data).includes('userId');
+      });
+      const user1Auth = awaitSocketForEvent(true, user1Socket, eventName, data => {
+        expect(data).includes('userId');
+      });
+      const user2Auth = awaitSocketForEvent(true, user2Socket, eventName, data => {
+        expect(data).includes('userId');
+      });
+      adminSocket.emit(eventNames.client.auth, { 
+        token: adminTokens.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      user1Socket.emit(eventNames.client.auth, { 
+        token: user1Tokens.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      user2Socket.emit(eventNames.client.auth, { 
+        token: user2Tokens.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      await Promise.all([adminAuth, user1Auth, user2Auth]);
+
+      /**
+       * Админ и user1 коннектится к каналу
+       */
+      const mediaState = helpers.defaultUserState();
+      const response1 = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/select?socketId=${adminSocket.id}`,
+        ...helpers.withAuthorization(adminTokens),
+        payload: mediaState
+      });
+      const response2 = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/select?socketId=${user1Socket.id}`,
+        ...helpers.withAuthorization(user1Tokens),
+        payload: mediaState
+      });
+      expect(response1.statusCode).equals(200);
+      expect(response2.statusCode).equals(200);
+
+      /**
+       * Админ эмитит conversation broadcast, user1 получает событие, user2 и admin нет
+       */
+
+      const user2NotNotifiedCB = awaitSocketForEvent(false, user2Socket, eventNames.socket.conversationBroadcast);
+      const adminNotNotifiedCB = awaitSocketForEvent(true, adminSocket, eventNames.socket.conversationBroadcast);
+      const user1NotifiedCB = awaitSocketForEvent(true, user1Socket, eventNames.socket.conversationBroadcast, d => {
+        expect(d).equals('custom data');
+      });
+      adminSocket.emit(eventNames.client.conversationBroadcast, 'custom data');
+      await Promise.race([adminNotNotifiedCB, user1NotifiedCB, user2NotNotifiedCB]);
+
+      adminSocket.disconnect();
+      user1Socket.disconnect();
+      user2Socket.disconnect();
+    });
+  });
+
   describe('Testing update user media state', () => {
     describe('User select a channel, update media state', () => {
       it('all member gets new media state of that user', async () => {

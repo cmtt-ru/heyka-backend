@@ -11,7 +11,6 @@ const eventNames = require('../lib/socket/event_names');
 const { methods: stubbedMethods } = require('./stub_external');
 const helpers = require('./helpers');
 const schemas = require('../lib/schemas');
-const { not } = require('joi');
 
 describe('Test socket', () => {
   let server = null;

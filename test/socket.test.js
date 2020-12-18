@@ -924,7 +924,7 @@ describe('Test socket', () => {
        */
 
       const user2NotNotifiedCB = awaitSocketForEvent(false, user2Socket, eventNames.socket.conversationBroadcast);
-      const adminNotNotifiedCB = awaitSocketForEvent(false, adminSocket, eventNames.socket.conversationBroadcast);
+      const adminNotNotifiedCB = awaitSocketForEvent(true, adminSocket, eventNames.socket.conversationBroadcast);
       const user1NotifiedCB = awaitSocketForEvent(true, user1Socket, eventNames.socket.conversationBroadcast, d => {
         expect(d).equals('custom data');
       });

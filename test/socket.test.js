@@ -943,6 +943,118 @@ describe('Test socket', () => {
         socket2.disconnect();
         socket3.disconnect();
       });
+      it('timestamps for camera and screen work', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@world.net' });
+        const user2 = await userService.signup({ email: 'user2@world.net' });
+        const user3 = await userService.signup({ email: 'user3@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        const channel = await workspaceService.createChannel(workspace.id, user1.id, {
+          isPrivate: true,
+          name: 'first'
+        });
+        await workspaceService.addMembersToChannel(channel.id, workspace.id, [user2.id]);
+        const user1Tokens = await userService.createTokens(user1);
+        const user2Tokens = await userService.createTokens(user2);
+        const user3Tokens = await userService.createTokens(user3);
+
+        // authenticate all users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+        const socket3 = io(server.info.uri);
+
+        let eventName = eventNames.socket.authSuccess;
+        const auth1 = awaitSocketForEvent(true, socket1, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth2 = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth3 = awaitSocketForEvent(true, socket3, eventName, data => {
+          expect(data).includes('userId');
+        });
+        socket1.emit(eventNames.client.auth, { 
+          token: user1Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: user2Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket3.emit(eventNames.client.auth, { 
+          token: user3Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        await Promise.all([auth1, auth2, auth3]);
+
+        // user1 selects channel
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: helpers.defaultUserState()
+        });
+        expect(response1.statusCode).equals(200);
+
+        // user2 gets an event about changed media state
+        // but user3 doesnt get that event (because he is not member of the channel)
+        eventName = eventNames.socket.mediaStateUpdated;
+        const newMediaState = helpers.defaultUserState();
+        newMediaState.screen = true;
+        const user2Event = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.userId).equals(user1.id);
+          expect(data.channelId).equals(channel.id);
+          expect(data.userMediaState.screen).equals(true);
+          expect(data.userMediaState.startScreenTs).exists();
+          expect(data.userMediaState.startCameraTs).not.exists();
+        });
+        const user3NotEvent = awaitSocketForEvent(false, socket3, eventName);
+        // user1 updates media state
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/user/media-state?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: newMediaState
+        });
+        expect(response2.statusCode).equals(200);
+        await Promise.race([
+          user2Event,
+          user3NotEvent
+        ]);
+
+        // user1 updates media state one more time, and prevous timestamp should be kept
+        eventName = eventNames.socket.mediaStateUpdated;
+        newMediaState.camera = true;
+        newMediaState.screen = false;
+        const user2Event2 = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.userId).equals(user1.id);
+          expect(data.channelId).equals(channel.id);
+          expect(data.userMediaState.camera).equals(true);
+          expect(data.userMediaState.startScreenTs).not.exists();
+          expect(data.userMediaState.startCameraTs).exists();
+        });
+        // user1 updates media state
+        const response3 = await server.inject({
+          method: 'POST',
+          url: `/user/media-state?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: newMediaState
+        });
+        expect(response3.statusCode).equals(200);
+        await user2Event2;
+
+        socket1.disconnect();
+        socket2.disconnect();
+        socket3.disconnect();
+      });
     });
   });
 

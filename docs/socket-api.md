@@ -44,6 +44,7 @@ socket.emit('auth', {
 socket.on('auth-success', data => {
   // data.transaction: {String} уникальная сторока, переданная с событием "auth"
   // data.userId: {String} id пользователя, который аутентифицирован
+  // data.onlineStatus: {String} какой онлайн статус сейчас у пользователя
 })
 ```
 
@@ -144,6 +145,22 @@ socket.on('user-updated', data => {
 socket.on('me-updated', data => {
   // data.user: {UserConfidentialDataScheme} обновление состоения пользователя с конфиденциальными данными
   // data.whatWasUpdated: {String} что было обновлено (подсказка). Варианты: 'social-auth', 'app-settings'
+})
+```
+
+### my-online-status-updated (у текущего пользователя обновлён онлайн статус с другого устройства)
+
+```
+socket.on('my-online-status-updated', data => {
+  // data.onlineStatus: {String} online, idle, offline
+})
+```
+
+### password-changed (изменился пароль, нужно перезайти)
+
+```
+socket.on('password-changed', data => {
+  // data === null
 })
 ```
 

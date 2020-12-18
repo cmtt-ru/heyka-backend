@@ -67,10 +67,12 @@ async function importUsers () {
 
     // create workspace "Комитет"
     const { workspace } = await workspaceService.createWorkspace(signedUpUsers[0], 'Комитет');
+    const { workspace: w2 } = await workspaceService.createWorkspace(signedUpUsers[0], 'TJournal');
     console.log(`Workspace created`);
 
     // add all users except the first one to the workspace
     await Promise.all(signedUpUsers.slice(1).map(user => workspaceService.addUserToWorkspace(workspace.id, user.id)));
+    await Promise.all(signedUpUsers.slice(1).map(user => workspaceService.addUserToWorkspace(w2.id, user.id)));
     console.log(`Users added to the created workspace`);
 
     // create public channels

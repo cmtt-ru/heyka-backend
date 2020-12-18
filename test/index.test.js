@@ -2,7 +2,7 @@
 
 const config = require('../config');
 const Lab = require('@hapi/lab');
-const { describe, it, before, beforeEach } = exports.lab = Lab.script();
+const { describe, it, before, beforeEach, after } = exports.lab = Lab.script();
 const createServer = require('../server');
 const { expect } = require('@hapi/code');
 const uuid4 = require('uuid/v4');
@@ -31,9 +31,12 @@ describe('Test routes', () => {
     server = await createServer();
   });
 
+  after(async () => {
+    await server.redis.client.flushdb();
+  });
+
   beforeEach(async () => {
     const db = server.plugins['hapi-pg-promise'].db;
-    await server.redis.client.flushdb();
     await db.query('DELETE FROM verification_codes');
     await db.query('DELETE FROM auth_links');
     await db.query('DELETE FROM users');
@@ -1112,6 +1115,47 @@ describe('Test routes', () => {
     });
   });
 
+  describe('GET /user/${userId}/', () => {
+    describe('request info about user from another workspace', () => {
+      it('should return 403 forbidden error', async () => {
+        const { userService } = server.services();
+        const user1 = await userService.signup({ email: 'user1@watching.you' });
+        const user2 = await userService.signup({ email: 'user2@watching.you' });
+        const tokens = await userService.createTokens({ id: user1.id });
+        const response = await server.inject({
+          method: 'GET',
+          url: `/user/${user2.id}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(403);
+      });
+    });
+    describe('request info about user from your workspace', () => {
+      it('should return info with 200 status', async () => {
+        const { userService, workspaceService, } = server.services();
+        const user1 = await userService.signup({ email: 'user1@watching.you' });
+        const user2 = await userService.signup({
+          email: 'user2@watching.you',
+          name: 'Test User'
+        });
+        const tokens = await userService.createTokens({ id: user1.id });
+        const { workspace: w1 } = await workspaceService.createWorkspace(user1, 'workspace1');
+        await workspaceService.addUserToWorkspace(w1.id, user2.id);
+        const response = await server.inject({
+          method: 'GET',
+          url: `/user/${user2.id}`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(response.result.id).equals(user2.id);
+        expect(response.result.email).equals(user2.email);
+      });
+    });
+  });
   /**
    * Workspaces
    */
@@ -1385,6 +1429,27 @@ describe('Test routes', () => {
         expect(payload.find(i => i.id === w1.id)).exist();
         expect(payload.find(i => i.id === w2.id)).exist();
         expect(payload.find(i => i.id === w3.id)).not.exist();
+      });
+    });
+  });
+
+  describe('GET /workspaces/{workspaceId}/info', () => {
+    describe('request info about workspace', () => {
+      it('should return workspace info with 200 status', async () => {
+        const { userService, workspaceService } = server.services();
+        const user = await userService.signup({ email: 'user@heyka.com', name: 'n' });
+        // создаём третьего юзера, который не должен фигурировать нигде
+        const tokens = await userService.createTokens({ id: user.id });
+        const { workspace } = await workspaceService.createWorkspace(user, 'workspace1');
+        const response = await server.inject({
+          method: 'GET',
+          url: `/workspaces/${workspace.id}/info`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+        expect(response.result.name).equals(workspace.name);
       });
     });
   });

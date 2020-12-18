@@ -156,6 +156,14 @@ socket.on('my-online-status-updated', data => {
 })
 ```
 
+### password-changed (изменился пароль, нужно перезайти)
+
+```
+socket.on('password-changed', data => {
+  // data === null
+})
+```
+
 ### user-selected-channel (юзер вошёл в канал)
 
 ```

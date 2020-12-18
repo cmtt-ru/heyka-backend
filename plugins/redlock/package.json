@@ -1,0 +1,8 @@
+{
+  "name": "hapi-redlock-plugin",
+  "version": "0.0.1",
+  "author": {
+    "name": "Evgenii Korolev",
+    "email": "ek@cmtt.ru"
+  }
+}

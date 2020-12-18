@@ -66,6 +66,9 @@ module.exports = {
           name: 'apiEvents'
         }
       },
+
+      // Redlock plugin
+      require('../plugins/redlock'),
       
       // add swagger if development mode (swagger requires inert and vision for static files)
       ...(

@@ -6,3 +6,6 @@ scripts/data
 yarn-error.log
 
 .werf_secret_key
+
+*.heapsnapshot
+*.log

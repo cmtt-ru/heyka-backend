@@ -1433,6 +1433,8 @@ describe('Test socket', () => {
   });
 
   describe('Testing updating online statuses', () => {
+    process.env.DISCONNECT_TIMEOUT_IN_CHANNEL = 1;
+    process.env.DISCONNECT_TIMEOUT = 1;
     it('testing different scenarious', async () => {
       const {
         userService,

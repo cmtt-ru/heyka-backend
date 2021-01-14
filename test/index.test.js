@@ -2857,7 +2857,7 @@ describe('Test routes', () => {
     });
   });
 
-  describe('POST /workspaces/{workspaceId}/invite/slack', () => {
+  describe('POST /workspaces/{workspaceId}/slack/invite', () => {
     describe('Try to invite slack, but user hasnt permission to invite', () => {
       it('should return error with reason', async () => {
         const {
@@ -2870,7 +2870,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(admin, 'test');
         const response = await server.inject({
           method: 'POST',
-          url: `/workspaces/${workspace.id}/invite/slack`,
+          url: `/workspaces/${workspace.id}/slack/invite`,
           payload: {
             slackUserId: 'JUHSYND1'
           },
@@ -2891,7 +2891,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(admin, 'test');
         const response = await server.inject({
           method: 'POST',
-          url: `/workspaces/${workspace.id}/invite/slack`,
+          url: `/workspaces/${workspace.id}/slack/invite`,
           payload: {
             slackUserId: 'JUHSYND1'
           },
@@ -2899,33 +2899,6 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).equals(400);
         expect(response.payload).includes('SlackIsNotConnected');
-      });
-    });
-    describe('Try to invite to workspace, but user is not associated with slack', () => {
-      it('should return error with the reason', async () => {
-        const {
-          userService,
-          workspaceService,
-        } = server.services();
-        const db = server.plugins['hapi-pg-promise'].db;
-        const admin = await userService.signup({ email: 'admin@admin.ru' });
-        const tokens = await userService.createTokens(admin);
-        const { workspace } = await workspaceService.createWorkspace(admin, 'test');
-        // emulate workspace connected to slack
-        await db.none(
-          'UPDATE workspaces SET slack=$1 WHERE id=$2',
-          [{ accessToken: 'asdasd' }, workspace.id]
-        );
-        const response = await server.inject({
-          method: 'POST',
-          url: `/workspaces/${workspace.id}/invite/slack`,
-          payload: {
-            slackUserId: 'JUHSYND1'
-          },
-          headers: { Authorization: `Bearer ${tokens.accessToken}` }
-        });
-        expect(response.statusCode).equals(400);
-        expect(response.payload).includes('UserNotAuthedWithSlack');
       });
     });
     describe('Try to invite to workspace, everything is ok', () => {
@@ -2951,7 +2924,7 @@ describe('Test routes', () => {
         );
         const response = await server.inject({
           method: 'POST',
-          url: `/workspaces/${workspace.id}/invite/slack`,
+          url: `/workspaces/${workspace.id}/slack/invite`,
           payload: {
             slackUserId
           },
@@ -2960,7 +2933,6 @@ describe('Test routes', () => {
         expect(response.statusCode).equals(200);
         expect(stubbedMethods.sendInviteToWorkspaceBySlack.calledOnce).true();
         const args = stubbedMethods.sendInviteToWorkspaceBySlack.args[0][0];
-        expect(args[0]).equals(senderSlackUserId);
         expect(args[1]).equals(slackAccessToken);
         expect(args[2]).equals(slackUserId);
         expect(args[3]).equals(workspace.name);

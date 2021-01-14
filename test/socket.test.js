@@ -1143,6 +1143,90 @@ describe('Test socket', () => {
         socket2.disconnect();
         socket3.disconnect();
       });
+      it('speaking should be disabled when user swtiches off microphone', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user1 = await userService.signup({ email: 'user1@world.net' });
+        const user2 = await userService.signup({ email: 'user2@world.net' });
+        const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user1.id, {
+          isPrivate: true,
+          name: 'first'
+        });
+        await workspaceService.addMembersToChannel(channel.id, workspace.id, [user2.id]);
+        const user1Tokens = await userService.createTokens(user1);
+        const user2Tokens = await userService.createTokens(user2);
+
+        // authenticate all users
+        const socket1 = io(server.info.uri);
+        const socket2 = io(server.info.uri);
+
+        let eventName = eventNames.socket.authSuccess;
+        const auth1 = awaitSocketForEvent(true, socket1, eventName, data => {
+          expect(data).includes('userId');
+        });
+        const auth2 = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data).includes('userId');
+        });
+        socket1.emit(eventNames.client.auth, { 
+          token: user1Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        socket2.emit(eventNames.client.auth, { 
+          token: user2Tokens.accessToken, 
+          transaction: uuid4(),
+          workspaceId: workspace.id
+        });
+        await Promise.all([auth1, auth2]);
+
+        // user1 selects channel
+        const response1 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/select?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: {
+            speaking: true,
+            speakers: true,
+            microphone: true,
+            camera: false,
+            screen: false,
+          }
+        });
+        expect(response1.statusCode).equals(200);
+
+        // user2 gets an event about changed media state
+        // but user3 doesnt get that event (because he is not member of the channel)
+        eventName = eventNames.socket.mediaStateUpdated;
+        const newMediaState = {
+          speaking: true,
+          speakers: true,
+          microphone: false,
+          camera: false,
+          screen: false,
+        };
+        newMediaState.screen = true;
+        const user2Event = awaitSocketForEvent(true, socket2, eventName, data => {
+          expect(data.userId).equals(user1.id);
+          expect(data.channelId).equals(channel.id);
+          expect(data.userMediaState.speaking).equals(false);
+        });
+        // user1 updates media state
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/user/media-state?socketId=${socket1.id}`,
+          ...helpers.withAuthorization(user1Tokens),
+          payload: newMediaState
+        });
+        expect(response2.statusCode).equals(200);
+        await user2Event;
+
+        socket1.disconnect();
+        socket2.disconnect();
+      });
     });
   });
 
@@ -1433,6 +1517,8 @@ describe('Test socket', () => {
   });
 
   describe('Testing updating online statuses', () => {
+    process.env.DISCONNECT_TIMEOUT_IN_CHANNEL = 1;
+    process.env.DISCONNECT_TIMEOUT = 1;
     it('testing different scenarious', async () => {
       const {
         userService,

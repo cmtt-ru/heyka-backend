@@ -27,15 +27,6 @@ jobs:
         run: |
           git submodule foreach 'git config --global url."https://x-access-token:${{ secrets.MY_REPO_PAT }}@github.com/cmtt-ru/heyka-sdk".insteadOf "https://github.com/cmtt-ru/heyka-sdk"'
 
-      - name: werf converge
-        uses: werf/actions/converge@master
-        with:
-          group: 1.1
-          channel: alpha
-          env: ${{ env.ENV }}
-        env:
-          WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/${{ github.event.repository.name }}/stages-${{ github.event.repository.name }}"
-
       - name: Cleanup
         uses: werf/actions/cleanup@master
         with:
@@ -45,3 +36,12 @@ jobs:
         env:
           WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/${{ github.event.repository.name }}/stages-${{ github.event.repository.name }}"
           WERF_GIT_HISTORY_BASED_CLEANUP_v1_2: "1"
+
+      - name: werf converge
+        uses: werf/actions/converge@master
+        with:
+          group: 1.1
+          channel: alpha
+          env: ${{ env.ENV }}
+        env:
+          WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/${{ github.event.repository.name }}/stages-${{ github.event.repository.name }}"

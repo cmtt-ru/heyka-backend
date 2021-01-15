@@ -3219,4 +3219,114 @@ describe('Test routes', () => {
       expect(workspaceState.users.find(u => u.id===user3.id).calls_count).null();
     });
   });
+
+  /**
+   * Testing mobile pushes
+   */
+  describe('Checking mobile pushes', () => {
+    describe('Adding/deleting mobile pushes', () => {
+      it('Adding device token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+          }
+        });
+        const response3 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token-2',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(response3.statusCode).equals(200);
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.device_tokens.length).equals(2);
+        expect(userAfterUpdate.device_tokens[0]).equals('unique-token');
+      });
+      it('Deleting device token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/delete-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.device_tokens.length).equals(0);
+      });
+      it('Send invite, check that push notification is sent', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user2);
+        const { workspace } = await workspaceService.createNewWorkspace(user.id, { name: 'test' });
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' }); 
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/send-invite`,
+          ...helpers.withAuthorization(tokens2),
+          payload: {
+            userId: user.id,
+            message: { data: 'any data' },
+            channelId: channel.id,
+            workspaceId: workspace.id,
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(stubbedMethods.sendPushNotificationToDevice.callCount).equals(1);
+        expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('unique-token');
+      });
+    });
+  });
 });

@@ -23,6 +23,8 @@ const stubbedMethods = {
 
   uploadImageFromUrl: sinon.stub(),
   uploadS3FromUrl: sinon.stub(),
+
+  sendPushNotificationToDevice: sinon.stub(),
 };
 
 // mock services that make requests to external APIs
@@ -30,6 +32,7 @@ const pathToEmailService = path.resolve(__dirname, '../lib/services/email/email.
 const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
 const pathToSlackService = path.resolve(__dirname, '../lib/services/slack.js');
 const pathToFileService = path.resolve(__dirname, '../lib/services/file.js');
+const pathToNotificationService = path.resolve(__dirname, '../lib/services/notification_service.js');
 mockery.enable({
   warnOnReplace: true,
   warnOnUnregistered: false // disable warnings on unmocked modules
@@ -137,6 +140,14 @@ mockery.registerMock(
     uploadImageFromUrl() {
       stubbedMethods.uploadImageFromUrl(...arguments);
       return 'https://leonardo.osnova.io/794af87c-195d-c9ee-40d6-14131c4c43a6/';
+    }
+  }
+);
+mockery.registerMock(
+  pathToNotificationService,
+  class NotificationService extends Schmervice.Service {
+    sendPushNotificationToDevice () {
+      stubbedMethods.sendPushNotificationToDevice(...arguments);
     }
   }
 );

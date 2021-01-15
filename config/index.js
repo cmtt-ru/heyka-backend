@@ -67,5 +67,12 @@ module.exports = {
     imgproxyKey: process.env.IMGPROXY_KEY || 'imgporxy_key',
     imgproxySalt: process.env.IMGPROXY_SALT || 'imgproxy_salt',
     limitPerUser: 100,
+  },
+  notificationService: {
+    awsKey: process.env.AWS_SNS_KEY,
+    awsSecret: process.env.AWS_SNS_SECRET,
+    appleArn: process.env.AWS_SNS_APPLE_ARN,
+    androidArn: process.env.AWS_SNS_ANDROID_ARN,
+    awsEndpoint: process.env.AWS_SNS_ENDPOINT,
   }
 };

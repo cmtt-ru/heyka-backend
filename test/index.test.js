@@ -3238,6 +3238,7 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(tokens),
           payload: {
             deviceToken: 'unique-token',
+            platform: 'iOS',
           }
         });
         const response2 = await server.inject({
@@ -3246,6 +3247,7 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(tokens),
           payload: {
             deviceToken: 'unique-token',
+            platform: 'iOS',
           }
         });
         const response3 = await server.inject({
@@ -3254,6 +3256,7 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(tokens),
           payload: {
             deviceToken: 'unique-token-2',
+            platform: 'iOS',
           }
         });
         expect(response.statusCode).equals(200);
@@ -3262,6 +3265,7 @@ describe('Test routes', () => {
         const userAfterUpdate = await udb.findById(user.id);
         expect(userAfterUpdate.device_tokens.length).equals(2);
         expect(userAfterUpdate.device_tokens[0]).equals('unique-token');
+        expect(Object.keys(userAfterUpdate.platform_endpoints).length).equals(2);
       });
       it('Deleting device token', async () => {
         const {
@@ -3276,6 +3280,7 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(tokens),
           payload: {
             deviceToken: 'unique-token',
+            platform: 'iOS',
           }
         });
         const response2 = await server.inject({
@@ -3290,6 +3295,7 @@ describe('Test routes', () => {
         expect(response2.statusCode).equals(200);
         const userAfterUpdate = await udb.findById(user.id);
         expect(userAfterUpdate.device_tokens.length).equals(0);
+        expect(Object.values(userAfterUpdate.platform_endpoints).length).equals(0);
       });
       it('Send invite, check that push notification is sent', async () => {
         const {
@@ -3309,6 +3315,7 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(tokens),
           payload: {
             deviceToken: 'unique-token',
+            platform: 'iOS',
           }
         });
         const response2 = await server.inject({
@@ -3325,7 +3332,7 @@ describe('Test routes', () => {
         expect(response.statusCode).equals(200);
         expect(response2.statusCode).equals(200);
         expect(stubbedMethods.sendPushNotificationToDevice.callCount).equals(1);
-        expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('unique-token');
+        expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('random string');
       });
     });
   });

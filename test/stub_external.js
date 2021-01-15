@@ -25,6 +25,7 @@ const stubbedMethods = {
   uploadS3FromUrl: sinon.stub(),
 
   sendPushNotificationToDevice: sinon.stub(),
+  createDeviceEndpoint: sinon.stub(),
 };
 
 // mock services that make requests to external APIs
@@ -148,6 +149,10 @@ mockery.registerMock(
   class NotificationService extends Schmervice.Service {
     sendPushNotificationToDevice () {
       stubbedMethods.sendPushNotificationToDevice(...arguments);
+    }
+    createDeviceEndpoint () {
+      stubbedMethods.createDeviceEndpoint(...arguments);
+      return 'random string';
     }
   }
 );

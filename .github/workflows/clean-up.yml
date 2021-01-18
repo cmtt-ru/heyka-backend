@@ -1,7 +1,7 @@
 name: Cleanup Docker registry
 on:
   schedule:
-    - cron:  '15 * * * *'
+    - cron:  '45 * * * *'
   repository_dispatch:
     types: [cleanup]
 
@@ -22,5 +22,5 @@ jobs:
           group: 1.1
           channel: alpha
         env:
-          WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/${{ github.event.repository.name }}/stages-${{ github.event.repository.name }}"
+          WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/heyka-backend/stages-heyka-backend"
           WERF_GIT_HISTORY_BASED_CLEANUP_v1_2: "1"

@@ -1,21 +1,20 @@
 name: Cleanup Docker registry
 on:
   schedule:
-    - cron:  '15 * * * *'
+    - cron:  '45 * * * *'
   repository_dispatch:
     types: [cleanup]
 
 jobs:
   cleanup:
     name: Cleanup
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
 
       - name: Checkout code
         uses: actions/checkout@v2
-
-      - name: Fetch all history for all tags and branches
-        run: git fetch --prune --unshallow
+        with:
+          fetch-depth: 0
 
       - name: Cleanup
         uses: werf/actions/cleanup@master
@@ -23,5 +22,5 @@ jobs:
           group: 1.1
           channel: alpha
         env:
-          WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/${{ github.event.repository.name }}/stages-${{ github.event.repository.name }}"
+          WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/heyka-backend/stages-heyka-backend"
           WERF_GIT_HISTORY_BASED_CLEANUP_v1_2: "1"

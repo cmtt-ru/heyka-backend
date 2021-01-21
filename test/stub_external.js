@@ -26,6 +26,8 @@ const stubbedMethods = {
 
   sendPushNotificationToDevice: sinon.stub(),
   createDeviceEndpoint: sinon.stub(),
+  deleteDeviceEndpoint: sinon.stub(),
+  getDisabledEndpoints: sinon.stub().returns([]),
 };
 
 // mock services that make requests to external APIs
@@ -153,6 +155,13 @@ mockery.registerMock(
     createDeviceEndpoint () {
       stubbedMethods.createDeviceEndpoint(...arguments);
       return 'random string';
+    }
+    deleteDeviceEndpoint () {
+      stubbedMethods.deleteDeviceEndpoint(...arguments);
+      return true;
+    }
+    getDisabledEndpoints (tokens) {
+      return stubbedMethods.getDisabledEndpoints(...arguments);
     }
   }
 );

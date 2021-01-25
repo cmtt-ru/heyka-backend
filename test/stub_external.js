@@ -91,6 +91,9 @@ mockery.registerMock(
     sendEmailVerificationCode() {
       stubbedMethods.sendEmail(arguments);
     }
+    sendWelcomeMail() {
+      stubbedMethods.sendEmail(arguments);
+    }
     sendInviteToWorkspace() {
       stubbedMethods.sendEmailWithInvite(arguments);
     }
@@ -122,6 +125,9 @@ mockery.registerMock(
     }
     uploadS3() {
       return '794af87c-195d-c9ee-40d6-14131c4c43a6.png';
+    }
+    deleteFileS3() {
+      return true;
     }
     uploadS3FromUrl() {
       stubbedMethods.uploadS3FromUrl(...arguments);

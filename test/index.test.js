@@ -1657,6 +1657,59 @@ describe('Test routes', () => {
         expect(payload1.channel.id).equals(payload2.channel.id);
       });
     });
+    describe('Check push notifications', () => {
+      it('create private talk to user with device tokens', async () => {
+        const {
+          userService,
+          workspaceService,
+          userDatabaseService: udb,
+          workspaceDatabaseService: wdb,
+        } = server.services();
+        // create users
+        const user1 = await userService.signup({ email: 'user1@user.net', name: 'Admin Kurat' });
+        const user2 = await userService.signup({ email: 'user2@user.net', name: 'Tester Popov' });
+
+        // added device token for user
+        const deviceToken = uuid4();
+        const platformEndpoint = uuid4();
+        await udb.updateUser(user1.id, {
+          device_tokens: [deviceToken],
+          platform_endpoints: {
+            [deviceToken]: platformEndpoint,
+          }
+        });
+
+        // create tokens
+        const tokens = await userService.createTokens(user2);
+
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
+        
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          payload: {
+            users: [user1.id],
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+
+        // check that push notification has been sent
+        expect(stubbedMethods.sendPushNotificationToDevice.calledOnce).true();
+        expect(stubbedMethods.sendPushNotificationToDevice.firstCall.args[0]).equals(platformEndpoint);
+
+        // delete channel and check that push notification has been sent
+        const channels = await wdb.getWorkspaceChannelsForUser(workspace.id, user2.id);
+        const ch = channels.find(el => el.is_tmp);
+        await workspaceService.deleteChannel(ch.id);
+        expect(stubbedMethods.sendPushNotificationToDevice.calledTwice).true();
+        expect(stubbedMethods.sendPushNotificationToDevice.secondCall.args[1].event).equals('invite-cancelled');
+      });
+    });
   });
 
   describe('GET /workspaces/{workspaceId}/invites', () => {

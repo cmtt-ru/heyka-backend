@@ -104,7 +104,11 @@ mockery.registerMock(
       return `http://slack.com/connect`;
     }
     gainAccessTokenByOAuthCode() {
-      return {};
+      return {
+        team: {
+          name: 'test',
+        },
+      };
     }
   }
 );

@@ -2528,7 +2528,7 @@ describe('Test routes', () => {
       expect(response2.result.id).equals(id);
     });
   });
-  describe('DELETE /channel-invites/${inviteId}', () => {
+  describe('POST /channel-invites/${inviteId}/deactivate', () => {
     it('Channel invite can be deleted by any workspace user', async () => {
       const {
         userService,
@@ -2558,8 +2558,8 @@ describe('Test routes', () => {
       expect(id).exists();
 
       const response2 = await server.inject({
-        method: 'DELETE',
-        url: `/channel-invites/${id}`,
+        method: 'POST',
+        url: `/channel-invites/${id}/deactivate`,
         ...helpers.withAuthorization(userTokens),
       });
       expect(response2.statusCode).equals(200);

@@ -2578,6 +2578,116 @@ describe('Test routes', () => {
         expect(payload.token).exists();
       });
     });
+    describe('Check that user can not create two invites in the same channel', () => {
+      it('If there is an actual invite in this channel, return it', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+
+        const user = await userService.signup({
+          name: 'admin',
+        });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        const channel = await workspaceService.createChannel(workspace.id, user.id, {
+          name: 'channel',
+        });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/invite`,
+          ...helpers.withAuthorization(tokens)
+        });
+        expect(response.statusCode).equals(200);
+        const id = response.result.id;
+        expect(id).exists();
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/channels/${channel.id}/invite`,
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response2.statusCode).equals(200);
+        expect(response2.result.id).equals(id);
+      });
+    });
+  });
+  describe('GET /channels/${channelId}/invite', () => {
+    it('Get an actual invite for channel', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+
+      const user = await userService.signup({
+        name: 'admin',
+      });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      const channel = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'channel',
+      });
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/invite`,
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(200);
+      const id = response.result.id;
+      expect(id).exists();
+
+      const response2 = await server.inject({
+        method: 'GET',
+        url: `/channels/${channel.id}/invite`,
+        ...helpers.withAuthorization(tokens),
+      });
+      expect(response2.statusCode).equals(200);
+      expect(response2.result.id).equals(id);
+    });
+  });
+  describe('DELETE /channel-invites/${inviteId}', () => {
+    it('Channel invite can be deleted by any workspace user', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+
+      const admin = await userService.signup({
+        name: 'admin',
+      });
+      const user = await userService.signup({
+        name: 'user',
+      });
+      const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user.id);
+      const channel = await workspaceService.createChannel(workspace.id, admin.id, {
+        name: 'channel',
+      });
+      const tokens = await userService.createTokens(admin);
+      const userTokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/invite`,
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(200);
+      const id = response.result.id;
+      expect(id).exists();
+
+      const response2 = await server.inject({
+        method: 'DELETE',
+        url: `/channel-invites/${id}`,
+        ...helpers.withAuthorization(userTokens),
+      });
+      expect(response2.statusCode).equals(200);
+      expect(response2.result).equals('ok');
+
+      const response3 = await server.inject({
+        method: 'GET',
+        url: `/channels/${channel.id}/invite`,
+        ...helpers.withAuthorization(userTokens),
+      });
+      expect(response3.statusCode).equals(404);
+    });
   });
 
   describe('POST /channels/join/{code}', () => {
@@ -2624,7 +2734,7 @@ describe('Test routes', () => {
         const channel = await workspaceService.createChannel(workspace.id, user.id, {
           name: 'channel',
         });
-        const inviteToken = await channelService.getInviteChannelToken(channel.id, user.id);
+        const { code: inviteToken } = await channelService.getInviteChannelToken(channel.id, user.id);
         
         const response = await server.inject({
           method: 'POST',
@@ -2657,8 +2767,7 @@ describe('Test routes', () => {
         const channel = await workspaceService.createChannel(workspace.id, user.id, {
           name: 'global'
         });
-        const inviteToken1 = await channelService.getInviteChannelToken(channel.id, user.id);
-        const inviteToken2 = await channelService.getInviteChannelToken(channel.id, user.id);
+        const { code: inviteToken1 } = await channelService.getInviteChannelToken(channel.id, user.id);
           
         // sign up with these invites
         const response1 = await server.inject({
@@ -2679,7 +2788,7 @@ describe('Test routes', () => {
         expect(response2.statusCode).equals(200);
         const response3 = await server.inject({
           method: 'POST',
-          url: `/channels/join/${inviteToken2}`,
+          url: `/channels/join/${inviteToken1}`,
           payload: {
             name: 'guest3',
           }
@@ -2691,7 +2800,7 @@ describe('Test routes', () => {
         expect(members).length(4);
   
         const invites = await invdb.getInvitesByChannel(channel.id);
-        expect(invites).length(2);
+        expect(invites).length(1);
   
         // delete invite with revoking access
         const response4 = await server.inject({
@@ -3096,7 +3205,7 @@ describe('Test routes', () => {
         const channel = await workspaceService.createChannel(workspace.id, user.id, {
           name: 'global'
         });
-        const inviteToken = await channelService.getInviteChannelToken(channel.id, user.id);
+        const { code: inviteToken } = await channelService.getInviteChannelToken(channel.id, user.id);
         
         // sign up with this invite
         const response1 = await server.inject({

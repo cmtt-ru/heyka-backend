@@ -2527,6 +2527,42 @@ describe('Test routes', () => {
       expect(response2.statusCode).equals(200);
       expect(response2.result.id).equals(id);
     });
+    it('Check that actual invite not expired', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+
+      const user = await userService.signup({
+        name: 'admin',
+      });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      const channel = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'channel',
+      });
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/invite`,
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(200);
+      const id = response.result.id;
+      expect(id).exists();
+
+      const db = server.plugins['hapi-pg-promise'].db;
+      await db.none('UPDATE invites SET expired_at = $1 WHERE id=$2', [
+        new Date(Date.now() - 2000),
+        response.result.id,
+      ]);
+
+      const response2 = await server.inject({
+        method: 'GET',
+        url: `/channels/${channel.id}/invite`,
+        ...helpers.withAuthorization(tokens),
+      });
+      expect(response2.statusCode).equals(404);
+    });
   });
   describe('POST /channel-invites/${inviteId}/deactivate', () => {
     it('Channel invite can be deleted by any workspace user', async () => {

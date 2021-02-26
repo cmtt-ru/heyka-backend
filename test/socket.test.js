@@ -916,6 +916,69 @@ describe('Test socket', () => {
       adminSocket.disconnect();
       user1Socket.disconnect();
     });
+    it('Update channel, wait for events for this channel', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const admin = await userService.signup({ email: 'admin@world.net' });
+      const user1 = await userService.signup({ email: 'user@world.net' });
+      const { workspace } = await workspaceService.createWorkspace(admin, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user1.id);
+      const adminTokens = await userService.createTokens(admin);
+      const user1Tokens = await userService.createTokens(user1);
+
+      // authenticate 2 users
+      const adminSocket = io(server.info.uri);
+      const user1Socket = io(server.info.uri);
+      let eventName = eventNames.socket.authSuccess;
+      const adminAuth = awaitSocketForEvent(true, adminSocket, eventName, data => {
+        expect(data).includes('userId');
+      });
+      const user1Auth = awaitSocketForEvent(true, user1Socket, eventName, data => {
+        expect(data).includes('userId');
+      });
+      adminSocket.emit(eventNames.client.auth, { 
+        token: adminTokens.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      user1Socket.emit(eventNames.client.auth, { 
+        token: user1Tokens.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      await Promise.all([adminAuth, user1Auth]);
+
+      // Создаём канал
+      const channel = await workspaceService.createChannel(workspace.id, admin.id, {
+        name: 'name',
+        isPrivate: false,
+      });
+
+      /**
+       * Админ коннектится к каналу
+       * Пользователь должен получить mediaState админа
+       */
+      const adminMediaState = helpers.defaultUserState();
+      adminMediaState.microphone = true;
+      const user1Notified = awaitSocketForEvent(true, user1Socket, eventNames.socket.channelUpdated, data => {
+        expect(data.channel.name).equals('new-name');
+      });
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}`,
+        ...helpers.withAuthorization(adminTokens),
+        payload: {
+          name: 'new-name',
+        },
+      });
+      expect(response.statusCode).equals(200);
+      await user1Notified;
+
+      adminSocket.disconnect();
+      user1Socket.disconnect();
+    });
   });
 
   describe('Testing conversation broadcast in channels', () => {

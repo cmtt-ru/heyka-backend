@@ -109,6 +109,7 @@ socket.on('channel-updated', data => {
 ```
 socket.on('channel-deleted', data => {
   // data.channelId: {string} Id удалённого канала
+  // data.workspaceId: {string} В каком воркспейсе удален канал
 })
 ```
 

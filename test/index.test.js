@@ -1219,6 +1219,104 @@ describe('Test routes', () => {
       });
     });
   });
+
+  describe('POST /password', () => {
+    it('should return 401 if old password is invalid', async () => {
+      const {
+        userService
+      } = server.services();
+      const user = await userService.signup({
+        name: 'name',
+        email: 'email@email.ru',
+        password: 'password',
+      });
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/password`,
+        payload: {
+          oldPassword: 'invalid-password',
+          password: 'new-password',
+        },
+        ...helpers.withAuthorization(tokens),
+      });
+      expect(response.statusCode).equals(401);
+    });
+    it('should set new password if there was not previous password', async () => {
+      const {
+        userService,
+        userDatabaseService: udb,
+      } = server.services();
+      const user = await userService.signup({
+        name: 'name',
+        email: 'email@email.ru',
+      });
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/password`,
+        payload: {
+          password: 'new-password',
+        },
+        ...helpers.withAuthorization(tokens),
+      });
+      expect(response.statusCode).equals(200);
+      const newUser = await udb.findById(user.id);
+      expect(newUser.password_hash).exists();
+    });
+    it('should set new password', async () => {
+      const {
+        userService,
+        userDatabaseService: udb,
+      } = server.services();
+      const user = await userService.signup({
+        name: 'name',
+        email: 'email@email.ru',
+        password: 'qwerty'
+      });
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/password`,
+        payload: {
+          oldPassword: 'qwerty',
+          password: 'new-password',
+        },
+        ...helpers.withAuthorization(tokens),
+      });
+      expect(response.statusCode).equals(200);
+      const newUser = await udb.findById(user.id);
+      expect(newUser.password_hash).exists();
+      expect(newUser.password_hash).not.equals(user.password_hash);
+    });
+    it('should cancel all sessions after password changed', async () => {
+      const {
+        userService,
+      } = server.services();
+      const user = await userService.signup({
+        name: 'name',
+        email: 'email@email.ru',
+        password: 'qwerty'
+      });
+      const tokens = await userService.createTokens(user);
+      const tokens2 = await userService.createTokens(user);
+      await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/password`,
+        payload: {
+          oldPassword: 'qwerty',
+          password: 'new-password',
+        },
+        ...helpers.withAuthorization(tokens),
+      });
+      expect(response.statusCode).equals(200);
+      const session1 = await userService.findAccessToken(tokens.accessToken);
+      const session2 = await userService.findAccessToken(tokens2.accessTOken);
+      expect(session1).not.exists();
+      expect(session2).not.exists();
+    });
+  });
   /**
    * Workspaces
    */

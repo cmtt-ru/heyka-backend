@@ -379,6 +379,69 @@ describe('Test routes', () => {
         expect(stubbedMethods.uploadImageFromUrl.calledOnce).true();
       });
     });
+    describe('pass null avatar_file_id to clear avatar', () => {
+      it('file should be deleted in S3, avatar fields should be empty', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+          fileDatabaseService: fdb,
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const file = {
+          id: uuid4(),
+          filename: uuid4(),
+          user_id: user.id,
+          type: 'avatar',
+          created_at: new Date(),
+          updated_at: new Date(),
+        };
+        await fdb.insertFile(file);
+        await udb.updateUser(user.id, {
+          avatar_file_id: file.id,
+          avatar_set: {
+            example: '1'
+          },
+        });
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: '/profile',
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            avatarFileId: null,
+          }
+        });
+        expect(response.statusCode).equals(200);
+        const newUser = await udb.findById(user.id);
+        expect(newUser.avatar_file_id).not.exists();
+        expect(newUser.avatar_set).equals({});
+        const notFile = await fdb.getFileById(file.id);
+        expect(notFile).not.exists();
+      });
+    });
+    describe('change email', () => {
+      it('email with verification code should be sent', async () => {
+        const {
+          userService,
+        } = server.services();
+
+        const user = await userService.signup({ email: 'admin@admin.ru', name: 'name' });
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: '/profile',
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            email: 'new@admin.ru',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(stubbedMethods.sendEmail.calledTwice).true();
+      });
+    });
   });
 
   describe('GET /me', () => {
@@ -3042,6 +3105,21 @@ describe('Test routes', () => {
         // check is email verified
         const userUpdated = await userService.findById(user.id);
         expect(userUpdated.is_email_verified).true();
+      });
+      it('change email if it is needed', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ name: 'name', email: 'admin@admin.ru' });
+        await userService.updateProfile(user.id, { email: 'new@admin.ru' });
+        const token = stubbedMethods.sendEmail.secondCall.args[0][1];
+        const response = await server.inject({
+          method: 'GET',
+          url: `/verify/${token}`
+        });
+        expect(response.statusCode).equals(200);
+        // check is email verified
+        const userUpdated = await userService.findById(user.id);
+        expect(userUpdated.is_email_verified).true();
+        expect(userUpdated.email).equals('new@admin.ru');
       });
     });
   });

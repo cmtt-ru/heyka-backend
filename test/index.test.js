@@ -2757,6 +2757,210 @@ describe('Test routes', () => {
     });
   });
 
+  describe('GET /channels/{channelId}/members', () => {
+    it('Should return list of members of private channel', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const user = await userService.signup({ email: 'test@user.ru', name: 'abc1', });
+      const user2 = await userService.signup({ email: 'test2@user.ru', name: 'bac2', });
+      const user3 = await userService.signup({ email: 'test3@user.ru', name: 'cba3', });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+      const channel = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'test',
+        isPrivate: true
+      });
+      await workspaceService.addMembersToChannel(channel.id, workspace.id, [
+        user2.id,
+        user3.id,
+      ]);
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'GET',
+        url: `/channels/${channel.id}/members`,
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(200);
+      expect(response.result).array();
+      expect(response.result).length(3);
+    });
+  });
+
+  describe('POST /channels/{channelId}/add-users', () => {
+    it('Try to add several users in private channel', async () => {
+      const {
+        userService,
+        workspaceService,
+        channelDatabaseService: chdb,
+      } = server.services();
+      const user = await userService.signup({ email: 'test@user.ru', name: 'abc1', });
+      const user2 = await userService.signup({ email: 'test2@user.ru', name: 'bac2', });
+      const user3 = await userService.signup({ email: 'test3@user.ru', name: 'cba3', });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+      const channel = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'test',
+        isPrivate: true
+      });
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/add-users`,
+        payload: {
+          users: [user2.id, user3.id],
+        },
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(200);
+
+      // check that users is added
+      const channelMembers = await chdb.getAllChannelMembers(channel.id);
+      expect(channelMembers).length(3);
+    });
+  });
+
+  describe('POST /channels/{channelId}/delete-users', () => {
+    it('Try to delete several users from private channel', async () => {
+      const {
+        userService,
+        workspaceService,
+        channelDatabaseService: chdb,
+      } = server.services();
+      const user = await userService.signup({ email: 'test@user.ru', name: 'abc1', });
+      const user2 = await userService.signup({ email: 'test2@user.ru', name: 'bac2', });
+      const user3 = await userService.signup({ email: 'test3@user.ru', name: 'cba3', });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+      const channel = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'test',
+        isPrivate: true
+      });
+      await workspaceService.addMembersToChannel(channel.id, workspace.id, [
+        user2.id,
+        user3.id,
+      ]);
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/delete-users`,
+        payload: {
+          users: [user2.id, user3.id],
+        },
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(200);
+
+      // check that users is added
+      const channelMembers = await chdb.getAllChannelMembers(channel.id);
+      expect(channelMembers).length(1);
+    });
+  });
+
+  describe('POST /channels/{channelId}/permissions', () => {
+    it('Try to delete last admin from channel, should return 400', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const user = await userService.signup({ email: 'test@user.ru', name: 'abc1', });
+      const user2 = await userService.signup({ email: 'test2@user.ru', name: 'bac2', });
+      const user3 = await userService.signup({ email: 'test3@user.ru', name: 'cba3', });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+      const channel = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'test',
+        isPrivate: true
+      });
+      await workspaceService.addMembersToChannel(channel.id, workspace.id, [
+        user2.id,
+        user3.id,
+      ]);
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/permissions`,
+        payload: {
+          userId: user.id,
+          role: 'user',
+        },
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(400);
+    });
+    it('Change member role to "admin" for user', async () => {
+      const {
+        userService,
+        workspaceService,
+        channelDatabaseService: chdb,
+      } = server.services();
+      const user = await userService.signup({ email: 'test@user.ru', name: 'abc1', });
+      const user2 = await userService.signup({ email: 'test2@user.ru', name: 'bac2', });
+      const user3 = await userService.signup({ email: 'test3@user.ru', name: 'cba3', });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+      const channel = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'test',
+        isPrivate: true
+      });
+      await workspaceService.addMembersToChannel(channel.id, workspace.id, [
+        user2.id,
+        user3.id,
+      ]);
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/permissions`,
+        payload: {
+          userId: user2.id,
+          role: 'admin',
+        },
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(200);
+
+      const channelMembers = await chdb.getAllChannelMembers(channel.id);
+      const admins = channelMembers.find(u => u.channel_role === 'admin' && u.id === user2.id);
+      expect(admins).exist();
+    });
+    it('Try to change role for not member', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const user = await userService.signup({ email: 'test@user.ru', name: 'abc1', });
+      const user2 = await userService.signup({ email: 'test2@user.ru', name: 'bac2', });
+      const user3 = await userService.signup({ email: 'test3@user.ru', name: 'cba3', });
+      const { workspace } = await workspaceService.createWorkspace(user, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+      const channel = await workspaceService.createChannel(workspace.id, user.id, {
+        name: 'test',
+        isPrivate: true
+      });
+      await workspaceService.addMembersToChannel(channel.id, workspace.id, [
+        user2.id,
+      ]);
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/permissions`,
+        payload: {
+          userId: user3.id,
+          role: 'admin',
+        },
+        ...helpers.withAuthorization(tokens)
+      });
+      expect(response.statusCode).equals(400);
+    });
+  });
+
   /**
    * Invites
    */

@@ -6,6 +6,8 @@
 | `channel.delete` | Delete the channel | `channel.owner`, `channel.admin`, `channel.moderator`, `workspace.admin`, `workspace.moderator` |
 | `channel.select` | Select the channel | `channel.participant` |
 | `channel.deleteAllInvites` | Delete all invites to the channel | All users expect `channel.guest` |
+| `channel.manageMembers` | Add\delete users to channel, change member roles | `channel.admin` |
+| `channel.viewInfo` | Request channel info | `channel.user` |
 
 ### Workspaces
 

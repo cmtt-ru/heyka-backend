@@ -3420,6 +3420,30 @@ describe('Test routes', () => {
     });
   });
 
+  describe('GET /workspaces/{workspaceId}/slack/detach', () => {
+    it('Try to detach, slack field should be empty', async () => {
+      const {
+        userService,
+        workspaceService,
+        workspaceDatabaseService: wdb,
+      } = server.services();
+      const user = await userService.signup({ email: 'admin@admin.ru' });
+      const { workspace } = await workspaceService.createWorkspace(user, 'testWorkspace');
+      await wdb.updateWorkspace(workspace.id, {
+        slack: { token: 'token', },
+      });
+      const tokens = await userService.createTokens(user);
+      const response = await server.inject({
+        method: 'GET',
+        url: `/workspaces/${workspace.id}/slack/detach`,
+        ...helpers.withAuthorization(tokens),
+      });
+      expect(response.statusCode).equals(200);
+      const w = await wdb.getWorkspaceById(workspace.id);
+      expect(w.slack).equals({});
+    });
+  });
+
   describe('POST /workspaces/{workspaceId}/slack/invite', () => {
     describe('Try to invite slack, but user hasnt permission to invite', () => {
       it('should return error with reason', async () => {

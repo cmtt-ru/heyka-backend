@@ -79,7 +79,8 @@ describe('Unit tests: userService', () => {
         insert: sinon.stub().resolves(true)
       };
       const emailServiceStub = {
-        sendEmailVerificationCode: sinon.stub().resolves(true)
+        sendEmailVerificationCode: sinon.stub().resolves(true),
+        sendWelcomeMail: sinon.stub().resolves(true),
       };
       const fileServiceStub = {
         getImgproxyImageSet: sinon.stub().resolves({ image32x32: 'url' }),
@@ -112,7 +113,8 @@ describe('Unit tests: userService', () => {
         insert: sinon.stub().resolves(true)
       };
       const emailServiceStub = {
-        sendEmailVerificationCode: sinon.stub().resolves(true)
+        sendEmailVerificationCode: sinon.stub().resolves(true),
+        sendWelcomeMail: sinon.stub().resolves(true),
       };
       const fileServiceStub = {
         getImgproxyImageSet: sinon.stub().resolves({ image32x32: 'url' }),

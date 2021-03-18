@@ -35,6 +35,12 @@ module.exports = {
     mailgun: {
       domain: process.env.MAILGUN_DOMAIN || 'mailgun-domain',
       apikey: process.env.MAILGUN_APIKEY || 'mailgun-apikey',
+    },
+    mailchimp: {
+      apikey: process.env.MAILCHIMP_APIKEY || 'mailchimp-apikey',
+      endpoint: 'https://us20.api.mailchimp.com/3.0/',
+      audienceName: 'Heyka release',
+      audienceId: 'fdd8523428',
     }
   },
   redis: process.env.SENTINELS ? {

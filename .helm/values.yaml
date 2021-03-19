@@ -44,7 +44,7 @@ app:
     _default: "2592000000"
   watcher:
     replicas:
-      dev: "0"
+      _default: "0"
       stage: "1"
   replicas:
     _default: "1"

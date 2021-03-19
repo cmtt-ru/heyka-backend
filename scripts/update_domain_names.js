@@ -16,7 +16,7 @@ async function syncDomainNamesWithJanusNodes(janusWorkspaceService) {
   const dnsRecords = (await cf.dnsRecords.browse(config.cloudflare.dnsZoneId)).result
     .filter(record => record.type === 'A' && record.name.includes('.infr.heyka.io'));
 
-  console.log(`Collected all janus nodes`;
+  console.log(`Collected all janus nodes`);
   console.log('records: ', dnsRecords);
   console.log('nodes: ', nodes);
 

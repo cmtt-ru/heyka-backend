@@ -27,13 +27,13 @@ async function syncDomainNamesWithJanusNodes(janusWorkspaceService) {
         
       // check if domain name should be added
       if (!dnsRecords.find(record => record.name === domainName)) {
-        await cf.dnsRecords.add(config.cloudflare.dnsZoneId, {
+        const response = await cf.dnsRecords.add(config.cloudflare.dnsZoneId, {
           type: 'A',
           name: domainName,
           content: janusNode.ip,
           ttl: 120,
         });
-        console.log(`DNS record for ${janusNode.ip} has been added (${domainName})`);
+        console.log(`DNS record for ${janusNode.ip} has been added (${domainName})`, response);
       }
     })
   );

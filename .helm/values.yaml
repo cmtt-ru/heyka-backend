@@ -10,14 +10,26 @@ postgres:
   port:
     _default: 6432
 
-kubernetes:
-  host:
-    _default: kubernetes.default
-  janus_node_label:
-    _default: "node-role.kubernetes.io/janus="
+janus:
+  kubernetes:
+    enabled:
+      dev: false
+      stage: true
+    host:
+      _default: kubernetes.default
+    janus_node_label:
+      _default: "node-role.kubernetes.io/janus="
+  external:
+    enabled:
+      dev: true
+      stage: false
+    url:
+      _default: https://janus-test.heyka.io
+    public_url:
+      _default: https://janus-test.heyka.io
 
 app:
-  domain_main: 
+  domain_main:
     _default: api.heyka.app
   domain_base: dev.k8s.heyka.io
   url: {}
@@ -46,4 +58,3 @@ app:
       _default: "1Gi"
       stage: "2Gi"
       production: "4Gi"
-

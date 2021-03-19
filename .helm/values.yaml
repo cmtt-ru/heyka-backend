@@ -14,7 +14,7 @@ janus:
   kubernetes:
     enabled:
       dev: false
-      strage: true
+      stage: true
     host:
       _default: kubernetes.default
     janus_node_label:
@@ -22,7 +22,7 @@ janus:
   external:
     enabled:
       dev: true
-      strage: false
+      stage: false
     url:
       _default: https://janus-test.heyka.io
     public_url:

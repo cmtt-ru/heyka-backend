@@ -18,15 +18,11 @@ async function startServer () {
   await server.services().workspaceService.initMonitoringLoop(monitoringWorkspaceId);
 
   const socketIO = await socket.getSocketIO(server);
-<<<<<<< HEAD
   configureSocketIOMetrics(socketIO);
-  socketIO.attach(server.listener);
-=======
   socketIO.attach(server.listener, {
     pingInterval: 1000,
     pingTimeout: 1000,
   });
->>>>>>> research-socket-reconnects
   server.start();
   server.log(['info'], 'Server started');
 }

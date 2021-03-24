@@ -45,7 +45,7 @@ describe('Test routes', () => {
     await db.query('DELETE FROM invites');
     await db.query('DELETE FROM workspaces');
     // clear all stubbed methods
-    Object.values(stubbedMethods).forEach(func => func.reset());
+    Object.values(stubbedMethods).forEach(func => func.resetHistory());
   });
 
   describe('GET /status (an unprotected route)', () => {
@@ -1816,6 +1816,59 @@ describe('Test routes', () => {
         const payload2 = JSON.parse(response2.payload);
 
         expect(payload1.channel.id).equals(payload2.channel.id);
+      });
+    });
+    describe('Check push notifications', () => {
+      it('create private talk to user with device tokens', async () => {
+        const {
+          userService,
+          workspaceService,
+          userDatabaseService: udb,
+          workspaceDatabaseService: wdb,
+        } = server.services();
+        // create users
+        const user1 = await userService.signup({ email: 'user1@user.net', name: 'Admin Kurat' });
+        const user2 = await userService.signup({ email: 'user2@user.net', name: 'Tester Popov' });
+
+        // added device token for user
+        const deviceToken = uuid4();
+        const platformEndpoint = uuid4();
+        await udb.updateUser(user1.id, {
+          device_tokens: [deviceToken],
+          platform_endpoints: {
+            [deviceToken]: platformEndpoint,
+          }
+        });
+
+        // create tokens
+        const tokens = await userService.createTokens(user2);
+
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
+        
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          payload: {
+            users: [user1.id],
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+
+        // check that push notification has been sent
+        expect(stubbedMethods.sendPushNotificationToDevice.calledOnce).true();
+        expect(stubbedMethods.sendPushNotificationToDevice.firstCall.args[0]).equals(platformEndpoint);
+
+        // delete channel and check that push notification has been sent
+        const channels = await wdb.getWorkspaceChannelsForUser(workspace.id, user2.id);
+        const ch = channels.find(el => el.is_tmp);
+        await workspaceService.deleteChannel(ch.id);
+        expect(stubbedMethods.sendPushNotificationToDevice.calledTwice).true();
+        expect(stubbedMethods.sendPushNotificationToDevice.secondCall.args[1].event).equals('invite-cancelled');
       });
     });
   });
@@ -3738,6 +3791,159 @@ describe('Test routes', () => {
       expect(workspaceState.users.find(u => u.id===user2.id).calls_count).equals(1);
       expect(workspaceState.users.find(u => u.id===user2.id).latest_call).exists();
       expect(workspaceState.users.find(u => u.id===user3.id).calls_count).null();
+    });
+  });
+
+  /**
+   * Testing mobile pushes
+   */
+  describe('Checking mobile pushes', () => {
+    describe('Adding/deleting mobile pushes', () => {
+      it('Adding device token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response3 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token-2',
+            platform: 'iOS',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(response3.statusCode).equals(200);
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.device_tokens.length).equals(2);
+        expect(userAfterUpdate.device_tokens[0]).equals('unique-token');
+        expect(Object.keys(userAfterUpdate.platform_endpoints).length).equals(2);
+
+      });
+      it('Deleting device token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/delete-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.device_tokens.length).equals(0);
+        expect(Object.values(userAfterUpdate.platform_endpoints).length).equals(0);
+      });
+      it('Send invite, check that push notification is sent', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user2);
+        const { workspace } = await workspaceService.createNewWorkspace(user.id, { name: 'test' });
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' }); 
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/send-invite`,
+          ...helpers.withAuthorization(tokens2),
+          payload: {
+            userId: user.id,
+            message: { data: 'any data' },
+            channelId: channel.id,
+            workspaceId: workspace.id,
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(stubbedMethods.sendPushNotificationToDevice.callCount).equals(1);
+        expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('random string');
+      });
+      it('Send invite, check that push notification is sent and disabled tokens is deleted', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        stubbedMethods.getDisabledEndpoints.returns(['random string']);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token2',
+            platform: 'iOS',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(stubbedMethods.deleteDeviceEndpoint.calledOnce).true();
+        expect(stubbedMethods.deleteDeviceEndpoint.args[0][0]).equals('random string');
+        const userAfterAPICalls = await udb.findById(user.id);
+        expect(userAfterAPICalls.device_tokens.length).equals(1);
+        expect(Object.keys(userAfterAPICalls.platform_endpoints).length).equals(1);
+        expect(Object.keys(userAfterAPICalls.platform_endpoints)[0]).equals('unique-token2');
+      });
     });
   });
 });

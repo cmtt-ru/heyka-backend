@@ -35,6 +35,12 @@ module.exports = {
     mailgun: {
       domain: process.env.MAILGUN_DOMAIN || 'mailgun-domain',
       apikey: process.env.MAILGUN_APIKEY || 'mailgun-apikey',
+    },
+    mailchimp: {
+      apikey: process.env.MAILCHIMP_APIKEY || 'mailchimp-apikey',
+      endpoint: 'https://us20.api.mailchimp.com/3.0/',
+      audienceName: 'Heyka release',
+      audienceId: 'fdd8523428',
     }
   },
   redis: process.env.SENTINELS ? {
@@ -67,5 +73,12 @@ module.exports = {
     imgproxyKey: process.env.IMGPROXY_KEY || 'imgporxy_key',
     imgproxySalt: process.env.IMGPROXY_SALT || 'imgproxy_salt',
     limitPerUser: 100,
+  },
+  notificationService: {
+    awsKey: process.env.AWS_SNS_KEY,
+    awsSecret: process.env.AWS_SNS_SECRET,
+    appleArn: process.env.AWS_SNS_APPLE_ARN,
+    androidArn: process.env.AWS_SNS_ANDROID_ARN,
+    awsEndpoint: process.env.AWS_SNS_ENDPOINT,
   }
 };

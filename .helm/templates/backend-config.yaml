@@ -36,7 +36,17 @@ data:
     AWS_KEY={{ pluck .Values.global.env .Values.app.s3.aws_key | first | default .Values.app.s3.aws_key._default | quote }}
     AWS_SECRET={{ pluck .Values.global.env .Values.app.s3.aws_secret | first | default .Values.app.s3.aws_secret._default | quote }}
 
+    # aws sns parameters
+    AWS_SNS_KEY={{ pluck .Values.global.env .Values.app.aws_sns.aws_key | first | default .Values.app.aws_sns.aws_key._default | quote }}
+    AWS_SNS_SECRET={{ pluck .Values.global.env .Values.app.aws_sns.aws_secret | first | default .Values.app.aws_sns.aws_secret._default | quote }}
+    AWS_SNS_APPLE_ARN={{ pluck .Values.global.env .Values.app.aws_sns.apple_arn | first | default .Values.app.aws_sns.apple_arn._default | quote }}
+    AWS_SNS_ANDROID_ARN={{ pluck .Values.global.env .Values.app.aws_sns.apple_arn | first | default .Values.app.aws_sns.android_arn._default | quote }}
+    AWS_SNS_ENDPOINT={{ pluck .Values.global.env .Values.app.aws_sns.aws_endpoint | first | default .Values.app.aws_sns.aws_endpoint._default | quote }}
+
     # imgproxy parameters
     IMGPROXY_URL={{ pluck .Values.global.env .Values.app.imgproxy.imgproxy_url | first | default .Values.app.imgproxy.imgproxy_url._default | quote }}
     IMGPROXY_KEY={{ pluck .Values.global.env .Values.app.imgproxy.imgproxy_key | first | default .Values.app.imgproxy.imgproxy_key._default | quote }}
     IMGPROXY_SALT={{ pluck .Values.global.env .Values.app.imgproxy.imgproxy_salt | first | default .Values.app.imgproxy.imgproxy_salt._default | quote }}
+
+    # mailchimp apikey
+    MAILCHIMP_APIKEY={{ pluck .Values.global.env .Values.app.mailchimp.apikey | first | default .Values.app.mailchimp.apikey._default | quote }}

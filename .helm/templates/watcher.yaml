@@ -6,7 +6,7 @@ metadata:
   labels:
     app: {{ .Chart.Name }}-watcher
 spec:
-  replicas: 1
+  replicas: {{ pluck .Values.global.env .Values.app.watcher.replicas | first | default .Values.app.watcher.replicas._default }}
   selector:
     matchLabels:
       app: {{ .Chart.Name }}-watcher

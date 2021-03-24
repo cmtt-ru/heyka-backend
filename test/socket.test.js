@@ -1685,7 +1685,7 @@ describe('Test socket', () => {
       // disconnect user3
       socket3.disconnect();
       // wait some time
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise(resolve => setTimeout(resolve, 20));
       const response2 = await server.inject({
         method: 'GET',
         url: `/workspaces/${workspace.id}`,

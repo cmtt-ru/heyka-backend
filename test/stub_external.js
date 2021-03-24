@@ -134,14 +134,18 @@ mockery.registerMock(
       return {
         image32x32: 'https://l.osn.io/794af87c',
         image64x64: 'https://l.osn.io/794af87c',
-        image128x128: 'https://l.osn.io/794af87c'
+        image128x128: 'https://l.osn.io/794af87c',
+        image256x256: 'https://l.osn.io/794af87c',
+        image512x512: 'https://l.osn.io/794af87c',
       };
     }
     getImageSetForOwnedEntity() {
       return {
         image32x32: 'https://l.osn.io/794af87c',
         image64x64: 'https://l.osn.io/794af87c',
-        image128x128: 'https://l.osn.io/794af87c'
+        image128x128: 'https://l.osn.io/794af87c',
+        image256x256: 'https://l.osn.io/794af87c',
+        image512x512: 'https://l.osn.io/794af87c',
       };
     }
     uploadImageFromUrl() {

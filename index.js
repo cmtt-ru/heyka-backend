@@ -19,7 +19,10 @@ async function startServer () {
 
   const socketIO = await socket.getSocketIO(server);
   configureSocketIOMetrics(socketIO);
-  socketIO.attach(server.listener);
+  socketIO.attach(server.listener, {
+    pingInterval: 25000,
+    pingTimeout: 15000,
+  });
   server.start();
   server.log(['info'], 'Server started');
 }

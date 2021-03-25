@@ -1481,6 +1481,30 @@ describe('Test routes', () => {
     });
   });
 
+  describe('POST /workspaces/{workspaceId}/settings', () => {
+    it('Update workspace settings, should update', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const admin = await userService.signup({ name: 'admin' });
+      const tokensUser = await userService.createTokens(admin);
+      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+        name: 'test'
+      });
+      const responseUpdate = await server.inject({
+        method: 'POST',
+        url: `/workspaces/${workspace.id}/settings`,
+        ...helpers.withAuthorization(tokensUser),
+        payload: {
+          canUsersInvite: false,
+        },
+      });
+      expect(responseUpdate.statusCode).equals(200);
+      expect(responseUpdate.result.workspace.canUsersInvite).equals(false);
+    });
+  });
+
   describe('POST /workspaces/{workspaceId}/channels', () => {
     describe('user cant create channel (not an admin, moderator or user)', () => {
       it('should return 401 error', async () => {
@@ -3214,6 +3238,33 @@ describe('Test routes', () => {
         expect(body.code).exists();
         //ensure that it is a guid + code
         expect(body.code).exists();
+      });
+    });
+    describe('Workspace set up that users cannot create invites, but user tries', () => {
+      it('Should return 403 error', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const guest = await userService.signup({ email: 'guest@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(guest);
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        await workspaceService.updateWorkspaceSettings(workspace.id, { canUsersInvite: false });
+
+        // add guest to the workspace as a guest
+        await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'user');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/invites`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(403);
       });
     });
   });

@@ -905,6 +905,18 @@ asn1@~0.2.3:
   dependencies:
     safer-buffer "~2.1.0"
 
+<<<<<<< HEAD
+assert-options@0.7.0:
+  version "0.7.0"
+  resolved "https://registry.yarnpkg.com/assert-options/-/assert-options-0.7.0.tgz#82c27618d9c0baa5e9da8ef607ee261a44ed6e5e"
+  integrity sha512-7q9uNH/Dh8gFgpIIb9ja8PJEWA5AQy3xnBC8jtKs8K/gNVCr1K6kIvlm59HUyYgvM7oEDoLzGgPcGd9FqhtXEQ==
+=======
+assert-options@0.6.2:
+  version "0.6.2"
+  resolved "https://registry.yarnpkg.com/assert-options/-/assert-options-0.6.2.tgz#cf0b27097b61aa1987d63628cbbaea11353f999a"
+  integrity sha512-KP9S549XptFAPGYmLRnIjQBL4/Ry8Jx5YNLQZ/l+eejqbTidBMnw4uZSAsUrzBq/lgyqDYqxcTF7cOxZb9gyEw==
+>>>>>>> redis-lock-fixes
+
 assert-options@0.7.0:
   version "0.7.0"
   resolved "https://registry.yarnpkg.com/assert-options/-/assert-options-0.7.0.tgz#82c27618d9c0baa5e9da8ef607ee261a44ed6e5e"
@@ -1096,7 +1108,11 @@ blob@0.0.5:
   resolved "https://registry.yarnpkg.com/blob/-/blob-0.0.5.tgz#d680eeef25f8cd91ad533f5b01eed48e64caf683"
   integrity sha512-gaqbzQPqOoamawKg0LGVd7SzLgXS+JH61oWprSLH+P+abTczqJbhTR8CmJ2u9/bUYNmHTGJx/UEmn6doAvvuig==
 
+<<<<<<< HEAD
 bluebird@^3.5.0, bluebird@^3.7.2:
+=======
+bluebird@^3.1.1, bluebird@^3.5.0, bluebird@^3.7.2:
+>>>>>>> redis-lock-fixes
   version "3.7.2"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.7.2.tgz#9f229c15be272454ffa973ace0dbee79a1b0c36f"
   integrity sha512-XpNj6GDQzdfW+r2Wnn7xiSAd7TM3jzkxGXBGTtWKuSXv1xUV+azxAm8jdWZN06QTQk+2N2XB9jRDkvbmQmcRtg==
@@ -3652,6 +3668,7 @@ log-timestamp@^0.3.0:
   dependencies:
     log-prefix "0.1.1"
 
+<<<<<<< HEAD
 log4js@^4.5.1:
   version "4.5.1"
   resolved "https://registry.yarnpkg.com/log4js/-/log4js-4.5.1.tgz#e543625e97d9e6f3e6e7c9fc196dd6ab2cae30b5"
@@ -3663,6 +3680,8 @@ log4js@^4.5.1:
     rfdc "^1.1.4"
     streamroller "^1.0.6"
 
+=======
+>>>>>>> redis-lock-fixes
 lolex@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/lolex/-/lolex-4.2.0.tgz#ddbd7f6213ca1ea5826901ab1222b65d714b3cd7"
@@ -4369,6 +4388,18 @@ performance-now@^2.1.0:
   resolved "https://registry.yarnpkg.com/performance-now/-/performance-now-2.1.0.tgz#6309f4e0e5fa913ec1c69307ae364b4b377c9e7b"
   integrity sha1-Ywn04OX6kT7BxpMHrjZLSzd8nns=
 
+<<<<<<< HEAD
+pg-connection-string@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.4.0.tgz#c979922eb47832999a204da5dbe1ebf2341b6a10"
+  integrity sha512-3iBXuv7XKvxeMrIgym7njT+HlZkwZqqGX4Bu9cci8xHZNT+Um1gWKqCsAzcC0d95rcKMU5WBg6YRUcHyV0HZKQ==
+=======
+pg-connection-string@^2.2.3:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.3.0.tgz#c13fcb84c298d0bfa9ba12b40dd6c23d946f55d6"
+  integrity sha512-ukMTJXLI7/hZIwTW7hGMZJ0Lj0S2XQBCJ4Shv4y1zgQ/vqVea+FLhzywvPj0ujSuofu+yA4MYHGZPTsgjBgJ+w==
+>>>>>>> redis-lock-fixes
+
 pg-connection-string@^2.4.0:
   version "2.4.0"
   resolved "https://registry.yarnpkg.com/pg-connection-string/-/pg-connection-string-2.4.0.tgz#c979922eb47832999a204da5dbe1ebf2341b6a10"
@@ -4379,6 +4410,7 @@ pg-int8@1.0.1:
   resolved "https://registry.yarnpkg.com/pg-int8/-/pg-int8-1.0.1.tgz#943bd463bf5b71b4170115f80f8efc9a0c0eb78c"
   integrity sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==
 
+<<<<<<< HEAD
 pg-minify@1.6.2:
   version "1.6.2"
   resolved "https://registry.yarnpkg.com/pg-minify/-/pg-minify-1.6.2.tgz#055acfe862cfca3ca0a529020846b0f308d68e70"
@@ -4405,6 +4437,59 @@ pg-protocol@^1.2.0, pg-protocol@^1.4.0:
   integrity sha512-El+aXWcwG/8wuFICMQjM5ZSAm6OWiJicFdNYo+VY3QP+8vI4SvLIWVe51PppTzMhikUJR+PsyIFKqfdXPz/yxA==
 
 pg-types@^2.1.0, pg-types@^2.2.0:
+=======
+pg-minify@1.6.1:
+  version "1.6.1"
+  resolved "https://registry.yarnpkg.com/pg-minify/-/pg-minify-1.6.1.tgz#d2c735cdaab171f9ab82bb73aded99ace2d88b8c"
+  integrity sha512-ujanxJJB9CSDUvlAOshtjdKAywOPR2vY0a7D+vvgk5rbrYcthZA7TjpN+Z+UwZsz/G/bUexYDT6huE33vYVN0g==
+
+pg-minify@1.6.2:
+  version "1.6.2"
+  resolved "https://registry.yarnpkg.com/pg-minify/-/pg-minify-1.6.2.tgz#055acfe862cfca3ca0a529020846b0f308d68e70"
+  integrity sha512-1KdmFGGTP6jplJoI8MfvRlfvMiyBivMRP7/ffh4a11RUFJ7kC2J0ZHlipoKiH/1hz+DVgceon9U2qbaHpPeyPg==
+
+pg-pool@^3.2.1:
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-3.2.1.tgz#5f4afc0f58063659aeefa952d36af49fa28b30e0"
+  integrity sha512-BQDPWUeKenVrMMDN9opfns/kZo4lxmSWhIqo+cSAF7+lfi9ZclQbr9vfnlNaPr8wYF3UYjm5X0yPAhbcgqNOdA==
+
+pg-pool@^3.2.2:
+  version "3.2.2"
+  resolved "https://registry.yarnpkg.com/pg-pool/-/pg-pool-3.2.2.tgz#a560e433443ed4ad946b84d774b3f22452694dff"
+  integrity sha512-ORJoFxAlmmros8igi608iVEbQNNZlp89diFVx6yV5v+ehmpMY9sK6QgpmgoXbmkNaBAx8cOOZh9g80kJv1ooyA==
+
+pg-promise@10.x:
+  version "10.9.5"
+  resolved "https://registry.yarnpkg.com/pg-promise/-/pg-promise-10.9.5.tgz#1ad7a2bb7fcbb3cea328caaf1e54eaa07ced4147"
+  integrity sha512-llJfdNQVTixjpsTuKTGStybkTWN5PYHWCTb0iqA9GFsvf1khJaH2dexljkMuyeQ41FG8ZkuqkmxrtRVauuS+0A==
+  dependencies:
+    assert-options "0.7.0"
+    pg "8.5.1"
+    pg-minify "1.6.2"
+    spex "3.2.0"
+
+pg-promise@^10.3.1:
+  version "10.5.8"
+  resolved "https://registry.yarnpkg.com/pg-promise/-/pg-promise-10.5.8.tgz#42f6c0bb12e21b9b267eb0cb1ee9330da3279265"
+  integrity sha512-EdLyPd/XlmNsfA2uRKHuCnyLhk5DHPdKGPZmjzpcKfdx6dDZB+nEfSuaNSjReRrM7BmPaV/hSGppt9kG/W2Umw==
+  dependencies:
+    assert-options "0.6.2"
+    pg "8.2.2"
+    pg-minify "1.6.1"
+    spex "3.0.2"
+
+pg-protocol@^1.2.5:
+  version "1.2.5"
+  resolved "https://registry.yarnpkg.com/pg-protocol/-/pg-protocol-1.2.5.tgz#28a1492cde11646ff2d2d06bdee42a3ba05f126c"
+  integrity sha512-1uYCckkuTfzz/FCefvavRywkowa6M5FohNMF5OjKrqo9PSR8gYc8poVmwwYQaBxhmQdBjhtP514eXy9/Us2xKg==
+
+pg-protocol@^1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/pg-protocol/-/pg-protocol-1.4.0.tgz#43a71a92f6fe3ac559952555aa3335c8cb4908be"
+  integrity sha512-El+aXWcwG/8wuFICMQjM5ZSAm6OWiJicFdNYo+VY3QP+8vI4SvLIWVe51PppTzMhikUJR+PsyIFKqfdXPz/yxA==
+
+pg-types@^2.1.0:
+>>>>>>> redis-lock-fixes
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/pg-types/-/pg-types-2.2.0.tgz#2d0250d636454f7cfa3b6ae0382fdfa8063254a3"
   integrity sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==
@@ -4414,6 +4499,26 @@ pg-types@^2.1.0, pg-types@^2.2.0:
     postgres-bytea "~1.0.0"
     postgres-date "~1.0.4"
     postgres-interval "^1.1.0"
+
+<<<<<<< HEAD
+pg@8.5.1:
+  version "8.5.1"
+  resolved "https://registry.yarnpkg.com/pg/-/pg-8.5.1.tgz#34dcb15f6db4a29c702bf5031ef2e1e25a06a120"
+  integrity sha512-9wm3yX9lCfjvA98ybCyw2pADUivyNWT/yIP4ZcDVpMN0og70BUWYEGXPCTAQdGTAqnytfRADb7NERrY1qxhIqw==
+=======
+pg@8.2.2:
+  version "8.2.2"
+  resolved "https://registry.yarnpkg.com/pg/-/pg-8.2.2.tgz#a8c2bbe1f20e67b11333a672b3bc2135338fd7e4"
+  integrity sha512-Uni50U0W2CNPM68+zfC/1WWjSO3q/uBSF/Nl7D+1npZGsPSM4/EZt0xSMW2jox1Bn0EfDlnTWnTsM/TrSOtBEA==
+>>>>>>> redis-lock-fixes
+  dependencies:
+    buffer-writer "2.0.0"
+    packet-reader "1.0.0"
+    pg-connection-string "^2.4.0"
+    pg-pool "^3.2.2"
+    pg-protocol "^1.4.0"
+    pg-types "^2.1.0"
+    pgpass "1.x"
 
 pg@8.5.1:
   version "8.5.1"
@@ -4784,6 +4889,13 @@ redis@^3.0.0:
     redis-commands "^1.5.0"
     redis-errors "^1.2.0"
     redis-parser "^3.0.0"
+
+redlock@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/redlock/-/redlock-4.2.0.tgz#c26590768559afd5fff76aa1133c94b411ff4f5f"
+  integrity sha512-j+oQlG+dOwcetUt2WJWttu4CZVeRzUrcVcISFmEmfyuwCVSJ93rDT7YSgg7H7rnxwoRyk/jU46kycVka5tW7jA==
+  dependencies:
+    bluebird "^3.7.2"
 
 redlock@^4.2.0:
   version "4.2.0"
@@ -5219,6 +5331,7 @@ source-map@~0.5.1:
   resolved "https://registry.yarnpkg.com/source-map/-/source-map-0.5.7.tgz#8a039d2d1021d22d1ea14c80d8ea468ba2ef3fcc"
   integrity sha1-igOdLRAh0i0eoUyA2OpGi6LvP8w=
 
+<<<<<<< HEAD
 spex@3.2.0:
   version "3.2.0"
   resolved "https://registry.yarnpkg.com/spex/-/spex-3.2.0.tgz#fa4a21922407e112624977b445a6d634578a1127"
@@ -5228,6 +5341,22 @@ split2@^3.1.1:
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/split2/-/split2-3.2.2.tgz#bf2cf2a37d838312c249c89206fd7a17dd12365f"
   integrity sha512-9NThjpgZnifTkJpzTZ7Eue85S49QwpNhZTq6GRJwObb6jnLFNGB7Qm73V5HewTROPyxD0C29xqmaI68bQtV+hg==
+=======
+spex@3.0.2:
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/spex/-/spex-3.0.2.tgz#7d0df635d92210847d5d92ce8abf45dfba3a8549"
+  integrity sha512-ZNCrOso+oNv5P01HCO4wuxV9Og5rS6ms7gGAqugfBPjx1QwfNXJI3T02ldfaap1O0dlT1sB0Rk+mhDqxt3Z27w==
+
+spex@3.2.0:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/spex/-/spex-3.2.0.tgz#fa4a21922407e112624977b445a6d634578a1127"
+  integrity sha512-9srjJM7NaymrpwMHvSmpDeIK5GoRMX/Tq0E8aOlDPS54dDnDUIp30DrP9SphMPEETDLzEM9+4qo+KipmbtPecg==
+
+split@^1.0.0:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/split/-/split-1.0.1.tgz#605bd9be303aa59fb35f9229fbea0ddec9ea07d9"
+  integrity sha512-mTyOoPbrivtXnwnIxZRFYRrPNtEFKlpB2fvjSnCQUiAA6qAZzqwna5envK4uk6OIeP17CsdF3rSBGYVBsU0Tkg==
+>>>>>>> redis-lock-fixes
   dependencies:
     readable-stream "^3.0.0"
 

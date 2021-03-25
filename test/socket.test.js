@@ -48,6 +48,7 @@ describe('Test socket', () => {
     await db.none('DELETE FROM sessions');
     await db.none('DELETE FROM groups');
     await db.none('DELETE FROM groups_members');
+
     Object.values(stubbedMethods).forEach(m => m.reset());
 
     process.env.DISCONNECT_TIMEOUT = '0';

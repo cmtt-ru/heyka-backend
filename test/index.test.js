@@ -1481,8 +1481,9 @@ describe('Test routes', () => {
     });
   });
 
-  describe('POST /workspaces/{workspaceId}/settings', () => {
-    it('Update workspace settings, should update', async () => {
+
+  describe('DELETE /workspaces/{workspaceId}', () => {
+    it('Delete workspace with wrong name', async () => {
       const {
         userService,
         workspaceService,
@@ -1502,6 +1503,53 @@ describe('Test routes', () => {
       });
       expect(responseUpdate.statusCode).equals(200);
       expect(responseUpdate.result.workspace.canUsersInvite).equals(false);
+    });
+  });
+
+  describe('POST /workspaces/{workspaceId}/settings', () => {
+    it('Update workspace settings, should update', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const admin = await userService.signup({ name: 'admin' });
+      const user = await userService.signup({ name: 'user' });
+      const tokens = await userService.createTokens(admin);
+      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+        name: 'test'
+      });
+      await workspaceService.addUserToWorkspace(workspace.id, user.id, 'moderator');
+      const responseUpdate = await server.inject({
+        method: 'DELETE',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens),
+        payload: {
+          name: 'test2'
+        },
+      });
+      expect(responseUpdate.statusCode).equals(400);
+    });
+    it('Delete workspace with proper name', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const admin = await userService.signup({ name: 'admin' });
+      const user = await userService.signup({ name: 'user' });
+      const tokens = await userService.createTokens(admin);
+      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+        name: 'test'
+      });
+      await workspaceService.addUserToWorkspace(workspace.id, user.id, 'moderator');
+      const responseUpdate = await server.inject({
+        method: 'DELETE',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens),
+        payload: {
+          name: 'test'
+        },
+      });
+      expect(responseUpdate.statusCode).equals(200);
     });
   });
 

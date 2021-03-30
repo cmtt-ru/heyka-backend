@@ -44,8 +44,10 @@ describe('Test routes', () => {
     await db.query('DELETE FROM channels');
     await db.query('DELETE FROM invites');
     await db.query('DELETE FROM workspaces');
+    await db.query('DELETE FROM groups');
+    await db.query('DELETE FROM groups_members');
     // clear all stubbed methods
-    Object.values(stubbedMethods).forEach(func => func.reset());
+    Object.values(stubbedMethods).forEach(func => func.resetHistory());
   });
 
   describe('GET /status (an unprotected route)', () => {
@@ -1479,8 +1481,33 @@ describe('Test routes', () => {
     });
   });
 
+
   describe('DELETE /workspaces/{workspaceId}', () => {
     it('Delete workspace', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const admin = await userService.signup({ name: 'admin' });
+      const tokensUser = await userService.createTokens(admin);
+      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+        name: 'test'
+      });
+      const responseUpdate = await server.inject({
+        method: 'POST',
+        url: `/workspaces/${workspace.id}/settings`,
+        ...helpers.withAuthorization(tokensUser),
+        payload: {
+          canUsersInvite: false,
+        },
+      });
+      expect(responseUpdate.statusCode).equals(200);
+      expect(responseUpdate.result.workspace.canUsersInvite).equals(false);
+    });
+  });
+
+  describe('POST /workspaces/{workspaceId}/settings', () => {
+    it('Update workspace settings, should update', async () => {
       const {
         userService,
         workspaceService,
@@ -1838,6 +1865,59 @@ describe('Test routes', () => {
         const payload2 = JSON.parse(response2.payload);
 
         expect(payload1.channel.id).equals(payload2.channel.id);
+      });
+    });
+    describe('Check push notifications', () => {
+      it('create private talk to user with device tokens', async () => {
+        const {
+          userService,
+          workspaceService,
+          userDatabaseService: udb,
+          workspaceDatabaseService: wdb,
+        } = server.services();
+        // create users
+        const user1 = await userService.signup({ email: 'user1@user.net', name: 'Admin Kurat' });
+        const user2 = await userService.signup({ email: 'user2@user.net', name: 'Tester Popov' });
+
+        // added device token for user
+        const deviceToken = uuid4();
+        const platformEndpoint = uuid4();
+        await udb.updateUser(user1.id, {
+          device_tokens: [deviceToken],
+          platform_endpoints: {
+            [deviceToken]: platformEndpoint,
+          }
+        });
+
+        // create tokens
+        const tokens = await userService.createTokens(user2);
+
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
+        
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          payload: {
+            users: [user1.id],
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+
+        // check that push notification has been sent
+        expect(stubbedMethods.sendPushNotificationToDevice.calledOnce).true();
+        expect(stubbedMethods.sendPushNotificationToDevice.firstCall.args[0]).equals(platformEndpoint);
+
+        // delete channel and check that push notification has been sent
+        const channels = await wdb.getWorkspaceChannelsForUser(workspace.id, user2.id);
+        const ch = channels.find(el => el.is_tmp);
+        await workspaceService.deleteChannel(ch.id);
+        expect(stubbedMethods.sendPushNotificationToDevice.calledTwice).true();
+        expect(stubbedMethods.sendPushNotificationToDevice.secondCall.args[1].event).equals('invite-cancelled');
       });
     });
   });
@@ -3183,6 +3263,33 @@ describe('Test routes', () => {
         expect(body.code).exists();
       });
     });
+    describe('Workspace set up that users cannot create invites, but user tries', () => {
+      it('Should return 403 error', async () => {
+        const {
+          userService,
+          workspaceService
+        } = server.services();
+        // create users
+        const admin = await userService.signup({ email: 'admin@user.net' });
+        const guest = await userService.signup({ email: 'guest@user.net' });
+        // create tokens
+        const tokens = await userService.createTokens(guest);
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
+        await workspaceService.updateWorkspaceSettings(workspace.id, { canUsersInvite: false });
+
+        // add guest to the workspace as a guest
+        await workspaceService.addUserToWorkspace(workspace.id, guest.id, 'user');
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/invites`,
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(403);
+      });
+    });
   });
 
   describe('GET /check/{code}', () => {
@@ -3550,6 +3657,385 @@ describe('Test routes', () => {
     });
   });
 
+  // Groups
+  describe('Groups', () => {
+    describe('POST /workspaces/${id}/groups : Create groups', () => {
+      it('Create first group with name and a list of users, should return 200', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [user2.id, user3.id],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+
+        // check that there are two relations
+        const db = server.plugins['hapi-pg-promise'].db;
+        const relations = await db.any('SELECT * FROM groups_members WHERE group_id=$1', [response.result.id]);
+        expect(relations).array().length(2);
+      });
+    });
+    describe('POST /groups/${id}/members : Add new users to group', () => {
+      it('Create new empty group, add two users, check that users are added', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+  
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+  
+        // add two users to the group
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/groups/${response.result.id}/members`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            users: [user2.id, user3.id],
+          }
+        });
+        expect(response2.statusCode).equals(200);
+  
+        // check that there are two relations
+        const db = server.plugins['hapi-pg-promise'].db;
+        const relations = await db.any('SELECT * FROM groups_members WHERE group_id=$1', [response.result.id]);
+        expect(relations).array().length(2);
+      });
+      it('Add user that already added to the group', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+  
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [user2.id, user3.id],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+  
+        // added already existing user
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/groups/${response.result.id}/members`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            users: [user2.id],
+          }
+        });
+        expect(response2.statusCode).equals(200);
+  
+        // check that there are two relations
+        const db = server.plugins['hapi-pg-promise'].db;
+        const relations = await db.any('SELECT * FROM groups_members WHERE group_id=$1', [response.result.id]);
+        expect(relations).array().length(2);
+      });
+    });
+    describe('DELETE /groups/${id}/members : Remove users from group', () => {
+      it('Create group with two users, delete one from them, check', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [user2.id, user3.id],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+
+        // delete one of them from list
+        const response2 = await server.inject({
+          method: 'DELETE',
+          url: `/groups/${response.result.id}/members`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            users: [user2.id],
+          }
+        });
+        expect(response2.statusCode).equals(200);
+
+        // check that there is single relation
+        const db = server.plugins['hapi-pg-promise'].db;
+        const relations = await db.any('SELECT * FROM groups_members WHERE group_id=$1', [response.result.id]);
+        expect(relations).array().length(1);
+        expect(relations[0].user_id).equals(user3.id);
+      });
+      it('Delete member that doesnt exists in this group', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [user2.id],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+
+        // delete one of them from list
+        const response2 = await server.inject({
+          method: 'DELETE',
+          url: `/groups/${response.result.id}/members`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            users: [user3.id],
+          }
+        });
+        expect(response2.statusCode).equals(200);
+
+        // check that there is single relation
+        const db = server.plugins['hapi-pg-promise'].db;
+        const relations = await db.any('SELECT * FROM groups_members WHERE group_id=$1', [response.result.id]);
+        expect(relations).array().length(1);
+        expect(relations[0].user_id).equals(user2.id);
+      });
+    });
+    describe('GET /workspaces/${id}/groups : Get list of groups', () => {
+      it('Get list of groups, check that everything is ok', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [user2.id, user3.id],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+
+        // get the list of groups in that workpsace
+        const response2 = await server.inject({
+          method: 'GET',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response2.statusCode).equals(200);
+        expect(response2.result).array().length(1);
+        expect(response2.result[0].id).equals(response.result.id);
+        expect(response2.result[0].name).exists();
+        expect(response2.result[0].membersCount).equals(2);
+      });
+    });
+    describe('GET /groups/${id}/members : Get list of users in the group', () => {
+      it('Get list of users', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [user2.id, user3.id],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+
+        // check that there are two relations
+        const response2 = await server.inject({
+          method: 'GET',
+          url: `/groups/${response.result.id}/members`,
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response2.statusCode).equals(200);
+        expect(response2.result).array().length(2);
+        expect(response2.result.find(u => u.id === user2.id)).exists();
+        expect(response2.result.find(u => u.id === user3.id)).exists();
+      });
+    });
+    describe('POST /groups/${id} : Edit the group', () => {
+      it('Edit name of group', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [user2.id, user3.id],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+
+        // check that there are two relations
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/groups/${response.result.id}`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'TestEdited'
+          }
+        });
+        expect(response2.statusCode).equals(200);
+
+        // check that name is changed
+        const db = server.plugins['hapi-pg-promise'].db;
+        const object = await db.one('SELECT * FROM groups WHERE id=$1', [response.result.id]);
+        expect(object).exists();
+      });
+    });
+    describe('DELETE /groups/${id} : Delete the group', () => {
+      it('Delete group', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [user2.id, user3.id],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+
+        // check that group exists
+        const db = server.plugins['hapi-pg-promise'].db;
+        const object = await db.one('SELECT * FROM groups WHERE id=$1', [response.result.id]);
+        expect(object).exists();
+
+        // delete group
+        const response2 = await server.inject({
+          method: 'DELETE',
+          url: `/groups/${response.result.id}`,
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response2.statusCode).equals(200);
+
+        // check that group doesnt exists
+        const object2 = await db.oneOrNone('SELECT * FROM groups WHERE id=$1', [response.result.id]);
+        expect(object2).not.exists();
+      });
+    });
+  });
+
   /**
    * Email verification functionality
    */
@@ -3760,6 +4246,159 @@ describe('Test routes', () => {
       expect(workspaceState.users.find(u => u.id===user2.id).calls_count).equals(1);
       expect(workspaceState.users.find(u => u.id===user2.id).latest_call).exists();
       expect(workspaceState.users.find(u => u.id===user3.id).calls_count).null();
+    });
+  });
+
+  /**
+   * Testing mobile pushes
+   */
+  describe('Checking mobile pushes', () => {
+    describe('Adding/deleting mobile pushes', () => {
+      it('Adding device token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response3 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token-2',
+            platform: 'iOS',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(response3.statusCode).equals(200);
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.device_tokens.length).equals(2);
+        expect(userAfterUpdate.device_tokens[0]).equals('unique-token');
+        expect(Object.keys(userAfterUpdate.platform_endpoints).length).equals(2);
+
+      });
+      it('Deleting device token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/delete-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.device_tokens.length).equals(0);
+        expect(Object.values(userAfterUpdate.platform_endpoints).length).equals(0);
+      });
+      it('Send invite, check that push notification is sent', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user2);
+        const { workspace } = await workspaceService.createNewWorkspace(user.id, { name: 'test' });
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' }); 
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/send-invite`,
+          ...helpers.withAuthorization(tokens2),
+          payload: {
+            userId: user.id,
+            message: { data: 'any data' },
+            channelId: channel.id,
+            workspaceId: workspace.id,
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(stubbedMethods.sendPushNotificationToDevice.callCount).equals(1);
+        expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('random string');
+      });
+      it('Send invite, check that push notification is sent and disabled tokens is deleted', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        stubbedMethods.getDisabledEndpoints.returns(['random string']);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token2',
+            platform: 'iOS',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(stubbedMethods.deleteDeviceEndpoint.calledOnce).true();
+        expect(stubbedMethods.deleteDeviceEndpoint.args[0][0]).equals('random string');
+        const userAfterAPICalls = await udb.findById(user.id);
+        expect(userAfterAPICalls.device_tokens.length).equals(1);
+        expect(Object.keys(userAfterAPICalls.platform_endpoints).length).equals(1);
+        expect(Object.keys(userAfterAPICalls.platform_endpoints)[0]).equals('unique-token2');
+      });
     });
   });
 });

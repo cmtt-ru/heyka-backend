@@ -7,5 +7,6 @@ yarn-error.log
 
 .werf_secret_key
 
-*.heapsnapshot
+# appmetrics logs
 *.log
+*.heapsnapshot

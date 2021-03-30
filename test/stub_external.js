@@ -23,6 +23,12 @@ const stubbedMethods = {
 
   uploadImageFromUrl: sinon.stub(),
   uploadS3FromUrl: sinon.stub(),
+
+  sendNotificationToUserDevices: sinon.stub(),
+  sendPushNotificationToDevice: sinon.stub(),
+  createDeviceEndpoint: sinon.stub(),
+  deleteDeviceEndpoint: sinon.stub(),
+  getDisabledEndpoints: sinon.stub().returns([]),
 };
 
 // mock services that make requests to external APIs
@@ -30,6 +36,7 @@ const pathToEmailService = path.resolve(__dirname, '../lib/services/email/email.
 const pathToJanusService = path.resolve(__dirname, '../lib/services/janus_workspace.js');
 const pathToSlackService = path.resolve(__dirname, '../lib/services/slack.js');
 const pathToFileService = path.resolve(__dirname, '../lib/services/file.js');
+const pathToNotificationService = path.resolve(__dirname, '../lib/services/notification_service.js');
 mockery.enable({
   warnOnReplace: true,
   warnOnUnregistered: false // disable warnings on unmocked modules
@@ -134,19 +141,45 @@ mockery.registerMock(
       return {
         image32x32: 'https://l.osn.io/794af87c',
         image64x64: 'https://l.osn.io/794af87c',
-        image128x128: 'https://l.osn.io/794af87c'
+        image128x128: 'https://l.osn.io/794af87c',
+        image256x256: 'https://l.osn.io/794af87c',
+        image512x512: 'https://l.osn.io/794af87c',
       };
     }
     getImageSetForOwnedEntity() {
       return {
         image32x32: 'https://l.osn.io/794af87c',
         image64x64: 'https://l.osn.io/794af87c',
-        image128x128: 'https://l.osn.io/794af87c'
+        image128x128: 'https://l.osn.io/794af87c',
+        image256x256: 'https://l.osn.io/794af87c',
+        image512x512: 'https://l.osn.io/794af87c',
       };
     }
     uploadImageFromUrl() {
       stubbedMethods.uploadImageFromUrl(...arguments);
       return 'https://leonardo.osnova.io/794af87c-195d-c9ee-40d6-14131c4c43a6/';
+    }
+  }
+);
+mockery.registerMock(
+  pathToNotificationService,
+  class NotificationService extends Schmervice.Service {
+    sendPushNotificationToDevice () {
+      stubbedMethods.sendPushNotificationToDevice(...arguments);
+    }
+    createDeviceEndpoint () {
+      stubbedMethods.createDeviceEndpoint(...arguments);
+      return 'random string';
+    }
+    deleteDeviceEndpoint () {
+      stubbedMethods.deleteDeviceEndpoint(...arguments);
+      return true;
+    }
+    getDisabledEndpoints (tokens) {
+      return stubbedMethods.getDisabledEndpoints(...arguments);
+    }
+    sendNotificationToUserDevices (){
+      return stubbedMethods.sendNotificationToUserDevices(...arguments);
     }
   }
 );

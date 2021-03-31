@@ -1984,7 +1984,6 @@ describe('Test routes', () => {
       const {
         userService,
         workspaceService,
-        workspaceDatabaseService: wdb
       } = server.services();
       const admin = await userService.signup({ email: 'admin@heyka.ru'});
       const user = await userService.signup({ email: 'user@heyka.ru' });

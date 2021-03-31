@@ -1483,7 +1483,7 @@ describe('Test routes', () => {
 
 
   describe('DELETE /workspaces/{workspaceId}', () => {
-    it('Delete workspace with wrong name', async () => {
+    it('Delete workspace', async () => {
       const {
         userService,
         workspaceService,
@@ -1523,31 +1523,6 @@ describe('Test routes', () => {
         method: 'DELETE',
         url: `/workspaces/${workspace.id}`,
         ...helpers.withAuthorization(tokens),
-        payload: {
-          name: 'test2'
-        },
-      });
-      expect(responseUpdate.statusCode).equals(400);
-    });
-    it('Delete workspace with proper name', async () => {
-      const {
-        userService,
-        workspaceService,
-      } = server.services();
-      const admin = await userService.signup({ name: 'admin' });
-      const user = await userService.signup({ name: 'user' });
-      const tokens = await userService.createTokens(admin);
-      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
-        name: 'test'
-      });
-      await workspaceService.addUserToWorkspace(workspace.id, user.id, 'moderator');
-      const responseUpdate = await server.inject({
-        method: 'DELETE',
-        url: `/workspaces/${workspace.id}`,
-        ...helpers.withAuthorization(tokens),
-        payload: {
-          name: 'test'
-        },
       });
       expect(responseUpdate.statusCode).equals(200);
     });

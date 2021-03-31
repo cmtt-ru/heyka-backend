@@ -3800,7 +3800,7 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(tokens),
           payload: {
             name: 'Test',
-            users: [user2.id, user3.id],
+            users: [user.id, user2.id, user3.id],
           }
         });
         expect(response.statusCode).equals(200);
@@ -3813,9 +3813,11 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(tokens),
         });
         expect(response2.statusCode).equals(200);
-        expect(response2.result).array().length(2);
+        expect(response2.result).array().length(3);
         expect(response2.result.find(u => u.id === user2.id)).exists();
         expect(response2.result.find(u => u.id === user3.id)).exists();
+        const user1InArray = response2.result.find(u => u.id === user.id);
+        expect(user1InArray.latestActivityAt).exists();
       });
     });
     describe('POST /groups/${id} : Edit the group', () => {

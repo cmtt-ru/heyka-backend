@@ -91,6 +91,7 @@ socket.on('workspace-updated', data => {
 ```
 socket.on('channel-created', data => {
   // data.channelId: {string} Id созданного канала
+  // data.workspaceId: {string} Id воркспейса, в котором создан канал
 })
 ```
 

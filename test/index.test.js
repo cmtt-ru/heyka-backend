@@ -4037,6 +4037,44 @@ describe('Test routes', () => {
         expect(response2.result[0].name).exists();
         expect(response2.result[0].membersCount).equals(2);
       });
+      it('Get list of groups, check that empty group there are', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ name: 'user' });
+        const user2 = await userService.signup({ name: 'user2' });
+        const user3 = await userService.signup({ name: 'user3' });
+        const { workspace } = await workspaceService.createWorkspace(user, 'test');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        
+        const tokens = await userService.createTokens(user);
+
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            name: 'Test',
+            users: [],
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response.result.id).exists();
+
+        // get the list of groups in that workpsace
+        const response2 = await server.inject({
+          method: 'GET',
+          url: `/workspaces/${workspace.id}/groups`,
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response2.statusCode).equals(200);
+        expect(response2.result).array().length(1);
+        expect(response2.result[0].id).equals(response.result.id);
+        expect(response2.result[0].name).exists();
+        expect(response2.result[0].membersCount).equals(0);
+      });
     });
     describe('GET /groups/${id}/members : Get list of users in the group', () => {
       it('Get list of users', async () => {

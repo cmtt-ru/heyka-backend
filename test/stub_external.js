@@ -24,7 +24,6 @@ const stubbedMethods = {
   uploadImageFromUrl: sinon.stub(),
   uploadS3FromUrl: sinon.stub(),
 
-  sendNotificationToUserDevices: sinon.stub(),
   sendPushNotificationToDevice: sinon.stub(),
   createDeviceEndpoint: sinon.stub(),
   deleteDeviceEndpoint: sinon.stub(),
@@ -177,9 +176,6 @@ mockery.registerMock(
     }
     getDisabledEndpoints (tokens) {
       return stubbedMethods.getDisabledEndpoints(...arguments);
-    }
-    sendNotificationToUserDevices (){
-      return stubbedMethods.sendNotificationToUserDevices(...arguments);
     }
   }
 );

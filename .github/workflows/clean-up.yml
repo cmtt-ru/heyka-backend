@@ -17,10 +17,9 @@ jobs:
           fetch-depth: 0
 
       - name: Cleanup
-        uses: werf/actions/cleanup@master
+        uses: werf/actions/cleanup@v1.1
         with:
-          group: 1.1
           channel: alpha
         env:
-          WERF_STAGES_STORAGE: "docker.pkg.github.com/cmtt-ru/heyka-backend/stages-heyka-backend"
+          WERF_STAGES_STORAGE: "ghcr.io/cmtt-ru/stages-heyka-backend"
           WERF_GIT_HISTORY_BASED_CLEANUP_v1_2: "1"

@@ -3273,6 +3273,93 @@ describe('Test socket', () => {
       });
     });
   });
+
+  describe('HEYK-765: Events continues after member was deleted from channel', () => {
+    it('Delete user from channel, check that events stop firing', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'admin@world.net' });
+      const user2 = await userService.signup({ email: 'user@world.net' });
+      const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      const channel = await workspaceService.createChannel(workspace.id, user1.id, {
+        isPrivate: false,
+        name: 'testChannel'
+      });
+      const tokens1 = await userService.createTokens(user1);
+      const tokens2 = await userService.createTokens(user2);
+
+      // authenticate 2 users
+      const socket1 = io(server.info.uri);
+      const socket2 = io(server.info.uri);
+      let eventName = eventNames.socket.authSuccess;
+      const awaitSocket1Auth = awaitSocketForEvent(true, socket1, eventName, data => {
+        expect(data).includes('userId');
+      });
+      const awaitSocket2Auth = awaitSocketForEvent(true, socket2, eventName, data => {
+        expect(data).includes('userId');
+      });
+      socket1.emit(eventNames.client.auth, {
+        token: tokens1.accessToken,
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      socket2.emit(eventNames.client.auth, {
+        token: tokens2.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      await Promise.all([awaitSocket1Auth, awaitSocket2Auth]);
+      
+      /**
+       * admin подключается к каналу, второй юзер узнает об этом
+       */
+      eventName = eventNames.socket.userSelectedChannel;
+      const socket2NotifiedAboutSelect = awaitSocketForEvent(true, socket2, eventName, data => {
+        expect(data.channelId).equals(channel.id);
+        expect(data.userId).equals(user1.id);
+      });
+      await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/select?socketId=${socket1.id}`,
+        ...helpers.withAuthorization(tokens1),
+        payload: helpers.defaultUserState()
+      });
+      await socket2NotifiedAboutSelect;
+
+      // админ удаляет пользователя из канала
+      const removeMemberResponse = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/delete-users`,
+        ...helpers.withAuthorization(tokens1),
+        payload: {
+          users: [ user2.id, ],
+        },
+      });
+      expect(removeMemberResponse.statusCode).equals(200);
+
+      /**
+       * Пользователь 1 выходит из канала сокетом, юзер 2 не должен узнать об этом
+       */
+      eventName = eventNames.socket.userUnselectedChannel;
+      const socket2NotNotifiedAboutUnselect = awaitSocketForEvent(false, socket2, eventName);
+      const unseletChannelResponse = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/unselect?socketId=${socket1.id}`,
+        ...helpers.withAuthorization(tokens1),
+      });
+      expect(unseletChannelResponse.statusCode).equals(200);
+      await Promise.race([
+        socket2NotNotifiedAboutUnselect,
+        helpers.skipSomeTime(100),
+      ]);
+
+      socket1.disconnect();
+      socket2.disconnect();
+    });
+  });
 });
 
 /**

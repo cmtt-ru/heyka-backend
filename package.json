@@ -56,6 +56,7 @@
     "json-stream": "^1.0.0",
     "jsonwebtoken": "^8.5.1",
     "kubernetes-client": "^9.0.0",
+    "log-timestamp": "^0.3.0",
     "mime-types": "^2.1.27",
     "node-pg-migrate": "^3.23.3",
     "pg-promise": "^10.3.1",

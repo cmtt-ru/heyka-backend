@@ -31,6 +31,7 @@
     "@hapi/inert": "^5.2.2",
     "@hapi/vision": "^5.5.4",
     "@slack/web-api": "^5.7.0",
+    "aws-sdk": "^2.827.0",
     "axios": "^0.19.2",
     "bcryptjs": "^2.4.3",
     "bell": "^10.0.0",

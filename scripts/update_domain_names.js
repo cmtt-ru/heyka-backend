@@ -16,7 +16,9 @@ async function syncDomainNamesWithJanusNodes(janusWorkspaceService) {
   const dnsRecords = (await cf.dnsRecords.browse(config.cloudflare.dnsZoneId)).result
     .filter(record => record.type === 'A' && record.name.includes('.infr.heyka.io'));
 
-  console.log(`Collected all janus nodes`, dnsRecords);
+  console.log(`Collected all janus nodes`);
+  console.log('records: ', dnsRecords);
+  console.log('nodes: ', nodes);
 
   // check domain that should be added
   await Promise.all(
@@ -25,13 +27,13 @@ async function syncDomainNamesWithJanusNodes(janusWorkspaceService) {
         
       // check if domain name should be added
       if (!dnsRecords.find(record => record.name === domainName)) {
-        await cf.dnsRecords.add(config.cloudflare.dnsZoneId, {
+        const response = await cf.dnsRecords.add(config.cloudflare.dnsZoneId, {
           type: 'A',
           name: domainName,
           content: janusNode.ip,
           ttl: 120,
         });
-        console.log(`DNS record for ${janusNode.ip} has been added (${domainName})`);
+        console.log(`DNS record for ${janusNode.ip} has been added (${domainName})`, response);
       }
     })
   );
@@ -43,7 +45,7 @@ async function syncDomainNamesWithJanusNodes(janusWorkspaceService) {
     dnsRecords.map(async record => {
       if (!nodes.find(node => node.ip === record.content)) {
         await cf.dnsRecords.del(config.cloudflare.dnsZoneId, record.id);
-        console.log(`DNS record for ${record.content} has been added (${record.name})`);
+        console.log(`DNS record for ${record.content} has been deleted (${record.name})`);
       }
     })
   );

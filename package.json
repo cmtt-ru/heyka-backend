@@ -30,6 +30,7 @@
     "@hapi/hapi": "^18.4.0",
     "@hapi/inert": "^5.2.2",
     "@hapi/vision": "^5.5.4",
+    "@mailchimp/mailchimp_marketing": "^3.0.36",
     "@slack/web-api": "^5.7.0",
     "aws-sdk": "^2.827.0",
     "appmetrics": "^5.1.1",

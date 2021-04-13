@@ -1478,6 +1478,45 @@ describe('Test routes', () => {
         expect(responseUpdate.result.workspace.name).equals('UpdateName');
         expect(responseUpdate.result.workspace.avatarSet.image64x64).exists();
       });
+      it('should update workspace with avatarFileId equals null', async () => {
+        const {
+          userService,
+          workspaceService,
+          workspaceDatabaseService: wdb,
+          fileDatabaseService: fdb,
+        } = server.services();
+        const admin = await userService.signup({ name: 'admin' });
+        const tokens = await userService.createTokens(admin);
+        const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+          name: 'test'
+        });
+        const fileDbInfo = {
+          id: uuid4(),
+          user_id: admin.id,
+          created_at: new Date(),
+          type: 'avatar',
+          updated_at: new Date(),
+          filename: uuid4() + '.png',
+        };
+        await fdb.insertFile(fileDbInfo);
+        await wdb.updateWorkspace(workspace.id, {
+          avatar_file_id: fileDbInfo.id,
+          avatar_set: {
+            avatar12x12: 'http://example.com/image.png',
+          },
+        });
+
+        const responseUpdate = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            avatarFileId: null
+          },
+        });
+        expect(responseUpdate.statusCode).equals(200);
+        expect(responseUpdate.result.workspace.avatarFileId).not.exists();
+      });
     });
   });
 
@@ -1997,7 +2036,6 @@ describe('Test routes', () => {
       const {
         userService,
         workspaceService,
-        workspaceDatabaseService: wdb
       } = server.services();
       const admin = await userService.signup({ email: 'admin@heyka.ru'});
       const user = await userService.signup({ email: 'user@heyka.ru' });

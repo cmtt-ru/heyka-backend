@@ -1544,6 +1544,53 @@ describe('Test routes', () => {
     });
   });
 
+  describe('DELETE /workspaces/{workspaceId}', () => {
+    it('Delete workspace with wrong name', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const admin = await userService.signup({ name: 'admin' });
+      const user = await userService.signup({ name: 'user' });
+      const tokens = await userService.createTokens(admin);
+      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+        name: 'test'
+      });
+      await workspaceService.addUserToWorkspace(workspace.id, user.id, 'moderator');
+      const responseUpdate = await server.inject({
+        method: 'DELETE',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens),
+        payload: {
+          name: 'test2'
+        },
+      });
+      expect(responseUpdate.statusCode).equals(400);
+    });
+    it('Delete workspace with proper name', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const admin = await userService.signup({ name: 'admin' });
+      const user = await userService.signup({ name: 'user' });
+      const tokens = await userService.createTokens(admin);
+      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+        name: 'test'
+      });
+      await workspaceService.addUserToWorkspace(workspace.id, user.id, 'moderator');
+      const responseUpdate = await server.inject({
+        method: 'DELETE',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens),
+        payload: {
+          name: 'test'
+        },
+      });
+      expect(responseUpdate.statusCode).equals(200);
+    });
+  });
+
   describe('POST /workspaces/{workspaceId}/channels', () => {
     describe('user cant create channel (not an admin, moderator or user)', () => {
       it('should return 401 error', async () => {

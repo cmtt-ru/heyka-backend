@@ -61,6 +61,7 @@ module.exports = {
   files: {
     awsEndpoint: process.env.AWS_ENDPOINT || 'aws_endpoint',
     awsBucket: process.env.AWS_BUCKET || 'aws_bucket',
+    awsLogsBucket: 'heyka-logs',
     awsKey: process.env.AWS_KEY || 'aws_key',
     awsSecret: process.env.AWS_SECRET || 'aws_secret',
     imgproxyUrl: process.env.IMGPROXY_URL || 'imgproxy_url',

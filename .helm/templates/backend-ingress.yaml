@@ -6,6 +6,7 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
 spec:
   rules:
   - host: {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
@@ -31,11 +32,11 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: web
-{{- end }}        
+{{- end }}
   tls:
   - hosts:
       - {{ pluck .Values.global.env .Values.app.url | first | default (printf "back-%s.%s" .Values.global.env .Values.app.domain_base) }}
-{{- if (eq $.Values.global.env "stage") }}     
+{{- if (eq $.Values.global.env "stage") }}
       - {{ pluck .Values.global.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
 {{- end }}
     secretName: {{ printf "tls-%s" .Chart.Name | quote }}

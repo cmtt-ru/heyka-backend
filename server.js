@@ -1,5 +1,6 @@
 'use strict';
 
+require('log-timestamp');
 const Glue = require('@hapi/glue');
 const manifest = require('./config/manifest');
 const options = {

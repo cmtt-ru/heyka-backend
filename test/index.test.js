@@ -3905,6 +3905,47 @@ describe('Test routes', () => {
         expect(stubbedMethods.sendPushNotificationToDevice.callCount).equals(1);
         expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('iOS@unique-token');
       });
+      it('Send batch of invites, check that push notifications is sent', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const user3 = await userService.signup({ email: 'test3@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user2);
+        const { workspace } = await workspaceService.createNewWorkspace(user.id, { name: 'test' });
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' }); 
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/send-invites`,
+          ...helpers.withAuthorization(tokens2),
+          payload: {
+            users: [ user.id, user2.id, user3.id, user3.id ],
+            message: { data: 'any data' },
+            channelId: channel.id,
+            workspaceId: workspace.id,
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(stubbedMethods.sendPushNotificationToDevice.callCount).equals(1);
+        expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('iOS@unique-token');
+        const messages = response2.result.invites.filter(i => i.invite);
+        expect(messages.length).equals(2);
+      });
       // it('Send invite, check that push notification is sent and disabled tokens is deleted', async () => {
       //   const {
       //     userService,

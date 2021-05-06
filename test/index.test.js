@@ -3256,7 +3256,7 @@ describe('Test routes', () => {
         // create workspace
         const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
-        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id, 'user@example.com');
         const response = await server.inject({
           method: 'GET',
           url: `/check/${code}`
@@ -3265,6 +3265,7 @@ describe('Test routes', () => {
         const body = JSON.parse(response.payload);
         expect(body.workspace).exists();
         expect(body.user).exists();
+        expect(body.email).exists();
       });
     });
   });

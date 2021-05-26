@@ -47,7 +47,7 @@ describe('Test routes', () => {
     await db.query('DELETE FROM groups');
     await db.query('DELETE FROM groups_members');
     // clear all stubbed methods
-    Object.values(stubbedMethods).forEach(func => func.reset());
+    Object.values(stubbedMethods).forEach(func => func.resetHistory());
   });
 
   describe('GET /status (an unprotected route)', () => {
@@ -301,7 +301,7 @@ describe('Test routes', () => {
     });
 
     describe('Request with valid tokens', () => {
-      it('Should return new tokens and delete old ones', async () => {
+      it('Should return new tokens and delete previous old ones', async () => {
         const { userService } = server.services();
         const user = await userService.signup({ email: 'funny@chel.ru' });
         const tokens = await userService.createTokens(user, 10000, 10000);
@@ -311,11 +311,71 @@ describe('Test routes', () => {
           payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
         });
         expect(response.statusCode).to.be.equal(200);
-        const payload = JSON.parse(response.payload);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/refresh-token',
+          payload: { accessToken: response.result.accessToken, refreshToken: response.result.refreshToken }
+        });
+        expect(response2.statusCode).to.be.equal(200);
+        const payload = JSON.parse(response2.payload);
         expect(payload).includes('accessToken');
         expect(payload).includes('refreshToken');
         expect(await userService.findAccessToken(tokens.accessToken)).to.be.null();
         expect(await userService.findRefreshToken(tokens.refreshToken)).to.be.null();
+      });
+    });
+
+    describe('HEYK-903: Case when server updates token, but client didnt receive them', () => {
+      it('Previous token should be valid until user will send new ones', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ name: 'hey', email: 'funny@chel.ru' });
+        const tokens = await userService.createTokens(user, 10000, 10000);
+        const response1 = await server.inject({
+          method: 'GET',
+          url: '/me',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response1.statusCode).equals(200);
+
+        // refresh token
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/refresh-token',
+          payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
+        });
+        expect(response2.statusCode).to.be.equal(200);
+
+        // previous accesss/refresh token still valid
+        const response3 = await server.inject({
+          method: 'GET',
+          url: '/me',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response3.statusCode).equals(200);
+
+        // refresh token works with previous access/refresh token
+        const response4 = await server.inject({
+          method: 'POST',
+          url: '/refresh-token',
+          payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
+        });
+        expect(response4.statusCode).to.be.equal(200);
+
+        // refresh token with the fresh pair
+        const response5 = await server.inject({
+          method: 'POST',
+          url: '/refresh-token',
+          payload: { accessToken: response4.result.accessToken, refreshToken: response4.result.refreshToken }
+        });
+        expect(response5.statusCode).to.be.equal(200);
+
+        // old tokens not valid
+        const response6 = await server.inject({
+          method: 'GET',
+          url: '/me',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response6.statusCode).equals(401);
       });
     });
   });
@@ -1481,6 +1541,53 @@ describe('Test routes', () => {
     });
   });
 
+  describe('DELETE /workspaces/{workspaceId}', () => {
+    it('Delete workspace with wrong name', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const admin = await userService.signup({ name: 'admin' });
+      const user = await userService.signup({ name: 'user' });
+      const tokens = await userService.createTokens(admin);
+      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+        name: 'test'
+      });
+      await workspaceService.addUserToWorkspace(workspace.id, user.id, 'moderator');
+      const responseUpdate = await server.inject({
+        method: 'DELETE',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens),
+        payload: {
+          name: 'test2'
+        },
+      });
+      expect(responseUpdate.statusCode).equals(400);
+    });
+    it('Delete workspace with proper name', async () => {
+      const {
+        userService,
+        workspaceService,
+      } = server.services();
+      const admin = await userService.signup({ name: 'admin' });
+      const user = await userService.signup({ name: 'user' });
+      const tokens = await userService.createTokens(admin);
+      const { workspace } = await workspaceService.createNewWorkspace(admin.id, {
+        name: 'test'
+      });
+      await workspaceService.addUserToWorkspace(workspace.id, user.id, 'moderator');
+      const responseUpdate = await server.inject({
+        method: 'DELETE',
+        url: `/workspaces/${workspace.id}`,
+        ...helpers.withAuthorization(tokens),
+        payload: {
+          name: 'test'
+        },
+      });
+      expect(responseUpdate.statusCode).equals(200);
+    });
+  });
+
   describe('POST /workspaces/{workspaceId}/channels', () => {
     describe('user cant create channel (not an admin, moderator or user)', () => {
       it('should return 401 error', async () => {
@@ -1620,9 +1727,14 @@ describe('Test routes', () => {
   describe('GET /workspaces/{workspaceId}', () => {
     describe('request the state of the workspace', () => {
       it('should return workspace state, array of users and channels', async () => {
-        const { userService, workspaceService } = server.services();
+        const {
+          userService,
+          workspaceService,
+          userDatabaseService,
+        } = server.services();
         const user = await userService.signup({ email: 'user@heyka.com', name: 'n' });
         const user2 = await userService.signup({ email: 'user2@heyka.com', name: 'n2' });
+        await userDatabaseService.updateUser(user.id, { auth: { slack: { id: 'ok'} } });
         // создаём третьего юзера, который не должен фигурировать нигде
         const user3 = await userService.signup({ email: 'user3@heyka.com', name: 'n3' });
         const tokens = await userService.createTokens({ id: user.id });
@@ -1818,6 +1930,56 @@ describe('Test routes', () => {
         const payload2 = JSON.parse(response2.payload);
 
         expect(payload1.channel.id).equals(payload2.channel.id);
+      });
+    });
+    describe('Check push notifications', () => {
+      it('create private talk to user with device tokens', async () => {
+        const {
+          userService,
+          workspaceService,
+          userDatabaseService: udb,
+          workspaceDatabaseService: wdb,
+        } = server.services();
+        // create users
+        const user1 = await userService.signup({ email: 'user1@user.net', name: 'Admin Kurat' });
+        const user2 = await userService.signup({ email: 'user2@user.net', name: 'Tester Popov' });
+
+        // added device token for user
+        const deviceToken = uuid4();
+        await udb.updateUser(user1.id, {
+          device_tokens: [deviceToken],
+        });
+
+        // create tokens
+        const tokens = await userService.createTokens(user2);
+
+        // create workspace
+        const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
+        
+        const response = await server.inject({
+          method: 'POST',
+          url: `/workspaces/${workspace.id}/private-talk`,
+          payload: {
+            users: [user1.id],
+          },
+          headers: {
+            'Authorization': `Bearer ${tokens.accessToken}`
+          }
+        });
+        expect(response.statusCode).to.be.equal(200);
+
+        // check that push notification has been sent
+        expect(stubbedMethods.sendPushNotificationToDevice.calledOnce).true();
+        expect(stubbedMethods.sendPushNotificationToDevice.firstCall.args[0]).equals(deviceToken);
+
+        // delete channel and check that push notification has been sent
+        const channels = await wdb.getWorkspaceChannelsForUser(workspace.id, user2.id);
+        const ch = channels.find(el => el.is_tmp);
+        await workspaceService.deleteChannel(ch.id);
+        console.log(stubbedMethods.sendPushNotificationToDevice.callCount);
+        expect(stubbedMethods.sendPushNotificationToDevice.calledTwice).true();
+        expect(stubbedMethods.sendPushNotificationToDevice.secondCall.args[1].event).equals('invite-cancelled');
       });
     });
   });
@@ -3203,7 +3365,7 @@ describe('Test routes', () => {
         // create workspace
         const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
-        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id, 'user@example.com');
         const response = await server.inject({
           method: 'GET',
           url: `/check/${code}`
@@ -3212,6 +3374,7 @@ describe('Test routes', () => {
         const body = JSON.parse(response.payload);
         expect(body.workspace).exists();
         expect(body.user).exists();
+        expect(body.email).exists();
       });
     });
   });
@@ -4159,6 +4322,195 @@ describe('Test routes', () => {
       expect(workspaceState.users.find(u => u.id===user2.id).calls_count).equals(1);
       expect(workspaceState.users.find(u => u.id===user2.id).latest_call).exists();
       expect(workspaceState.users.find(u => u.id===user3.id).calls_count).null();
+    });
+  });
+
+  /**
+   * Testing mobile pushes
+   */
+  describe('Checking mobile pushes', () => {
+    describe('Adding/deleting mobile pushes', () => {
+      it('Adding device token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response3 = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token-2',
+            platform: 'iOS',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(response3.statusCode).equals(200);
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.device_tokens.length).equals(2);
+        expect(userAfterUpdate.device_tokens[0]).includes('unique-token');
+
+      });
+      it('Deleting device token', async () => {
+        const {
+          userService,
+          userDatabaseService: udb,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/delete-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        const userAfterUpdate = await udb.findById(user.id);
+        expect(userAfterUpdate.device_tokens.length).equals(0);
+        expect(Object.values(userAfterUpdate.platform_endpoints).length).equals(0);
+      });
+      it('Send invite, check that push notification is sent', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user2);
+        const { workspace } = await workspaceService.createNewWorkspace(user.id, { name: 'test' });
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' }); 
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/send-invite`,
+          ...helpers.withAuthorization(tokens2),
+          payload: {
+            userId: user.id,
+            message: { data: 'any data' },
+            channelId: channel.id,
+            workspaceId: workspace.id,
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(stubbedMethods.sendPushNotificationToDevice.callCount).equals(1);
+        expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('iOS@unique-token');
+      });
+      it('Send batch of invites, check that push notifications is sent', async () => {
+        const {
+          userService,
+          workspaceService,
+        } = server.services();
+        const user = await userService.signup({ email: 'test@user.ru' });
+        const user2 = await userService.signup({ email: 'test2@user.ru' });
+        const user3 = await userService.signup({ email: 'test3@user.ru' });
+        const tokens = await userService.createTokens(user);
+        const tokens2 = await userService.createTokens(user2);
+        const { workspace } = await workspaceService.createNewWorkspace(user.id, { name: 'test' });
+        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+        await workspaceService.addUserToWorkspace(workspace.id, user3.id);
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' }); 
+        const response = await server.inject({
+          method: 'POST',
+          url: `/add-device-token`,
+          ...helpers.withAuthorization(tokens),
+          payload: {
+            deviceToken: 'unique-token',
+            platform: 'iOS',
+          }
+        });
+        const response2 = await server.inject({
+          method: 'POST',
+          url: `/send-invites`,
+          ...helpers.withAuthorization(tokens2),
+          payload: {
+            users: [ user.id, user2.id, user3.id, user3.id ],
+            message: { data: 'any data' },
+            channelId: channel.id,
+            workspaceId: workspace.id,
+          }
+        });
+        expect(response.statusCode).equals(200);
+        expect(response2.statusCode).equals(200);
+        expect(stubbedMethods.sendPushNotificationToDevice.callCount).equals(1);
+        expect(stubbedMethods.sendPushNotificationToDevice.args[0][0]).equals('iOS@unique-token');
+        const messages = response2.result.invites.filter(i => i.invite);
+        expect(messages.length).equals(2);
+      });
+      // it('Send invite, check that push notification is sent and disabled tokens is deleted', async () => {
+      //   const {
+      //     userService,
+      //     userDatabaseService: udb,
+      //   } = server.services();
+      //   const user = await userService.signup({ email: 'test@user.ru' });
+      //   const tokens = await userService.createTokens(user);
+      //   const response = await server.inject({
+      //     method: 'POST',
+      //     url: `/add-device-token`,
+      //     ...helpers.withAuthorization(tokens),
+      //     payload: {
+      //       deviceToken: 'unique-token',
+      //       platform: 'iOS',
+      //     }
+      //   });
+      //   stubbedMethods.getDisabledEndpoints.returns(['unique-token']);
+      //   const response2 = await server.inject({
+      //     method: 'POST',
+      //     url: `/add-device-token`,
+      //     ...helpers.withAuthorization(tokens),
+      //     payload: {
+      //       deviceToken: 'unique-token2',
+      //       platform: 'iOS',
+      //     }
+      //   });
+      //   expect(response.statusCode).equals(200);
+      //   expect(response2.statusCode).equals(200);
+      //   const userAfterAPICalls = await udb.findById(user.id);
+      //   expect(userAfterAPICalls.device_tokens.length).equals(1);
+      // });
     });
   });
 });

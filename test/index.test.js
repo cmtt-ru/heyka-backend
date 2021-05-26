@@ -1665,9 +1665,14 @@ describe('Test routes', () => {
   describe('GET /workspaces/{workspaceId}', () => {
     describe('request the state of the workspace', () => {
       it('should return workspace state, array of users and channels', async () => {
-        const { userService, workspaceService } = server.services();
+        const {
+          userService,
+          workspaceService,
+          userDatabaseService,
+        } = server.services();
         const user = await userService.signup({ email: 'user@heyka.com', name: 'n' });
         const user2 = await userService.signup({ email: 'user2@heyka.com', name: 'n2' });
+        await userDatabaseService.updateUser(user.id, { auth: { slack: { id: 'ok'} } });
         // создаём третьего юзера, который не должен фигурировать нигде
         const user3 = await userService.signup({ email: 'user3@heyka.com', name: 'n3' });
         const tokens = await userService.createTokens({ id: user.id });
@@ -3298,7 +3303,7 @@ describe('Test routes', () => {
         // create workspace
         const { workspace } = await workspaceService.createWorkspace(admin, 'testWorkspace');
         // create invite code
-        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id);
+        const code = await workspaceService.inviteToWorkspace(workspace.id, admin.id, 'user@example.com');
         const response = await server.inject({
           method: 'GET',
           url: `/check/${code}`
@@ -3307,6 +3312,7 @@ describe('Test routes', () => {
         const body = JSON.parse(response.payload);
         expect(body.workspace).exists();
         expect(body.user).exists();
+        expect(body.email).exists();
       });
     });
   });

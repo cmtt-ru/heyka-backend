@@ -299,7 +299,7 @@ describe('Test routes', () => {
     });
 
     describe('Request with valid tokens', () => {
-      it('Should return new tokens and delete old ones', async () => {
+      it('Should return new tokens and delete previous old ones', async () => {
         const { userService } = server.services();
         const user = await userService.signup({ email: 'funny@chel.ru' });
         const tokens = await userService.createTokens(user, 10000, 10000);
@@ -309,11 +309,71 @@ describe('Test routes', () => {
           payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
         });
         expect(response.statusCode).to.be.equal(200);
-        const payload = JSON.parse(response.payload);
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/refresh-token',
+          payload: { accessToken: response.result.accessToken, refreshToken: response.result.refreshToken }
+        });
+        expect(response2.statusCode).to.be.equal(200);
+        const payload = JSON.parse(response2.payload);
         expect(payload).includes('accessToken');
         expect(payload).includes('refreshToken');
         expect(await userService.findAccessToken(tokens.accessToken)).to.be.null();
         expect(await userService.findRefreshToken(tokens.refreshToken)).to.be.null();
+      });
+    });
+
+    describe('HEYK-903: Case when server updates token, but client didnt receive them', () => {
+      it('Previous token should be valid until user will send new ones', async () => {
+        const { userService } = server.services();
+        const user = await userService.signup({ name: 'hey', email: 'funny@chel.ru' });
+        const tokens = await userService.createTokens(user, 10000, 10000);
+        const response1 = await server.inject({
+          method: 'GET',
+          url: '/me',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response1.statusCode).equals(200);
+
+        // refresh token
+        const response2 = await server.inject({
+          method: 'POST',
+          url: '/refresh-token',
+          payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
+        });
+        expect(response2.statusCode).to.be.equal(200);
+
+        // previous accesss/refresh token still valid
+        const response3 = await server.inject({
+          method: 'GET',
+          url: '/me',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response3.statusCode).equals(200);
+
+        // refresh token works with previous access/refresh token
+        const response4 = await server.inject({
+          method: 'POST',
+          url: '/refresh-token',
+          payload: { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken }
+        });
+        expect(response4.statusCode).to.be.equal(200);
+
+        // refresh token with the fresh pair
+        const response5 = await server.inject({
+          method: 'POST',
+          url: '/refresh-token',
+          payload: { accessToken: response4.result.accessToken, refreshToken: response4.result.refreshToken }
+        });
+        expect(response5.statusCode).to.be.equal(200);
+
+        // old tokens not valid
+        const response6 = await server.inject({
+          method: 'GET',
+          url: '/me',
+          ...helpers.withAuthorization(tokens),
+        });
+        expect(response6.statusCode).equals(401);
       });
     });
   });

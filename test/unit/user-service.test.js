@@ -300,7 +300,8 @@ describe('Unit tests: userService', () => {
       const serviceStub = {
         findSession: sinon.stub().resolves(null),
         deleteAccessToken: sinon.stub().resolves(true),
-        updateSession: sinon.stub().resolves(true)
+        updateSession: sinon.stub().resolves(true),
+        findSessionByPrevious: sinon.stub().resolves(null),
       };
       let isExcept = false;
       try {
@@ -355,12 +356,14 @@ describe('Unit tests: userService', () => {
       expect(isExcept).true();
     });
     
-    it('should refresh token, deletes old and creates ones', async () => {
+    it('should refresh token, deletes pre-old and creates ones', async () => {
       const refreshToken = { 
         id: 'rtokenUUID', 
         expired_at: Date.now() + 2000, 
         access_token: 'atoken', 
-        user_id: 'userUUID' 
+        user_id: 'userUUID',
+        prev_access_token: 'prev-atoken',
+        prev_refresh_token: 'prev-rtoken',
       };
       const user = { id: 'userUUID' };
       const serviceStub = {
@@ -377,7 +380,7 @@ describe('Unit tests: userService', () => {
       expect(tokens.accessToken).to.not.undefined();
       expect(tokens.refreshToken).to.not.undefined();
       expect(serviceStub.findSession.calledOnceWithExactly('rtoken')).true();
-      expect(serviceStub.deleteAccessToken.calledOnceWithExactly('atoken')).true();
+      expect(serviceStub.deleteAccessToken.calledOnceWithExactly('prev-atoken')).true();
       expect(serviceStub.updateSession.firstCall.args[0]).equals(refreshToken.id);
       expect(serviceStub.findById.calledOnceWithExactly('userUUID')).true();
     });

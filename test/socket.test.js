@@ -46,6 +46,8 @@ describe('Test socket', () => {
     await db.none('DELETE FROM channels');
     await db.none('DELETE FROM workspaces');
     await db.none('DELETE FROM sessions');
+    await db.none('DELETE FROM groups');
+    await db.none('DELETE FROM groups_members');
 
     Object.values(stubbedMethods).forEach(m => m.reset());
 

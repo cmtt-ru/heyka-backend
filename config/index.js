@@ -35,6 +35,12 @@ module.exports = {
     mailgun: {
       domain: process.env.MAILGUN_DOMAIN || 'mailgun-domain',
       apikey: process.env.MAILGUN_APIKEY || 'mailgun-apikey',
+    },
+    mailchimp: {
+      apikey: process.env.MAILCHIMP_APIKEY || 'mailchimp-apikey',
+      endpoint: 'https://us20.api.mailchimp.com/3.0/',
+      audienceName: 'Heyka release',
+      audienceId: 'fdd8523428',
     }
   },
   redis: process.env.SENTINELS ? {
@@ -61,6 +67,7 @@ module.exports = {
   files: {
     awsEndpoint: process.env.AWS_ENDPOINT || 'aws_endpoint',
     awsBucket: process.env.AWS_BUCKET || 'aws_bucket',
+    awsLogsBucket: 'heyka-logs',
     awsKey: process.env.AWS_KEY || 'aws_key',
     awsSecret: process.env.AWS_SECRET || 'aws_secret',
     imgproxyUrl: process.env.IMGPROXY_URL || 'imgproxy_url',

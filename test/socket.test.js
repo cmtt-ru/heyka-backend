@@ -46,6 +46,7 @@ describe('Test socket', () => {
     await db.none('DELETE FROM channels');
     await db.none('DELETE FROM workspaces');
     await db.none('DELETE FROM sessions');
+
     Object.values(stubbedMethods).forEach(m => m.reset());
 
     process.env.DISCONNECT_TIMEOUT = '0';
@@ -2089,42 +2090,42 @@ describe('Test socket', () => {
   });
 
   describe('Testing messages', () => {
-    describe('Try to send message to user that is not connected', () => {
-      it('should return 400 User is not connected', async () => {
-        const {
-          userService,
-          workspaceService,
-          workspaceDatabaseService: wdb,
-        } = server.services();
-        const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
-        const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
+    // describe('Try to send message to user that is not connected', () => {
+    //   it('should return 400 User is not connected', async () => {
+    //     const {
+    //       userService,
+    //       workspaceService,
+    //       workspaceDatabaseService: wdb,
+    //     } = server.services();
+    //     const user1 = await userService.signup({ email: 'user1@email.email', name: 'user1' });
+    //     const user2 = await userService.signup({ email: 'user2@email.email', name: 'user2' });
   
-        const { workspace } = await workspaceService.createWorkspace(user1, 'name');
-        await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+    //     const { workspace } = await workspaceService.createWorkspace(user1, 'name');
+    //     await workspaceService.addUserToWorkspace(workspace.id, user2.id);
   
-        // create tokens for user
-        const tokens1 = await userService.createTokens(user1);
+    //     // create tokens for user
+    //     const tokens1 = await userService.createTokens(user1);
 
-        const chnls = await wdb.getWorkspaceChannels(workspace.id);
+    //     const chnls = await wdb.getWorkspaceChannels(workspace.id);
   
-        // send message to second user
-        const response = await server.inject({
-          method: 'POST',
-          url: `/send-invite`,
-          ...helpers.withAuthorization(tokens1),
-          payload: {
-            userId: user2.id,
-            isResponseNeeded: true,
-            message: { data: 'somedata' },
-            workspaceId: workspace.id,
-            channelId: chnls[0].id
-          }
-        });
-        expect(response.statusCode).equals(400);
-        const payload = JSON.parse(response.payload);
-        expect(payload.message).equals('User is not connected');
-      });
-    });
+    //     // send message to second user
+    //     const response = await server.inject({
+    //       method: 'POST',
+    //       url: `/send-invite`,
+    //       ...helpers.withAuthorization(tokens1),
+    //       payload: {
+    //         userId: user2.id,
+    //         isResponseNeeded: true,
+    //         message: { data: 'somedata' },
+    //         workspaceId: workspace.id,
+    //         channelId: chnls[0].id
+    //       }
+    //     });
+    //     expect(response.statusCode).equals(200);
+    //     const payload = JSON.parse(response.payload);
+    //     expect(payload.message).equals('User is not connected');
+    //   });
+    // });
     describe('Try to send message to user that connected from different devices in different workspaces', () => {
       it('All user devices should get message', async () => {
         const {
@@ -3271,6 +3272,93 @@ describe('Test socket', () => {
         socket1.disconnect();
         socket2.disconnect();
       });
+    });
+  });
+
+  describe('HEYK-765: Events continues after member was deleted from channel', () => {
+    it('Delete user from channel, check that events stop firing', async () => {
+      const {
+        userService,
+        workspaceService
+      } = server.services();
+      const user1 = await userService.signup({ email: 'admin@world.net' });
+      const user2 = await userService.signup({ email: 'user@world.net' });
+      const { workspace } = await workspaceService.createWorkspace(user1, 'test');
+      await workspaceService.addUserToWorkspace(workspace.id, user2.id);
+      const channel = await workspaceService.createChannel(workspace.id, user1.id, {
+        isPrivate: false,
+        name: 'testChannel'
+      });
+      const tokens1 = await userService.createTokens(user1);
+      const tokens2 = await userService.createTokens(user2);
+
+      // authenticate 2 users
+      const socket1 = io(server.info.uri);
+      const socket2 = io(server.info.uri);
+      let eventName = eventNames.socket.authSuccess;
+      const awaitSocket1Auth = awaitSocketForEvent(true, socket1, eventName, data => {
+        expect(data).includes('userId');
+      });
+      const awaitSocket2Auth = awaitSocketForEvent(true, socket2, eventName, data => {
+        expect(data).includes('userId');
+      });
+      socket1.emit(eventNames.client.auth, {
+        token: tokens1.accessToken,
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      socket2.emit(eventNames.client.auth, {
+        token: tokens2.accessToken, 
+        transaction: uuid4(),
+        workspaceId: workspace.id
+      });
+      await Promise.all([awaitSocket1Auth, awaitSocket2Auth]);
+      
+      /**
+       * admin подключается к каналу, второй юзер узнает об этом
+       */
+      eventName = eventNames.socket.userSelectedChannel;
+      const socket2NotifiedAboutSelect = awaitSocketForEvent(true, socket2, eventName, data => {
+        expect(data.channelId).equals(channel.id);
+        expect(data.userId).equals(user1.id);
+      });
+      await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/select?socketId=${socket1.id}`,
+        ...helpers.withAuthorization(tokens1),
+        payload: helpers.defaultUserState()
+      });
+      await socket2NotifiedAboutSelect;
+
+      // админ удаляет пользователя из канала
+      const removeMemberResponse = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/delete-users`,
+        ...helpers.withAuthorization(tokens1),
+        payload: {
+          users: [ user2.id, ],
+        },
+      });
+      expect(removeMemberResponse.statusCode).equals(200);
+
+      /**
+       * Пользователь 1 выходит из канала сокетом, юзер 2 не должен узнать об этом
+       */
+      eventName = eventNames.socket.userUnselectedChannel;
+      const socket2NotNotifiedAboutUnselect = awaitSocketForEvent(false, socket2, eventName);
+      const unseletChannelResponse = await server.inject({
+        method: 'POST',
+        url: `/channels/${channel.id}/unselect?socketId=${socket1.id}`,
+        ...helpers.withAuthorization(tokens1),
+      });
+      expect(unseletChannelResponse.statusCode).equals(200);
+      await Promise.race([
+        socket2NotNotifiedAboutUnselect,
+        helpers.skipSomeTime(100),
+      ]);
+
+      socket1.disconnect();
+      socket2.disconnect();
     });
   });
 });

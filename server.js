@@ -25,10 +25,10 @@ module.exports = async function createServer () {
     const roomExists = await janusWorkspaceService.roomExists(ch.janus, janusOpts4Channel);
     await janusWorkspaceService.deleteAuthTokenForWorkspace(ch.id, janusOpts4Channel);
     if (!roomExists) {
+      console.log(`del redis janus opts for ${ch.name} (${ch.id}`);
       await redis.del(`channel:janus:${ch.id}`);
     }
   }));
-  console.log(`Delete redis janus opts for ${channels.length} channels`);
   /*----------*/
 
   return server;

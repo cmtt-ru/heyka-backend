@@ -80,12 +80,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  annotations:
-    prometheus.deckhouse.io/path: /prometheus
-    prometheus.deckhouse.io/port: {{ .Values.app.port }}
   labels:
     app: {{ .Chart.Name }}
-    prometheus.deckhouse.io/custom-target: {{ .Chart.Name }}
   name: {{ .Chart.Name }}
 spec:
   ports:

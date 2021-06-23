@@ -52,8 +52,14 @@ module.exports = {
           cn: config.pg.uri,
           init: {
             noWarnings: process.env.NODE_ENV === 'test',
-            error: (err) => {
+            error: (err, e) => {
               console.log('Database error');
+
+              if (e.query) {
+                console.log('SQL query:', e.query);
+              }
+
+              console.trace();
               console.log(err);
             }
           },
@@ -69,7 +75,7 @@ module.exports = {
 
       // Redlock plugin
       require('../plugins/redlock'),
-      
+
       // add swagger if development mode (swagger requires inert and vision for static files)
       ...(
         process.env.NODE_ENV === 'development' ? [

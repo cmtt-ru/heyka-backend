@@ -28,7 +28,7 @@ spec:
           command: ["/bin/sh"]
           args:
             - -c
-            - "yarn run migrate up"
+            - "yarn run migrate up -- --no-check-order"
           workingDir: /app/
           env:
 {{ tuple "backend" . | include "werf_container_env" | indent 12 }}

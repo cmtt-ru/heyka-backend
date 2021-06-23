@@ -58,7 +58,8 @@ module.exports = {
               if (e.query) {
                 console.log('SQL query:', e.query);
               }
-              
+
+              console.trace();
               console.log(err);
             }
           },

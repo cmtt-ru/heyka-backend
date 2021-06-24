@@ -73,7 +73,7 @@ module.exports = {
                 console.log(e.ctx);
               }
 
-              console.log('-- Trace');
+              console.log('-- Trace:');
               console.trace();
 
               console.log('-- Error:');

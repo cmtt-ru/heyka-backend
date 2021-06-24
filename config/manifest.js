@@ -53,13 +53,30 @@ module.exports = {
           init: {
             noWarnings: process.env.NODE_ENV === 'test',
             error: (err, e) => {
+              console.log('٩(๑•̀ㅂ•́)و');
               console.log('Database error');
 
               if (e.query) {
-                console.log('SQL query:', e.query);
+                console.log('-- SQL query:');
+                console.log(e.query);
+              }else{
+                console.log('-- No SQL query available');
               }
 
+              if (e.cn) {
+                console.log('-- Connection error:');
+                console.log(e.cn);
+              }
+
+              if (e.ctx) {
+                console.log('-- Error occurred inside a task or transaction:');
+                console.log(e.ctx);
+              }
+
+              console.log('-- Trace');
               console.trace();
+
+              console.log('-- Error:');
               console.log(err);
             }
           },

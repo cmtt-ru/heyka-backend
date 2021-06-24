@@ -13,7 +13,7 @@ postgres:
 janus:
   kubernetes:
     enabled:
-      dev: false
+      dev: true
       stage: true
     host:
       _default: kubernetes.default
@@ -21,7 +21,7 @@ janus:
       _default: "node-role.kubernetes.io/janus="
   external:
     enabled:
-      dev: true
+      dev: false
       stage: false
     url:
       _default: https://janus-test.heyka.io

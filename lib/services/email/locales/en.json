@@ -28,5 +28,10 @@
       "button": "Verify",
       "part2": "If you did not change email address, please ignore this email or <a href=\"mailto:{{supportEmail}}\">contact support</a> if you have questions."
     }
+  },
+  "notifications": {
+    "channelInvite": {
+      "header": "{{userName}} invites you to {{channelName}}"
+    }
   }
 }

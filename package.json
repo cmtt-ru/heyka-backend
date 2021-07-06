@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "NODE_ENV=development nodemon index.js",
+    "nodemon": "nodemon index.js",
     "dev:node": "NODE_ENV=development node index.js",
     "lint": "eslint ./",
     "test": "yarn lab --verbose --leaks -m 3000 --coverage --coverage-exclude config/index.js --coverage-exclude config/manifest.js --coverage-exclude lib/.hc.js --coverage-exclude lib/index.js",

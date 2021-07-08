@@ -37,12 +37,11 @@ services:
   janus:
     container_name: heyka_janus
     build: ./docker/janus
-    environment:
-      - EXTERNAL_IP:${EXTERNAL_IP}
+#    environment:
+#      - EXTERNAL_IP:${EXTERNAL_IP}
     volumes:
       - ./docker/janus/conf:/opt/janus/etc/janus
     ports:
       - 10000-10200:10000-10200/udp
       - 8088:8088
       - 7088:7088
-      

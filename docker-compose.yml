@@ -37,6 +37,9 @@ services:
   janus:
     container_name: heyka_janus
     build: ./docker/janus
+
+    environment:
+     - EXTERNAL_IP:${EXTERNAL_IP}
     volumes:
       - ./docker/janus/conf:/opt/janus/etc/janus
     ports:

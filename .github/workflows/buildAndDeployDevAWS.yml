@@ -14,6 +14,7 @@ jobs:
     name: "Build and Deploy to dev"
     runs-on: self-hosted
     env:
+      WERF_KUBE_CONTEXT: "main-aws"
       ENV: "dev"
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
 

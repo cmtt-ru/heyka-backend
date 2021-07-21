@@ -81,5 +81,6 @@ module.exports = {
     appleArn: process.env.AWS_SNS_APPLE_ARN,
     androidArn: process.env.AWS_SNS_ANDROID_ARN,
     awsEndpoint: process.env.AWS_SNS_ENDPOINT,
-  }
+  },
+  limitOfChannelMembers: 32
 };

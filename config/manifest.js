@@ -89,10 +89,8 @@ module.exports = {
           name: 'apiEvents'
         }
       },
-
       // Redlock plugin
       require('../plugins/redlock'),
-
       // add swagger if development mode (swagger requires inert and vision for static files)
       ...(
         process.env.NODE_ENV === 'development' ? [
@@ -119,7 +117,23 @@ module.exports = {
           }
         ] :
           []
-      )
+      ),
+      // plugin for Rate Limit
+      {
+        plugin: 'hapi-rate-limit',
+        options: {
+          // limit 500 requests per hour for user
+          userLimit: 500,
+          userCache: {
+            expiresIn: 60*60*1000
+          },
+          // limit of requests set in routes
+          pathCache:{
+            expiresIn: 60*1000
+          },
+          authLimit: 5
+        }
+      }
     ]
   }
 };

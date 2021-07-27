@@ -563,29 +563,7 @@ describe('Test routes', () => {
     });
   });
   describe('DELETE /me', () => {
-    describe('Cant delete if password is invalid', () => {
-      it('should return 403 forbidden', async () => {
-        const {
-          userService
-        } = server.services();
-        const userInfo = {
-          name: 'test',
-          email: 'testEmail@mail.ru',
-          password: 'very-strong-password'
-        };
-        const user = await userService.signup(userInfo);
-        const tokens = await userService.createTokens(user);
-        const response = await server.inject({
-          method: 'POST',
-          url: '/me/delete',
-          payload: {
-            password: 'invalid-password'
-          },
-          ...helpers.withAuthorization(tokens)
-        });
-        expect(response.statusCode).equals(403);
-      });
-    });
+
     describe('Cant delete if there are workspaces where user is admin', () => {
       it('should return 400 bad request', async () => {
         const {
@@ -619,7 +597,6 @@ describe('Test routes', () => {
         const userInfo = {
           name: 'test',
           email: 'testEmail@mail.ru',
-          password: 'qwerty',
         };
         const user = await userService.signup(userInfo);
         const admin = await userService.signup({ name: 'admin', email: 'admin@admin.ru' });
@@ -629,15 +606,12 @@ describe('Test routes', () => {
         const response = await server.inject({
           method: 'POST',
           url: '/me/delete',
-          payload: {
-            password: 'qwerty',
-          },
           ...helpers.withAuthorization(tokens)
         });
         expect(response.statusCode).equals(200);
         const allWorkspaceMembers = await wdb.getWorkspaceMembers(w.id);
         expect(allWorkspaceMembers).length(1);
-        expect(allWorkspaceMembers[0].id).equals(admin.id); 
+        expect(allWorkspaceMembers[0].id).equals(admin.id);
       });
     });
   });
@@ -924,7 +898,7 @@ describe('Test routes', () => {
         expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
         const args = stubbedMethods.sendResetPasswordToken.args[0][0];
         expect(args[0].id).equals(user.id);
-        
+
         const token = args[1];
 
         const response2 = await server.inject({
@@ -969,7 +943,7 @@ describe('Test routes', () => {
         expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
         const args = stubbedMethods.sendResetPasswordToken.args[0][0];
         expect(args[0].id).equals(user.id);
-        
+
         const token = args[1];
 
         MockDate.set(Date.now() + 24 * 60 * 60 * 1000 + 1);
@@ -983,7 +957,7 @@ describe('Test routes', () => {
         });
         MockDate.reset();
         expect(response2.statusCode).equals(400);
-      
+
 
         // try signin with old password
         await userService.signin({
@@ -1017,7 +991,7 @@ describe('Test routes', () => {
         expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
         const args = stubbedMethods.sendResetPasswordToken.args[0][0];
         expect(args[0].id).equals(user.id);
-        
+
         const token = args[1];
 
         const response2 = await server.inject({
@@ -1029,7 +1003,7 @@ describe('Test routes', () => {
           }
         });
         expect(response2.statusCode).equals(200);
-      
+
 
         // try signin with new password
         await userService.signin({
@@ -1083,7 +1057,7 @@ describe('Test routes', () => {
         expect(stubbedMethods.sendResetPasswordToken.calledOnce).true();
         const args = stubbedMethods.sendResetPasswordToken.args[0][0];
         expect(args[0].id).equals(user.id);
-        
+
         const token = args[1];
 
         // try to use tokens created before password resetting
@@ -1932,7 +1906,7 @@ describe('Test routes', () => {
         // create workspace
         const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
-        
+
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/private-talk`,
@@ -1966,7 +1940,7 @@ describe('Test routes', () => {
         // create workspace
         const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
-        
+
         // first private talk
         const response1 = await server.inject({
           method: 'POST',
@@ -2022,7 +1996,7 @@ describe('Test routes', () => {
         // create workspace
         const { workspace } = await workspaceService.createWorkspace(user1, 'testWorkspace');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id, 'user');
-        
+
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/private-talk`,
@@ -2267,7 +2241,7 @@ describe('Test routes', () => {
         expect(response.statusCode).equals(200);
         const connections = await connectionService.getChannelConnections(channel.id);
         expect(connections.map(c => c.userId)).includes(user.id);
-        
+
         // auth token should be added
         expect(stubbedMethods.addAuthTokenForWorkspace.calledOnce).true();
         // rooms should be created
@@ -3139,7 +3113,7 @@ describe('Test routes', () => {
           name: 'channel',
         });
         const { code: inviteToken } = await channelService.getInviteChannelToken(channel.id, user.id);
-        
+
         const response = await server.inject({
           method: 'POST',
           url: `/channels/join/${inviteToken}`,
@@ -3172,7 +3146,7 @@ describe('Test routes', () => {
           name: 'global'
         });
         const { code: inviteToken1 } = await channelService.getInviteChannelToken(channel.id, user.id);
-          
+
         // sign up with these invites
         const response1 = await server.inject({
           method: 'POST',
@@ -3198,14 +3172,14 @@ describe('Test routes', () => {
           }
         });
         expect(response3.statusCode).equals(200);
-          
+
         // check that there are 4 users in workspace
         const members = await wdb.getWorkspaceMembers(workspace.id);
         expect(members).length(4);
-  
+
         const invites = await invdb.getInvitesByChannel(channel.id);
         expect(invites).length(1);
-  
+
         // delete invite with revoking access
         const response4 = await server.inject({
           method: 'DELETE',
@@ -3213,11 +3187,11 @@ describe('Test routes', () => {
           ...helpers.withAuthorization(tokens)
         });
         expect(response4.statusCode).equals(200);
-  
+
         // check that invite doesnt exist
         const invitesAfterDelete = await invdb.getInvitesByChannel(channel.id);
         expect(invitesAfterDelete).length(0);
-  
+
         // check that there is only one user in workspace
         const membersAfterDelete = await wdb.getWorkspaceMembers(workspace.id);
         expect(membersAfterDelete).length(1);
@@ -3842,7 +3816,7 @@ describe('Test routes', () => {
           name: 'global'
         });
         const { code: inviteToken } = await channelService.getInviteChannelToken(channel.id, user.id);
-        
+
         // sign up with this invite
         const response1 = await server.inject({
           method: 'POST',
@@ -3852,7 +3826,7 @@ describe('Test routes', () => {
           }
         });
         expect(response1.statusCode).equals(200);
-        
+
         // check that there are two users in workspace
         const members = await wdb.getWorkspaceMembers(workspace.id);
         expect(members).length(2);
@@ -3893,7 +3867,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
 
         const response = await server.inject({
@@ -3926,9 +3900,9 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
-  
+
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/groups`,
@@ -3940,7 +3914,7 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).equals(200);
         expect(response.result.id).exists();
-  
+
         // add two users to the group
         const response2 = await server.inject({
           method: 'POST',
@@ -3951,7 +3925,7 @@ describe('Test routes', () => {
           }
         });
         expect(response2.statusCode).equals(200);
-  
+
         // check that there are two relations
         const db = server.plugins['hapi-pg-promise'].db;
         const relations = await db.any('SELECT * FROM groups_members WHERE group_id=$1', [response.result.id]);
@@ -3968,9 +3942,9 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
-  
+
         const response = await server.inject({
           method: 'POST',
           url: `/workspaces/${workspace.id}/groups`,
@@ -3982,7 +3956,7 @@ describe('Test routes', () => {
         });
         expect(response.statusCode).equals(200);
         expect(response.result.id).exists();
-  
+
         // added already existing user
         const response2 = await server.inject({
           method: 'POST',
@@ -3993,7 +3967,7 @@ describe('Test routes', () => {
           }
         });
         expect(response2.statusCode).equals(200);
-  
+
         // check that there are two relations
         const db = server.plugins['hapi-pg-promise'].db;
         const relations = await db.any('SELECT * FROM groups_members WHERE group_id=$1', [response.result.id]);
@@ -4012,7 +3986,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
 
         const response = await server.inject({
@@ -4055,7 +4029,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
 
         const response = await server.inject({
@@ -4100,7 +4074,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
 
         const response = await server.inject({
@@ -4138,7 +4112,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
 
         const response = await server.inject({
@@ -4178,7 +4152,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
 
         const response = await server.inject({
@@ -4219,7 +4193,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
 
         const response = await server.inject({
@@ -4263,7 +4237,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createWorkspace(user, 'test');
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        
+
         const tokens = await userService.createTokens(user);
 
         const response = await server.inject({
@@ -4599,7 +4573,7 @@ describe('Test routes', () => {
         const tokens2 = await userService.createTokens(user2);
         const { workspace } = await workspaceService.createNewWorkspace(user.id, { name: 'test' });
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
-        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' }); 
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' });
         const response = await server.inject({
           method: 'POST',
           url: `/add-device-token`,
@@ -4638,7 +4612,7 @@ describe('Test routes', () => {
         const { workspace } = await workspaceService.createNewWorkspace(user.id, { name: 'test' });
         await workspaceService.addUserToWorkspace(workspace.id, user2.id);
         await workspaceService.addUserToWorkspace(workspace.id, user3.id);
-        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' }); 
+        const channel = await workspaceService.createChannel(workspace.id, user.id, { name: 'test' });
         const response = await server.inject({
           method: 'POST',
           url: `/add-device-token`,

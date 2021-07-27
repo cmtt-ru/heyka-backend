@@ -119,21 +119,22 @@ module.exports = {
           []
       ),
       // plugin for Rate Limit
-      {
-        plugin: 'hapi-rate-limit',
-        options: {
+      process.env.NODE_ENV === 'test' ? 
+        {
+          plugin: 'hapi-rate-limit',
+          options: {
           // limit 500 requests per hour for user
-          userLimit: 500,
-          userCache: {
-            expiresIn: 60*60*1000
-          },
-          // limit of requests set in routes
-          pathCache:{
-            expiresIn: 60*1000
-          },
-          authLimit: 5
-        }
-      }
+            userLimit: 500,
+            userCache: {
+              expiresIn: 60*60*1000
+            },
+            // limit of requests set in routes
+            pathCache:{
+              expiresIn: 60*1000
+            },
+            authLimit: 5
+          }
+        } : {}
     ]
   }
 };

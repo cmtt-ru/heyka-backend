@@ -11,6 +11,8 @@ async function startServer () {
     pingTimeout: 15000,
   });
   server.start();
+
+  console.log(`Server running at: ${server.info.uri}`);
   server.log(['info'], 'Server started');
 }
 

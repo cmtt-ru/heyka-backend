@@ -123,7 +123,7 @@ module.exports = {
         plugin: 'hapi-rate-limit',
         options: {
           // limit 500 requests per hour for user
-          userLimit: 500,
+          userLimit: 10000,
           userCache: {
             expiresIn: 60*60*1000
           },

@@ -82,5 +82,6 @@ module.exports = {
     androidArn: process.env.AWS_SNS_ANDROID_ARN,
     awsEndpoint: process.env.AWS_SNS_ENDPOINT,
   },
-  pathLimit: 50
+  pathLimit: 50,
+  limitOfChannelMembers: 3
 };

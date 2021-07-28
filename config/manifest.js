@@ -122,8 +122,9 @@ module.exports = {
       {
         plugin: 'hapi-rate-limit',
         options: {
+          enabled: process.env.NODE_ENV !== 'test',
           // limit 500 requests per hour for user
-          userLimit: 10000,
+          userLimit: 500,
           userCache: {
             expiresIn: 60*60*1000
           },

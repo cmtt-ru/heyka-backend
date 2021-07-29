@@ -25,7 +25,7 @@ jobs:
         run: |
           git submodule foreach 'git config --global url."https://x-access-token:${{ secrets.MY_REPO_PAT }}@github.com/cmtt-ru/heyka-sdk".insteadOf "https://github.com/cmtt-ru/heyka-sdk"'
       - name: werf converge
-        uses: werf/actions/converge@v1.1
+        uses: werf/actions/converge@v1.2
         with:
           channel: alpha
           env: ${{ env.ENV }}

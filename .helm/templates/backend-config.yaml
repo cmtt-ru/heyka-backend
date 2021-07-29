@@ -6,47 +6,47 @@ metadata:
 data:
   dotenv: |
     COOKIE_PASSWORD=you_have_to_set_very_long_string_and_it_should_be_protected_as_a_zenitsa_oka
-    JWT_SECRET={{ pluck .Values.global.env .Values.app.jwt_secret | first | default .Values.app.jwt_secret._default | quote }}
+    JWT_SECRET={{ pluck .Values.werf.env .Values.app.jwt_secret | first | default .Values.app.jwt_secret._default | quote }}
 
     # Token lifespan
-    ACCESS_TOKEN_LIFESPAN = {{ pluck .Values.global.env .Values.app.access_token_lifespan | first | default .Values.app.access_token_lifespan._default | toString }}
-    REFRESH_TOKEN_LIFESPAN = {{ pluck .Values.global.env .Values.app.refresh_token_lifespan | first | default .Values.app.refresh_token_lifespan._default | toString }}
-    EMAIL_VERIFICATION_CODE_LIFESPAN = {{ pluck .Values.global.env .Values.app.email_verification_code_lifespan | first | default .Values.app.email_verification_code_lifespan._default |  toString }}
-    AUTH_LINK_LIFESPAN = {{ pluck .Values.global.env .Values.app.auth_link_lifespan | first | default .Values.app.auth_link_lifespan._default | toString }}
+    ACCESS_TOKEN_LIFESPAN = {{ pluck .Values.werf.env .Values.app.access_token_lifespan | first | default .Values.app.access_token_lifespan._default | toString }}
+    REFRESH_TOKEN_LIFESPAN = {{ pluck .Values.werf.env .Values.app.refresh_token_lifespan | first | default .Values.app.refresh_token_lifespan._default | toString }}
+    EMAIL_VERIFICATION_CODE_LIFESPAN = {{ pluck .Values.werf.env .Values.app.email_verification_code_lifespan | first | default .Values.app.email_verification_code_lifespan._default |  toString }}
+    AUTH_LINK_LIFESPAN = {{ pluck .Values.werf.env .Values.app.auth_link_lifespan | first | default .Values.app.auth_link_lifespan._default | toString }}
 
     # External authenticator credentials
 
-    GOOGLE_CLIENT_ID={{ pluck .Values.global.env .Values.app.google.id | first | default .Values.app.google.id._default | quote }}
-    GOOGLE_CLIENT_SECRET={{ pluck .Values.global.env .Values.app.google.secret | first | default .Values.app.google.secret._default | quote }}
+    GOOGLE_CLIENT_ID={{ pluck .Values.werf.env .Values.app.google.id | first | default .Values.app.google.id._default | quote }}
+    GOOGLE_CLIENT_SECRET={{ pluck .Values.werf.env .Values.app.google.secret | first | default .Values.app.google.secret._default | quote }}
 
-    SLACK_CLIENT_ID={{ pluck .Values.global.env .Values.app.slack.id | first | default .Values.app.slack.id._default | quote }}
-    SLACK_CLIENT_SECRET={{ pluck .Values.global.env .Values.app.slack.secret | first | default .Values.app.slack.secret._default | quote }}
-    SLACK_VERIFICATION_TOKEN={{ pluck .Values.global.env .Values.app.slack.verification_token | first | default .Values.app.slack.verification_token._default | quote }}
+    SLACK_CLIENT_ID={{ pluck .Values.werf.env .Values.app.slack.id | first | default .Values.app.slack.id._default | quote }}
+    SLACK_CLIENT_SECRET={{ pluck .Values.werf.env .Values.app.slack.secret | first | default .Values.app.slack.secret._default | quote }}
+    SLACK_VERIFICATION_TOKEN={{ pluck .Values.werf.env .Values.app.slack.verification_token | first | default .Values.app.slack.verification_token._default | quote }}
 
-    FACEBOOK_CLIENT_ID={{ pluck .Values.global.env .Values.app.facebook.id | first | default .Values.app.facebook.id._default | quote }}
-    FACEBOOK_CLIENT_SECRET={{ pluck .Values.global.env .Values.app.facebook.secret | first | default .Values.app.facebook.secret._default | quote }}
+    FACEBOOK_CLIENT_ID={{ pluck .Values.werf.env .Values.app.facebook.id | first | default .Values.app.facebook.id._default | quote }}
+    FACEBOOK_CLIENT_SECRET={{ pluck .Values.werf.env .Values.app.facebook.secret | first | default .Values.app.facebook.secret._default | quote }}
 
     # @mailgun parameters
-    MAILGUN_DOMAIN={{ pluck .Values.global.env .Values.app.mailgun.domain | first | default .Values.app.mailgun.domain._default | quote }}
-    MAILGUN_APIKEY={{ pluck .Values.global.env .Values.app.mailgun.apikey | first | default .Values.app.mailgun.apikey._default | quote }}
+    MAILGUN_DOMAIN={{ pluck .Values.werf.env .Values.app.mailgun.domain | first | default .Values.app.mailgun.domain._default | quote }}
+    MAILGUN_APIKEY={{ pluck .Values.werf.env .Values.app.mailgun.apikey | first | default .Values.app.mailgun.apikey._default | quote }}
 
     # s3 parameters
-    AWS_ENDPOINT={{ pluck .Values.global.env .Values.app.s3.aws_endpoint | first | default .Values.app.s3.aws_endpoint._default | quote }}
-    AWS_BUCKET={{ pluck .Values.global.env .Values.app.s3.aws_bucket | first | default .Values.app.s3.aws_bucket._default | quote }}
-    AWS_KEY={{ pluck .Values.global.env .Values.app.s3.aws_key | first | default .Values.app.s3.aws_key._default | quote }}
-    AWS_SECRET={{ pluck .Values.global.env .Values.app.s3.aws_secret | first | default .Values.app.s3.aws_secret._default | quote }}
+    AWS_ENDPOINT={{ pluck .Values.werf.env .Values.app.s3.aws_endpoint | first | default .Values.app.s3.aws_endpoint._default | quote }}
+    AWS_BUCKET={{ pluck .Values.werf.env .Values.app.s3.aws_bucket | first | default .Values.app.s3.aws_bucket._default | quote }}
+    AWS_KEY={{ pluck .Values.werf.env .Values.app.s3.aws_key | first | default .Values.app.s3.aws_key._default | quote }}
+    AWS_SECRET={{ pluck .Values.werf.env .Values.app.s3.aws_secret | first | default .Values.app.s3.aws_secret._default | quote }}
 
     # aws sns parameters
-    AWS_SNS_KEY={{ pluck .Values.global.env .Values.app.aws_sns.aws_key | first | default .Values.app.aws_sns.aws_key._default | quote }}
-    AWS_SNS_SECRET={{ pluck .Values.global.env .Values.app.aws_sns.aws_secret | first | default .Values.app.aws_sns.aws_secret._default | quote }}
-    AWS_SNS_APPLE_ARN={{ pluck .Values.global.env .Values.app.aws_sns.apple_arn | first | default .Values.app.aws_sns.apple_arn._default | quote }}
-    AWS_SNS_ANDROID_ARN={{ pluck .Values.global.env .Values.app.aws_sns.android_arn | first | default .Values.app.aws_sns.android_arn._default | quote }}
-    AWS_SNS_ENDPOINT={{ pluck .Values.global.env .Values.app.aws_sns.aws_endpoint | first | default .Values.app.aws_sns.aws_endpoint._default | quote }}
+    AWS_SNS_KEY={{ pluck .Values.werf.env .Values.app.aws_sns.aws_key | first | default .Values.app.aws_sns.aws_key._default | quote }}
+    AWS_SNS_SECRET={{ pluck .Values.werf.env .Values.app.aws_sns.aws_secret | first | default .Values.app.aws_sns.aws_secret._default | quote }}
+    AWS_SNS_APPLE_ARN={{ pluck .Values.werf.env .Values.app.aws_sns.apple_arn | first | default .Values.app.aws_sns.apple_arn._default | quote }}
+    AWS_SNS_ANDROID_ARN={{ pluck .Values.werf.env .Values.app.aws_sns.android_arn | first | default .Values.app.aws_sns.android_arn._default | quote }}
+    AWS_SNS_ENDPOINT={{ pluck .Values.werf.env .Values.app.aws_sns.aws_endpoint | first | default .Values.app.aws_sns.aws_endpoint._default | quote }}
 
     # imgproxy parameters
-    IMGPROXY_URL={{ pluck .Values.global.env .Values.app.imgproxy.imgproxy_url | first | default .Values.app.imgproxy.imgproxy_url._default | quote }}
-    IMGPROXY_KEY={{ pluck .Values.global.env .Values.app.imgproxy.imgproxy_key | first | default .Values.app.imgproxy.imgproxy_key._default | quote }}
-    IMGPROXY_SALT={{ pluck .Values.global.env .Values.app.imgproxy.imgproxy_salt | first | default .Values.app.imgproxy.imgproxy_salt._default | quote }}
+    IMGPROXY_URL={{ pluck .Values.werf.env .Values.app.imgproxy.imgproxy_url | first | default .Values.app.imgproxy.imgproxy_url._default | quote }}
+    IMGPROXY_KEY={{ pluck .Values.werf.env .Values.app.imgproxy.imgproxy_key | first | default .Values.app.imgproxy.imgproxy_key._default | quote }}
+    IMGPROXY_SALT={{ pluck .Values.werf.env .Values.app.imgproxy.imgproxy_salt | first | default .Values.app.imgproxy.imgproxy_salt._default | quote }}
 
     # mailchimp apikey
-    MAILCHIMP_APIKEY={{ pluck .Values.global.env .Values.app.mailchimp.apikey | first | default .Values.app.mailchimp.apikey._default | quote }}
+    MAILCHIMP_APIKEY={{ pluck .Values.werf.env .Values.app.mailchimp.apikey | first | default .Values.app.mailchimp.apikey._default | quote }}

@@ -6,7 +6,7 @@ metadata:
   labels:
     app: {{ .Chart.Name }}-watcher
 spec:
-  replicas: {{ pluck .Values.global.env .Values.app.watcher.replicas | first | default .Values.app.watcher.replicas._default }}
+  replicas: {{ pluck .Values.werf.env .Values.app.watcher.replicas | first | default .Values.app.watcher.replicas._default }}
   selector:
     matchLabels:
       app: {{ .Chart.Name }}-watcher
@@ -22,7 +22,7 @@ spec:
         - name: registrysecret
       containers:
         - name: backend
-{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
+          image:  {{ .Values.werf.image.backend }}
           command: ["/bin/sh"]
           args:
             - -c
@@ -30,12 +30,11 @@ spec:
           workingDir: /app/
           resources:
             requests:
-              memory: {{ pluck .Values.global.env .Values.app.requests.memory | first | default .Values.app.requests.memory._default | quote }}
-              cpu: {{ pluck .Values.global.env .Values.app.requests.cpu | first | default .Values.app.requests.cpu._default | quote }}
+              memory: {{ pluck .Values.werf.env .Values.app.requests.memory | first | default .Values.app.requests.memory._default | quote }}
+              cpu: {{ pluck .Values.werf.env .Values.app.requests.cpu | first | default .Values.app.requests.cpu._default | quote }}
             limits:
-              memory: {{ pluck .Values.global.env .Values.app.limits.memory | first | default .Values.app.limits.memory._default | quote }}
+              memory: {{ pluck .Values.werf.env .Values.app.limits.memory | first | default .Values.app.limits.memory._default | quote }}
           env:
-{{ tuple "backend" . | include "werf_container_env" | indent 12 }}
 {{- include "backend_env_watcher" . | indent 12 }}
           ports:
             - containerPort: 5000

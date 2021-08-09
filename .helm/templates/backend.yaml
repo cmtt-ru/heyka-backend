@@ -6,7 +6,7 @@ metadata:
   labels:
     app: {{ .Chart.Name }}
 spec:
-  replicas: {{ pluck .Values.global.env .Values.app.replicas | first | default .Values.app.replicas._default }}
+  replicas: {{ pluck .Values.werf.env .Values.app.replicas | first | default .Values.app.replicas._default }}
   selector:
     matchLabels:
       app: {{ .Chart.Name }}
@@ -24,18 +24,17 @@ spec:
         - name: registrysecret
       initContainers:
         - name: migrate
-{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
+          image:  {{ .Values.werf.image.backend }}
           command: ["/bin/sh"]
           args:
             - -c
             - "yarn run migrate up -- --no-check-order"
           workingDir: /app/
           env:
-{{ tuple "backend" . | include "werf_container_env" | indent 12 }}
 {{- include "backend_env" . | indent 12 }}
       containers:
         - name: backend
-{{ tuple "backend" . | include "werf_container_image" | indent 10 }}
+          image:  {{ .Values.werf.image.backend }}
           command: ["/bin/sh"]
           args:
             - -c
@@ -43,12 +42,11 @@ spec:
           workingDir: /app/
           resources:
             requests:
-              memory: {{ pluck .Values.global.env .Values.app.requests.memory | first | default .Values.app.requests.memory._default | quote }}
-              cpu: {{ pluck .Values.global.env .Values.app.requests.cpu | first | default .Values.app.requests.cpu._default | quote }}
+              memory: {{ pluck .Values.werf.env .Values.app.requests.memory | first | default .Values.app.requests.memory._default | quote }}
+              cpu: {{ pluck .Values.werf.env .Values.app.requests.cpu | first | default .Values.app.requests.cpu._default | quote }}
             limits:
-              memory: {{ pluck .Values.global.env .Values.app.limits.memory | first | default .Values.app.limits.memory._default | quote }}
+              memory: {{ pluck .Values.werf.env .Values.app.limits.memory | first | default .Values.app.limits.memory._default | quote }}
           env:
-{{ tuple "backend" . | include "werf_container_env" | indent 12 }}
 {{- include "backend_env" . | indent 12 }}
           ports:
             - containerPort: {{ .Values.app.port }}

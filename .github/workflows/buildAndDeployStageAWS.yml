@@ -1,19 +1,15 @@
-name: Build and deploy to stage
-
+name: Build and deploy to stage AWS
 on:
   push:
     branches:
     - stage
-
 jobs:
   buildAndDeploy2Stage:
     name: "Build and Deploy to stage"
     runs-on: self-hosted
     env:
       WERF_KUBE_CONTEXT: "main-aws"
-      ENV: "stage"
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -28,7 +24,4 @@ jobs:
         uses: werf/actions/converge@v1.2
         with:
           channel: alpha
-          env: ${{ env.ENV }}
-        env:
-          WERF_STAGES_STORAGE: "ghcr.io/cmtt-ru/stages-${{ github.event.repository.name }}"
-          WERF_IMAGES_REPO: "ghcr.io/cmtt-ru/${{ github.event.repository.name }}"
+          env: stage

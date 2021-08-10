@@ -26,5 +26,5 @@ jobs:
       - name: werf converge
         uses: werf/actions/converge@v1.2
         with:
-          channel: alpha
+          channel: beta
           env: dev

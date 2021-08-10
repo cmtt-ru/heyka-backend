@@ -6,7 +6,7 @@ deploy:
 
 ---
 image: backend
-from: node:alpine
+from: node:15.14.0-alpine3.11
 docker:
   ENV:
     LANG: C.UTF-8

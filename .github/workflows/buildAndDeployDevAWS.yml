@@ -1,4 +1,5 @@
-name: Build and deploy to dev AWS
+name: Build and deploy to dev
+
 on:
   push:
     branches:
@@ -6,13 +7,16 @@ on:
   pull_request:
     branches:
       - develop
+
 jobs:
   buildAndDeploy2Dev:
     name: "Build and Deploy to dev"
     runs-on: self-hosted
     env:
       WERF_KUBE_CONTEXT: "main-aws"
+      ENV: "dev"
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -23,8 +27,12 @@ jobs:
       - name: Fix git config
         run: |
           git submodule foreach 'git config --global url."https://x-access-token:${{ secrets.MY_REPO_PAT }}@github.com/cmtt-ru/heyka-sdk".insteadOf "https://github.com/cmtt-ru/heyka-sdk"'
+
       - name: werf converge
-        uses: werf/actions/converge@v1.2
+        uses: werf/actions/converge@v1.1
         with:
           channel: alpha
-          env: dev
+          env: ${{ env.ENV }}
+        env:
+          WERF_STAGES_STORAGE: "ghcr.io/cmtt-ru/stages-${{ github.event.repository.name }}"
+          WERF_IMAGES_REPO: "ghcr.io/cmtt-ru/${{ github.event.repository.name }}"

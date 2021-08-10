@@ -1,17 +1,19 @@
-name: Build and deploy to stage
+name: Build and deploy to dev
 
 on:
   push:
     branches:
-    - stage
+      - develop
+  pull_request:
+    branches:
+      - develop
 
 jobs:
-  buildAndDeploy2Stage:
-    name: "Build and Deploy to stage"
+  buildAndDeploy2Dev:
+    name: "Build and Deploy to dev"
     runs-on: self-hosted
     env:
-      WERF_KUBE_CONTEXT: "main-aws"
-      ENV: "stage"
+      ENV: "dev"
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
 
     steps:
@@ -24,6 +26,7 @@ jobs:
       - name: Fix git config
         run: |
           git submodule foreach 'git config --global url."https://x-access-token:${{ secrets.MY_REPO_PAT }}@github.com/cmtt-ru/heyka-sdk".insteadOf "https://github.com/cmtt-ru/heyka-sdk"'
+
       - name: werf converge
         uses: werf/actions/converge@v1.1
         with:

@@ -10,7 +10,6 @@ jobs:
     name: "Build and Deploy to stage"
     runs-on: self-hosted
     env:
-      WERF_KUBE_CONTEXT: "main-aws"
       ENV: "stage"
       WERF_SECRET_KEY: ${{ secrets.WERF_SECRET_KEY }}
 

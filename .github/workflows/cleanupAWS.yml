@@ -4,7 +4,7 @@ on:
     - cron:  '30 1 * * *'
 jobs:
   cleanup:
-    name: "Build and deploy backup repo"
+    name: "cleanup"
     runs-on: self-hosted
     env:
       WERF_KUBE_CONTEXT: "main-aws"

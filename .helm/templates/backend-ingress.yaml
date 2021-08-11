@@ -20,7 +20,7 @@ spec:
         backend:
           serviceName: {{ .Chart.Name }}
           servicePort: web
-{{- if (eq $.Values.werf.env "stage") }}
+{{- if (eq $.Values.werf.env "prod") }}
   - host: {{ pluck .Values.werf.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
     http:
       paths:
@@ -36,7 +36,7 @@ spec:
   tls:
   - hosts:
       - {{ pluck .Values.werf.env .Values.app.url | first | default (printf "back-%s.%s" .Values.werf.env .Values.app.domain_base) }}
-{{- if (eq $.Values.werf.env "stage") }}
+{{- if (eq $.Values.werf.env "prod") }}
       - {{ pluck .Values.werf.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
 {{- end }}
     secretName: {{ printf "tls-%s" .Chart.Name | quote }}

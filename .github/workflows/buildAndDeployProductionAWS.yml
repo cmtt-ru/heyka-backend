@@ -1,14 +1,11 @@
-name: Build and deploy to dev AWS
+name: Build and Deploy to production AWS
 on:
   push:
     branches:
-      - develop
-  pull_request:
-    branches:
-      - develop
+    - master
 jobs:
-  buildAndDeploy2Dev:
-    name: "Build and Deploy to dev"
+  buildAndDeploy2Production:
+    name: "Build and Deploy to production AWS"
     runs-on: self-hosted
     env:
       WERF_KUBE_CONTEXT: "main-aws"
@@ -27,4 +24,4 @@ jobs:
         uses: werf/actions/converge@v1.2
         with:
           channel: beta
-          env: dev
+          env: prod

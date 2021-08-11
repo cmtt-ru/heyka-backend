@@ -5,6 +5,13 @@ redis:
     _default: 6379
 
 postgres:
+  endpoint:
+    stage: dev.cwc0gqyf1kwe.eu-central-1.rds.amazonaws.com
+    prod: stage.cwc0gqyf1kwe.eu-central-1.rds.amazonaws.com
+  user:
+    _default: heyka
+  name:
+    _default: heyka
   host:
     _default: postgres
   port:
@@ -13,16 +20,16 @@ postgres:
 janus:
   kubernetes:
     enabled:
-      dev: true
       stage: true
+      prod: true
     host:
       _default: kubernetes.default
     janus_node_label:
       _default: "node-role.kubernetes.io/janus="
   external:
     enabled:
-      dev: false
       stage: false
+      prod: false
     url:
       _default: https://janus-test.heyka.io
     public_url:
@@ -45,20 +52,17 @@ app:
   watcher:
     replicas:
       _default: "0"
-      stage: "1"
+      prod: "1"
   replicas:
     _default: "1"
   requests:
     cpu:
       _default: "250m"
-      stage: "500m"
-      production: "1"
+      prod: "500m"
     memory:
       _default: "512Mi"
-      stage: "1Gi"
-      production: "2Gi"
+      prod: "1Gi"
   limits:
     memory:
       _default: "1Gi"
-      stage: "2Gi"
-      production: "4Gi"
+      prod: "2Gi"

@@ -10,13 +10,29 @@ spec:
   selector:
     matchLabels:
       app: {{ .Chart.Name }}-watcher
+  revisionHistoryLimit: 3
   template:
     metadata:
       labels:
         app: {{ .Chart.Name }}-watcher
     spec:
-      nodeSelector:
-        node-role.kubernetes.io/node: ""
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  app: {{ .Chart.Name }}-watcher
+              topologyKey: kubernetes.io/hostname
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: node-role.kubernetes.io/node
+                operator: In
+                values:
+                - ""
       serviceAccountName: {{ .Chart.Name }}-sa
       imagePullSecrets:
         - name: registrysecret
@@ -53,3 +69,15 @@ spec:
               scheme: HTTP
             initialDelaySeconds: 15
             periodSeconds: 3
+---
+apiVersion: autoscaling.k8s.io/v1beta2
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ .Chart.Name }}-watcher
+spec:
+  targetRef:
+    apiVersion: "apps/v1"
+    kind: Deployment
+    name: {{ .Chart.Name }}-watcher
+  updatePolicy:
+    updateMode: "Off"

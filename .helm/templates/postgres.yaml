@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+spec:
+  externalName: {{ pluck .Values.werf.env .Values.postgres.endpoint | first | default .Values.postgres.endpoint._default }}
+  ports:
+  - port: {{ pluck .Values.werf.env .Values.postgres.port | first | default .Values.postgres.port._default }}
+    protocol: TCP
+    targetPort: {{ pluck .Values.werf.env .Values.postgres.port | first | default .Values.postgres.port._default }}
+  sessionAffinity: None
+  type: ExternalName

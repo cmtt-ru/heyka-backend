@@ -1,24 +1,12 @@
 {{ define "backend_env" }}
 - name: S_DATABASE_USER
-  valueFrom:
-    configMapKeyRef:
-      name: postgres-config
-      key: user
+  value: "{{ pluck .Values.werf.env .Values.postgres.user | first | default .Values.postgres.user._default }}"
 - name: S_DATABASE_PASSWORD
-  valueFrom:
-    configMapKeyRef:
-      name: postgres-config
-      key: password
+  value: "{{ pluck .Values.werf.env .Values.postgres.password | first | default .Values.postgres.password._default }}"
 - name: S_DATABASE_NAME
-  valueFrom:
-    configMapKeyRef:
-      name: postgres-config
-      key: db
+  value: "{{ pluck .Values.werf.env .Values.postgres.name | first | default .Values.postgres.name._default }}"
 - name: S_REDIS_PASS
-  valueFrom:
-    configMapKeyRef:
-      name: redis-config
-      key: password
+  value: "{{ pluck .Values.werf.env .Values.redis.password | first | default .Values.redis.password._default }}"
 - name: DATABASE_URL
   value: "postgres://$(S_DATABASE_USER):$(S_DATABASE_PASSWORD)@{{ pluck .Values.werf.env .Values.postgres.host | first | default .Values.postgres.host._default }}:{{ pluck .Values.werf.env .Values.postgres.port | first | default .Values.postgres.port._default }}/$(S_DATABASE_NAME)"
 - name: REDIS_URI
@@ -47,25 +35,13 @@
 
 {{ define "backend_env_watcher" }}
 - name: S_DATABASE_USER
-  valueFrom:
-    configMapKeyRef:
-      name: postgres-config
-      key: user
+  value: "{{ pluck .Values.werf.env .Values.postgres.user | first | default .Values.postgres.user._default }}"
 - name: S_DATABASE_PASSWORD
-  valueFrom:
-    configMapKeyRef:
-      name: postgres-config
-      key: password
+  value: "{{ pluck .Values.werf.env .Values.postgres.password | first | default .Values.postgres.password._default }}"
 - name: S_DATABASE_NAME
-  valueFrom:
-    configMapKeyRef:
-      name: postgres-config
-      key: db
+  value: "{{ pluck .Values.werf.env .Values.postgres.name | first | default .Values.postgres.name._default }}"
 - name: S_REDIS_PASS
-  valueFrom:
-    configMapKeyRef:
-      name: redis-config
-      key: password
+  value: "{{ pluck .Values.werf.env .Values.redis.password | first | default .Values.redis.password._default }}"
 - name: DATABASE_URL
   value: "postgres://$(S_DATABASE_USER):$(S_DATABASE_PASSWORD)@{{ pluck .Values.werf.env .Values.postgres.host | first | default .Values.postgres.host._default }}:{{ pluck .Values.werf.env .Values.postgres.port | first | default .Values.postgres.port._default }}/$(S_DATABASE_NAME)"
 - name: REDIS_URI

@@ -5,7 +5,7 @@ on:
     - stage
 jobs:
   buildAndDeploy2Stage:
-    name: "Build and Deploy to stage"
+    name: "Build and Deploy to stage AWS"
     runs-on: self-hosted
     env:
       WERF_KUBE_CONTEXT: "main-aws"

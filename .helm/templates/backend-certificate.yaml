@@ -11,7 +11,7 @@ spec:
   commonName: {{ pluck .Values.werf.env .Values.app.url | first | default (printf "back-%s.%s" .Values.werf.env .Values.app.domain_base) }}
   dnsNames:
   - {{ pluck .Values.werf.env .Values.app.url | first | default (printf "back-%s.%s" .Values.werf.env .Values.app.domain_base) }}
-{{- if (eq $.Values.werf.env "stage") }}
+{{- if (eq $.Values.werf.env "prod") }}
   - {{ pluck .Values.werf.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
 {{- end }}
   acme:
@@ -20,6 +20,6 @@ spec:
         ingressClass: nginx
       domains:
       - {{ pluck .Values.werf.env .Values.app.url | first | default (printf "back-%s.%s" .Values.werf.env .Values.app.domain_base) }}
-{{- if (eq $.Values.werf.env "stage") }}
+{{- if (eq $.Values.werf.env "prod") }}
       - {{ pluck .Values.werf.env .Values.app.domain_main | first | default .Values.app.domain_main._default }}
 {{- end }}

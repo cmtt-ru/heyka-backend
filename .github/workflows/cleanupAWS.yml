@@ -16,5 +16,5 @@ jobs:
     - name: werf cleanup
       uses: werf/actions/cleanup@v1.2
       with:
-        channel: alpha
+        channel: beta
         github-token: ${{ secrets.CLEANUP_TOKEN }}

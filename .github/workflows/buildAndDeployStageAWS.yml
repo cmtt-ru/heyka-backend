@@ -2,10 +2,7 @@ name: Build and deploy to stage AWS
 on:
   push:
     branches:
-      - stage
-  pull_request:
-    branches:
-      - stage
+    - stage
 jobs:
   buildAndDeploy2Stage:
     name: "Build and Deploy to stage AWS"

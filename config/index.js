@@ -6,7 +6,7 @@ module.exports = {
   port: process.env.PORT || 5000,
   host: process.env.HOST || '0.0.0.0',
   jwtSecret: process.env.JWT_SECRET || 'default_jwt_token',
-  publicHostname: process.env.DEPLOYMENT_ENV === 'stage'
+  publicHostname: process.env.DEPLOYMENT_ENV === 'prod'
     ? 'heyka.app'
     : process.env.DEPLOYMENT_ENV ? 'web-dev.dev.k8s.heyka.io' : 'localhost:8080',
   leonardo: {

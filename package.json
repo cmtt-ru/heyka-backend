@@ -33,7 +33,7 @@
     "@mailchimp/mailchimp_marketing": "^3.0.36",
     "@slack/web-api": "^5.7.0",
     "aws-sdk": "^2.827.0",
-    "axios": "^0.19.2",
+    "axios": "^0.21.2",
     "bcryptjs": "^2.4.3",
     "bell": "^10.0.0",
     "busboy": "^0.3.1",
